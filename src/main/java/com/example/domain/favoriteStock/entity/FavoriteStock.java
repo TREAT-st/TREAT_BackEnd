@@ -42,9 +42,11 @@ public class FavoriteStock {
     @Column(name = "alert_period", nullable = false)
     private AlertPeriod alertPeriod;
 
-    @Column(name = "created_at", nullable = false, updatable = false,
-            insertable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @Builder
     public FavoriteStock(User user, String stockCode, Boolean isAlertEnabled,

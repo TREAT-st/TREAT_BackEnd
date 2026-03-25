@@ -28,14 +28,13 @@ public class Notification {
     @Column(name = "notification_type", nullable = false)
     private NotificationType notificationType;
 
-    @Column(name = "message", nullable = false, length = 255)
+    @Column(name = "message", nullable = false, length = 200)
     private String message;
 
     @Column(name = "is_read", nullable = false)
     private Boolean isRead;
 
-    @Column(name = "created_at", nullable = false, updatable = false,
-            insertable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Builder

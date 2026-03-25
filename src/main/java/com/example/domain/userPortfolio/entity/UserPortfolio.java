@@ -10,15 +10,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "user_portfolio",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uq_user_portfolio_user",
-                        columnNames = {"user_id"}
-                )
-        }
-)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserPortfolio {
@@ -47,12 +38,10 @@ public class UserPortfolio {
     @Column(name = "virtual_profit", nullable = false)
     private Double virtualProfit;
 
-    @Column(name = "created_at", nullable = false, updatable = false,
-            insertable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false,
-            insertable = false, updatable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Builder

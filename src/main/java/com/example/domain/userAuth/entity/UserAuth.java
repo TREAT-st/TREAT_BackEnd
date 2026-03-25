@@ -31,7 +31,7 @@ public class UserAuth {
     @Column(name = "email", nullable = false, length = 100)
     private String email;
 
-    @Column(name = "password", length = 255)
+    @Column(name = "password", length = 100)
     private String password;
 
     @Column(name = "provider_login_id", length = 100)
@@ -40,12 +40,10 @@ public class UserAuth {
     @Column(name = "is_email_verified", nullable = false)
     private Boolean isEmailVerified;
 
-    @Column(name = "created_at", nullable = false, updatable = false,
-            insertable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false,
-            insertable = false, updatable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Builder
