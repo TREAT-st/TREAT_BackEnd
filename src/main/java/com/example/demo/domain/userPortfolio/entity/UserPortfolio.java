@@ -1,6 +1,6 @@
-package com.example.domain.userPortfolio.entity;
+package com.example.demo.domain.userPortfolio.entity;
 
-import com.example.domain.user.entity.User;
+import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

@@ -1,4 +1,4 @@
-package com.example.domain.userAuth.entity;
+package com.example.demo.domain.userAuth.entity;
 
 public enum LoginType {
     EMAIL,   // 이메일 로그인

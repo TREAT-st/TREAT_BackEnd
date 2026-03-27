@@ -1,4 +1,4 @@
-package com.example.domain.favoriteStock.entity;
+package com.example.demo.domain.favoriteStock.entity;
 
 public enum AlertPeriod {
     DAILY,
