@@ -1,6 +1,7 @@
 package com.example.demo.api.common.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
+import com.example.demo.common.annotation.DisableSwaggerSecurity;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import lombok.Getter;
