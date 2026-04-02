@@ -1,19 +1,17 @@
 package com.example.demo.domain.notification.entity;
 
+import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notification")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Notification {
+public class Notification extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,16 +31,4 @@ public class Notification {
 
     @Column(name = "is_read", nullable = false)
     private Boolean isRead;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Builder
-    public Notification(User user, NotificationType notificationType,
-                        String message, Boolean isRead) {
-        this.user = user;
-        this.notificationType = notificationType;
-        this.message = message;
-        this.isRead = isRead;
-    }
 }

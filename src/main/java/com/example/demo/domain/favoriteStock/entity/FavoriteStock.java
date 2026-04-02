@@ -1,13 +1,11 @@
 package com.example.demo.domain.favoriteStock.entity;
 
+import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -21,7 +19,7 @@ import java.time.LocalDateTime;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class FavoriteStock {
+public class FavoriteStock extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,19 +39,4 @@ public class FavoriteStock {
     @Enumerated(EnumType.STRING)
     @Column(name = "alert_period", nullable = false)
     private AlertPeriod alertPeriod;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Builder
-    public FavoriteStock(User user, String stockCode, Boolean isAlertEnabled,
-                         AlertPeriod alertPeriod) {
-        this.user = user;
-        this.stockCode = stockCode;
-        this.isAlertEnabled = isAlertEnabled;
-        this.alertPeriod = alertPeriod;
-    }
 }

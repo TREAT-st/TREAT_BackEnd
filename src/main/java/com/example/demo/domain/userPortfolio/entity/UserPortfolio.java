@@ -3,11 +3,8 @@ package com.example.demo.domain.userPortfolio.entity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -37,21 +34,4 @@ public class UserPortfolio {
 
     @Column(name = "virtual_profit", nullable = false)
     private Double virtualProfit;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Builder
-    public UserPortfolio(User user, Integer totalPoint, Integer totalPrediction,
-                         Integer successCount, Integer failCount, Double virtualProfit) {
-        this.user = user;
-        this.totalPoint = totalPoint;
-        this.totalPrediction = totalPrediction;
-        this.successCount = successCount;
-        this.failCount = failCount;
-        this.virtualProfit = virtualProfit;
-    }
 }

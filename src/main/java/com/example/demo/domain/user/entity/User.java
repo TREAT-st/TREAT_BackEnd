@@ -1,21 +1,30 @@
 package com.example.demo.domain.user.entity;
 
+import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+@Table(
+        name = "user",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_user_provider_provider_user_id",
+                        columnNames = {"provider", "provider_user_id"}
+                )
+        }
+)
+public class User extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
     @Column(name = "name", nullable = false, length = 50)
     private String name;
@@ -41,21 +50,16 @@ public class User {
     @Column(name = "status", nullable = false)
     private UserStatus status;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "email", nullable = false, length = 100)
+    private String email;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "is_email_verified", nullable = false)
+    private Boolean isEmailVerified;
 
-    @Builder
-    public User(String name, LocalDate birthDate, Gender gender, String nickname,
-                Role role, String accountNumber, UserStatus status) {
-        this.name = name;
-        this.birthDate = birthDate;
-        this.gender = gender;
-        this.nickname = nickname;
-        this.role = role;
-        this.accountNumber = accountNumber;
-        this.status = status;
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider")
+    private SocialProvider provider;
+
+    @Column(name = "provider_user_id", length = 100)
+    private String providerUserId;
 }
