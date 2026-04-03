@@ -1,0 +1,42 @@
+package com.example.demo.domain.favoriteStock.entity;
+
+import com.example.demo.domain.model.entity.BaseTimeEntity;
+import com.example.demo.domain.user.entity.User;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(
+        name = "favorite_stock",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uq_favorite_stock_user_stock",
+                        columnNames = {"user_id", "stock_code"}
+                )
+        }
+)
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class FavoriteStock extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "favorite_stock_id")
+    private Integer favoriteStockId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name = "stock_code", nullable = false, length = 20)
+    private String stockCode;
+
+    @Column(name = "is_alert_enabled", nullable = false)
+    private Boolean isAlertEnabled;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "alert_period", nullable = false)
+    private AlertPeriod alertPeriod;
+}
