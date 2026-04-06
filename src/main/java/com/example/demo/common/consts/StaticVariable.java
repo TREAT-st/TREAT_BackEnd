@@ -19,6 +19,6 @@ public class StaticVariable {
     //JWT
     public static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24; // 1일
     public static final long REFRESH_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 7; // 7일
-
+    public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 }
 

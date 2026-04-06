@@ -62,7 +62,7 @@ public class Member extends BaseTimeEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER")); // TODO: 임의의 ROLE_USER 값 부여하였으므로 ROLE이 필요할 경우 추후 enum 타입으로 수정 예정
+        return List.of(new SimpleGrantedAuthority("ROLE_USER")); // TODO: social 작업 끝나면 바로 admin, User enum타입으로 변경
     }
 
     @Override
