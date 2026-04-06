@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import static com.example.demo.common.consts.StaticVariable.*;
 import static java.util.stream.Collectors.groupingBy;
 
-/** Swagger 사용 환경을 위한 설정 파일 */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
