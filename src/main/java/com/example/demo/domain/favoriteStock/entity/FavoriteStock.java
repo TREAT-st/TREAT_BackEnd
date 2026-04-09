@@ -24,7 +24,7 @@ public class FavoriteStock extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "favorite_stock_id")
-    private Integer favoriteStockId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -33,10 +33,9 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 
+    @Column(name = "ticker", nullable = false, length = 20)
+    private String ticker;
+
     @Column(name = "is_alert_enabled", nullable = false)
     private Boolean isAlertEnabled;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "alert_period", nullable = false)
-    private AlertPeriod alertPeriod;
 }
