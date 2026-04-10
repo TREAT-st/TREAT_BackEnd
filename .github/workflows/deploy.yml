@@ -66,7 +66,8 @@ jobs:
               --RDS_DATABASE_URL=$RDS_DATABASE_URL \
               --RDS_DATABASE_USERNAME=$RDS_DATABASE_USERNAME \
               --RDS_DATABASE_PASSWORD=$RDS_DATABASE_PASSWORD \
-              > /home/$EC2_USER/app/app.log 2>&1 &
+              < /dev/null > /home/$EC2_USER/app/app.log 2>&1 &
+            disown
           EOF
 
           rm -f key.pem
