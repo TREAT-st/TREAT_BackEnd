@@ -37,5 +37,5 @@ public class FavoriteStock extends BaseTimeEntity {
     private String ticker;
 
     @Column(name = "is_alert_enabled", nullable = false)
-    private Boolean isAlertEnabled;
+    private Boolean isAlertEnabled = false;
 }

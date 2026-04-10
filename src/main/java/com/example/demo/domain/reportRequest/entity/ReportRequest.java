@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "reportRequest")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(exclude = {"favoriteStock", "reportId"})
 public class ReportRequest {
 
     @Id
@@ -22,6 +24,9 @@ public class ReportRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "favorite_stock_id")
     private FavoriteStock favoriteStock;
+
+    @Column(name = "report_id")
+    private Long reportId;
 
     @Column(name = "request_stock_code", nullable = false)
     private String requestStockCode;

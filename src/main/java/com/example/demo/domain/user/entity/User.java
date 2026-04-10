@@ -54,7 +54,7 @@ public class User extends BaseTimeEntity {
     private String email;
 
     @Column(name = "is_email_verified", nullable = false)
-    private Boolean isEmailVerified;
+    private Boolean isEmailVerified = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "provider")

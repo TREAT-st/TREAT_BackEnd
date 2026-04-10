@@ -22,20 +22,20 @@ public class UserPortfolio {
     private User user;
 
     @Column(name = "total_point", nullable = false)
-    private Long totalPoint;
+    private Long totalPoint = 0L;
 
     @Column(name = "total_prediction", nullable = false)
-    private Long totalPrediction;
+    private Long totalPrediction = 0L;
 
     @Column(name = "success_count", nullable = false)
-    private Long successCount;
+    private Long successCount = 0L;
 
     @Column(name = "fail_count", nullable = false)
-    private Long failCount;
+    private Long failCount = 0L;
 
     @Column(name = "virtual_profit_krw", nullable = false)
-    private Double virtualProfitKrw;
+    private Double virtualProfitKrw = 0.0;
 
     @Column(name = "virtual_profit_percent", nullable = false)
-    private Double virtualProfitPercent;
+    private Double virtualProfitPercent = 0.0;
 }

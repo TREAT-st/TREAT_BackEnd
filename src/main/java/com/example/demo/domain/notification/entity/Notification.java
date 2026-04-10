@@ -33,5 +33,5 @@ public class Notification extends BaseTimeEntity {
     private String message;
 
     @Column(name = "is_read", nullable = false)
-    private Boolean isRead;
+    private Boolean isRead = false;
 }
