@@ -56,16 +56,18 @@ jobs:
             # S3에서 최신 JAR 다운로드
             aws s3 cp s3://$S3_BUCKET/treat-app.jar /home/$EC2_USER/app/treat-app.jar
 
-            # 실행 (환경변수 주입)
+            # 환경변수 설정 (&가 쉘 연산자로 해석되지 않도록 따옴표 처리)
+            export RDS_DATABASE_URL="$RDS_DATABASE_URL"
+            export RDS_DATABASE_USERNAME="$RDS_DATABASE_USERNAME"
+            export RDS_DATABASE_PASSWORD="$RDS_DATABASE_PASSWORD"
+
+            # 실행
             nohup java -jar \
               -Xms128m -Xmx400m \
               -XX:MetaspaceSize=128m \
               -XX:MaxMetaspaceSize=128m \
               /home/$EC2_USER/app/treat-app.jar \
               --spring.profiles.active=dev \
-              --RDS_DATABASE_URL=$RDS_DATABASE_URL \
-              --RDS_DATABASE_USERNAME=$RDS_DATABASE_USERNAME \
-              --RDS_DATABASE_PASSWORD=$RDS_DATABASE_PASSWORD \
               < /dev/null > /home/$EC2_USER/app/app.log 2>&1 &
             disown
           EOF
