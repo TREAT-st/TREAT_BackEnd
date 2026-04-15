@@ -36,25 +36,19 @@ public class User extends BaseTimeEntity {
     @Column(name = "gender", nullable = false)
     private Gender gender;
 
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", unique = true, nullable = false, length = 50)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
 
-    @Column(name = "account_number", length = 50)
+    @Column(name = "account_number", unique = true, length = 50)
     private String accountNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private UserStatus status;
-
-    @Column(name = "email", nullable = false, length = 100)
-    private String email;
-
-    @Column(name = "is_email_verified", nullable = false)
-    private Boolean isEmailVerified = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "provider")

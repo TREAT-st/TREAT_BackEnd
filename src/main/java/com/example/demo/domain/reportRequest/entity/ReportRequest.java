@@ -1,19 +1,18 @@
 package com.example.demo.domain.reportRequest.entity;
 
 import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
+import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reportRequest")
+@Table(name = "report_request")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@ToString(exclude = {"favoriteStock", "reportId"})
 public class ReportRequest {
 
     @Id
@@ -22,31 +21,24 @@ public class ReportRequest {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "favorite_stock_id")
+    @JoinColumn(name = "favorite_stock_id", nullable = false)
     private FavoriteStock favoriteStock;
 
-    @Column(name = "report_id")
-    private Long reportId;
-
-    @Column(name = "request_stock_code", nullable = false)
-    private String requestStockCode;
-
-    @Column(name = "request_ticker", nullable = false)
-    private String requestTicker;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "request_status", nullable = false)
     private RequestStatus requestStatus;
 
     @Column(name = "retry_count", nullable = false)
-    private int retryCount = 0;
+    private Integer retryCount = 0;
 
     @Column(name = "error_message")
     private String errorMessage;
 
-    @CreationTimestamp
-    @Column(name = "created_date", updatable = false)
-    private LocalDateTime createdDate;
+    @Column(name = "requested_date")
+    private LocalDateTime requestedDate;
 
     @Column(name = "completed_date")
     private LocalDateTime completedDate;

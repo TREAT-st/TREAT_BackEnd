@@ -12,13 +12,14 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report extends BaseTimeEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "report_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "report_request_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "report_request_id", nullable = false, unique = true)
     private ReportRequest reportRequest;
 
     @Column(name = "report_html_url", nullable = false)
