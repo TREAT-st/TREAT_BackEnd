@@ -1,5 +1,6 @@
 package com.example.demo.domain.userPortfolio.entity;
 
+import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "userPortfolio")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserPortfolio {
+public class UserPortfolio extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

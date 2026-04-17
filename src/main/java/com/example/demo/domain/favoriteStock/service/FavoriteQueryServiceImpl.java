@@ -1,6 +1,7 @@
 package com.example.demo.domain.favoriteStock.service;
 
 import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
+import com.example.demo.domain.favoriteStock.exception.FavoriteStockHandler;
 import com.example.demo.domain.favoriteStock.repository.FavoriteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,12 +25,11 @@ public class FavoriteQueryServiceImpl implements FavoriteQueryService {
     @Override
     public FavoriteStock getUserFavoriteStockByUserIdAndStockCode(Long userId, String stockCode) {
         return favoriteRepository.findByUserIdAndStockCode(userId, stockCode)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "FavoriteStock not found for user: " + userId + ", stock: " + stockCode));
+                .orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
     }
 
     @Override
-    public Boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode) {
+    public boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode) {
         return favoriteRepository.existsByUserIdAndStockCode(userId, stockCode);
     }
 }

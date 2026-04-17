@@ -7,5 +7,5 @@ import org.springframework.data.domain.Pageable;
 public interface FavoriteQueryService {
     Page<FavoriteStock> getUserFavoriteStockListByPage(Long userId, Pageable pageable);
     FavoriteStock getUserFavoriteStockByUserIdAndStockCode(Long userId, String stockCode);
-    Boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode);
+    boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode);
 }

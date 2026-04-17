@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "report_request")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ReportRequest {
+public class ReportRequest extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +29,7 @@ public class ReportRequest {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "request_status", nullable = false)
-    private RequestStatus requestStatus;
+    private RequestStatus requestStatus = RequestStatus.PENDING;
 
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount = 0;
@@ -37,9 +37,21 @@ public class ReportRequest {
     @Column(name = "error_message")
     private String errorMessage;
 
-    @Column(name = "requested_date")
-    private LocalDateTime requestedDate;
-
     @Column(name = "completed_date")
     private LocalDateTime completedDate;
+
+    public void startProcessing() {
+        this.requestStatus = RequestStatus.IN_PROGRESS;
+    }
+
+    public void complete() {
+        this.requestStatus = RequestStatus.DONE;
+        this.completedDate = LocalDateTime.now();
+    }
+
+    public void fail(String errorMessage) {
+        this.requestStatus = RequestStatus.FAILED;
+        this.errorMessage = errorMessage;
+        this.retryCount++;
+    }
 }
