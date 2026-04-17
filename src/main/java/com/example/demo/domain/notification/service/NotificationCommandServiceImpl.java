@@ -18,6 +18,9 @@ public class NotificationCommandServiceImpl implements NotificationCommandServic
         return notificationRepository.save(notification);
     }
 
+    /*  TODO: 삭제를 요청한 notification이 요청한 user의 것이 맞는지 확인해야함.
+         -> notificationUseCase를 만들어서 처리 예정.
+    */
     @Override
     public Long readNotification(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
