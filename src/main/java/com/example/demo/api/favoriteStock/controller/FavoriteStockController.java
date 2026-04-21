@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FavoriteStockController {
     @Operation(summary = "user의 관심 종목 등록", description = "user의 관심 종목에 해당 종목을 등록합니다.")
     @PostMapping
-    public ApiResponseDto<> addUserFavoriteStock(@) {
-
+    public ApiResponseDto<Void> addUserFavoriteStock() {
+        return null;
     }
 }

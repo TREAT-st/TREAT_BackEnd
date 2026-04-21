@@ -62,11 +62,11 @@ jobs:
             export RDS_DATABASE_PASSWORD="$RDS_DATABASE_PASSWORD"
 
             # 실행
-            nohup java -jar \
+            nohup java \
               -Xms128m -Xmx400m \
               -XX:MetaspaceSize=128m \
               -XX:MaxMetaspaceSize=128m \
-              /home/$EC2_USER/app/treat-app.jar \
+              -jar /home/$EC2_USER/app/treat-app.jar \
               --spring.profiles.active=dev \
               < /dev/null > /home/$EC2_USER/app/app.log 2>&1 &
             disown
