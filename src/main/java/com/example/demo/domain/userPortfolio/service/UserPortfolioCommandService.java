@@ -1,8 +1,9 @@
 package com.example.demo.domain.userPortfolio.service;
 
-import com.example.demo.domain.userPortfolio.entity.UserPortfolio;
+import com.example.demo.api.userPortfolio.dto.UserPortfolioRequestDto.UpdateUserPortfolioRequest;
 
 public interface UserPortfolioCommandService {
-    UserPortfolio createPortfolio(UserPortfolio userPortfolio);
+    void createPortfolio(Long userId);
+    void updateUserPortfolio(Long userId, UpdateUserPortfolioRequest request);
     Long deletePortfolio(Long portfolioId);
 }

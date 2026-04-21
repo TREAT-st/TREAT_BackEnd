@@ -1,25 +1,20 @@
 package com.example.demo.api.userPortfolio.dto;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-public class UserPortfolioRequestDto {
+public class UserPortfolioResponseDto {
 
     @Getter
-    @NoArgsConstructor
-    public static class UpdateUserPortfolioRequest {
-        @NotNull
+    @Builder
+    public static class UserPortfolioResponse {
+        private Long portfolioId;
+        private Long userId;
         private Long totalPoint;
-        @NotNull
         private Long totalPrediction;
-        @NotNull
         private Long successCount;
-        @NotNull
         private Long failCount;
-        @NotNull
         private Double virtualProfitKrw;
-        @NotNull
         private Double virtualProfitPercent;
     }
 }
