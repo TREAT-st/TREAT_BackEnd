@@ -42,7 +42,8 @@ public class NotificationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("createdDate")));
-        Page<Notification> notificationPage = notificationUseCase.getNotificationList(user.getId(), pageable);
+        Page<Notification> notificationPage = notificationUseCase.getNotificationList(user, pageable);
+
         return ApiResponseDto.onSuccess(NotificationConverter.toNotificationPageResponse(notificationPage));
     }
 

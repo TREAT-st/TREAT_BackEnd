@@ -25,8 +25,8 @@ public class NotificationUseCase {
         return notificationCommandService.createNotification(notification);
     }
 
-    public Page<Notification> getNotificationList(Long userId, Pageable pageable) {
-        return notificationQueryService.getNotificationListByPage(userId, pageable);
+    public Page<Notification> getNotificationList(User user, Pageable pageable) {
+        return notificationQueryService.getNotificationListByPage(user.getId(), pageable);
     }
 
     public Long readNotification(User user, Long notificationId) {

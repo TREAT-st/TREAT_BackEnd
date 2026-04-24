@@ -33,7 +33,7 @@ public class FavoriteStockController {
     }
 
     // TODO: Member와 User 통합 후, @AuthUser 만들고 적용
-    @Operation(summary = "user의 관심 종목들 목록", description = "user의 관심 종목들을 pagenation으로 조회합니다.")
+    @Operation(summary = "user의 관심 종목들 목록", description = "user의 관심 종목들을 pagination으로 조회합니다.")
     @GetMapping
     public ApiResponseDto<FavoriteStockPageResponse> getFavoriteStockByPage(
             User user,
@@ -47,7 +47,7 @@ public class FavoriteStockController {
         return ApiResponseDto.onSuccess(FavoriteStockConverter.toFavoriteStockPageDto(favoriteStocksPage));
     }
 
-    @Operation(summary = "관심 종목의 알림 업데이트", description = "user의 favorite-stock에 등록된 종목의 알림을 켜거나 끔니다.")
+    @Operation(summary = "관심 종목의 알림 업데이트", description = "user의 favorite-stock에 등록된 종목의 알림을 켜거나 끕니다.")
     @PatchMapping("/{favoriteStockId}")
     public ApiResponseDto<Long> updateFavoriteStock(
             User user, @PathVariable Long favoriteStockId, @RequestParam boolean isEnabled) {
