@@ -6,6 +6,8 @@ import com.example.demo.common.exception.GeneralException;
 public class NotificationHandler extends GeneralException {
     public static final GeneralException NOT_FOUND
             = new NotificationHandler(NotificationErrorStatus.NOTIFICATION_NOT_FOUND);
+    public static final GeneralException FORBIDDEN
+            = new NotificationHandler(NotificationErrorStatus.NOTIFICATION_FORBIDDEN);
 
     public NotificationHandler(BaseErrorCode baseErrorCode) {
         super(baseErrorCode);

@@ -3,14 +3,14 @@ package com.example.demo.domain.report.entity;
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.reportRequest.entity.ReportRequest;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "report")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Report extends BaseTimeEntity {
 
     @Id

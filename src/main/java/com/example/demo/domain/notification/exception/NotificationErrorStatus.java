@@ -15,7 +15,8 @@ import java.util.Objects;
 public enum NotificationErrorStatus implements BaseErrorCode {
 
     //  Entity Notification(4150~4199)
-    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 4150, "알림을 찾지 못 했습니다.");
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 4150, "알림을 찾지 못 했습니다."),
+    NOTIFICATION_FORBIDDEN(HttpStatus.FORBIDDEN, 4151, "해당 알림에 대한 권한이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

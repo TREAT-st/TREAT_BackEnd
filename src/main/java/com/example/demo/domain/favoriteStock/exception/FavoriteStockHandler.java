@@ -10,6 +10,9 @@ public class FavoriteStockHandler extends GeneralException {
     public static final GeneralException ALREADY_EXISTS
             = new FavoriteStockHandler(FavoriteStockErrorStatus.FAVORITE_STOCK_ALREADY_EXISTS);
 
+    public static final GeneralException FORBIDDEN
+            = new FavoriteStockHandler(FavoriteStockErrorStatus.FAVORITE_STOCK_UNAUTHORIZED);
+
     public FavoriteStockHandler(BaseErrorCode baseErrorCode) {
         super(baseErrorCode);
     }

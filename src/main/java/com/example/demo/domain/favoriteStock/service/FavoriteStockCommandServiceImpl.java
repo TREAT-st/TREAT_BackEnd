@@ -2,7 +2,7 @@ package com.example.demo.domain.favoriteStock.service;
 
 import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
 import com.example.demo.domain.favoriteStock.exception.FavoriteStockHandler;
-import com.example.demo.domain.favoriteStock.repository.FavoriteRepository;
+import com.example.demo.domain.favoriteStock.repository.FavoriteStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,23 +10,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class FavoriteCommandServiceImpl implements FavoriteCommandService {
-    private final FavoriteRepository favoriteRepository;
+public class FavoriteStockCommandServiceImpl implements FavoriteStockCommandService {
+    private final FavoriteStockRepository favoriteStockRepository;
 
-    // TODO: builder로 처리하기
     @Override
-    public FavoriteStock addFavoriteStock(FavoriteStock favoriteStock) {
-        boolean exists = favoriteRepository.existsByUserIdAndStockCode(
-                favoriteStock.getUser().getId(), favoriteStock.getStockCode());
-        if (exists) {
+    public Long addFavoriteStock(FavoriteStock favoriteStock) {
+        if (favoriteStockRepository.existsByUserIdAndStockCode(
+                favoriteStock.getUser().getId(), favoriteStock.getStockCode())) {
             throw FavoriteStockHandler.ALREADY_EXISTS;
         }
-        return favoriteRepository.save(favoriteStock);
+
+        favoriteStockRepository.save(favoriteStock);
+
+        return favoriteStock.getId();
     }
 
     @Override
     public boolean turnOnFavoriteStockAlarm(Long favoriteStockId) {
-        FavoriteStock favoriteStock = favoriteRepository.findById(favoriteStockId)
+        FavoriteStock favoriteStock = favoriteStockRepository.findById(favoriteStockId)
                 .orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
 
         if (!favoriteStock.getIsAlertEnabled()) {
@@ -39,7 +40,7 @@ public class FavoriteCommandServiceImpl implements FavoriteCommandService {
 
     @Override
     public boolean turnOffFavoriteStockAlarm(Long favoriteStockId) {
-        FavoriteStock favoriteStock = favoriteRepository.findById(favoriteStockId)
+        FavoriteStock favoriteStock = favoriteStockRepository.findById(favoriteStockId)
                 .orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
 
         if (favoriteStock.getIsAlertEnabled()) {
@@ -53,10 +54,8 @@ public class FavoriteCommandServiceImpl implements FavoriteCommandService {
 
     //  TODO: hard
     @Override
-    public Long deleteFavoriteStock(Long favoriteStockId) {
-        FavoriteStock favoriteStock = favoriteRepository.findById(favoriteStockId)
-                .orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
-        favoriteRepository.delete(favoriteStock);
-        return favoriteStock.getId();
+    public Void deleteFavoriteStock(Long favoriteStockId) {
+        favoriteStockRepository.deleteById(favoriteStockId);
+        return null;
     }
 }

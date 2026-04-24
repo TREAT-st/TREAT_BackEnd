@@ -3,16 +3,16 @@ package com.example.demo.domain.reportRequest.entity;
 import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "report_request")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class ReportRequest extends BaseTimeEntity {
 
     @Id

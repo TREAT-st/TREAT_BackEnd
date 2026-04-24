@@ -3,14 +3,14 @@ package com.example.demo.domain.notification.entity;
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "notification")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Notification extends BaseTimeEntity {
 
     @Id

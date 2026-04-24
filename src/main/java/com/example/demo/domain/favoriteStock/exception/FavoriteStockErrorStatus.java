@@ -16,7 +16,8 @@ public enum FavoriteStockErrorStatus implements BaseErrorCode {
 
     //  Entity FavoriteStock(4200~4249)
     FAVORITE_STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4200, "favoriteStock을 찾지 못 했습니다."),
-    FAVORITE_STOCK_ALREADY_EXISTS(HttpStatus.CONFLICT, 4201, "이미 등록된 stock입니다.");
+    FAVORITE_STOCK_ALREADY_EXISTS(HttpStatus.CONFLICT, 4201, "이미 등록된 stock입니다."),
+    FAVORITE_STOCK_UNAUTHORIZED(HttpStatus.FORBIDDEN, 4202, "user가 등록한 favoriteStock이 아닙니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

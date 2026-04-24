@@ -13,10 +13,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationCommandServiceImpl implements NotificationCommandService {
     private final NotificationRepository notificationRepository;
 
-    // TODO: builder로 처리하기
     @Override
     public Notification createNotification(Notification notification) {
         return notificationRepository.save(notification);
+    }
+
+    @Override
+    public Long readNotification(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> NotificationHandler.NOT_FOUND);
+
+        notification.markAsRead();
+
+        return notification.getId();
     }
 
     /*  TODO: 삭제를 요청한 notification이 요청한 user의 것이 맞는지 확인해야함.

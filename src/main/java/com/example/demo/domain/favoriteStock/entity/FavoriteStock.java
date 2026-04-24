@@ -3,9 +3,7 @@ package com.example.demo.domain.favoriteStock.entity;
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(
@@ -18,7 +16,9 @@ import lombok.NoArgsConstructor;
         }
 )
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class FavoriteStock extends BaseTimeEntity {
 
     @Id
