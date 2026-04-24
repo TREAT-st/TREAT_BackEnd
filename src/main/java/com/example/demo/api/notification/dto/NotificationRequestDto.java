@@ -10,7 +10,7 @@ public class NotificationRequestDto {
 
     @Getter
     @NoArgsConstructor
-    public static class SendNotificationRequest {
+    public static class NotificationRequest {
         @NotNull
         private Long sourceId;
         @NotNull

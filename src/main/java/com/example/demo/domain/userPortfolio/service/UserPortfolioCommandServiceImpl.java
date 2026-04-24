@@ -1,7 +1,6 @@
 package com.example.demo.domain.userPortfolio.service;
 
-import com.example.demo.api.userPortfolio.dto.UserPortfolioRequestDto.UpdateUserPortfolioRequest;
-import com.example.demo.api.userPortfolio.mapper.UserPortfolioConverter;
+import com.example.demo.api.userPortfolio.dto.UserPortfolioRequestDto.*;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.exception.UserHandler;
 import com.example.demo.domain.user.repository.UserRepository;
@@ -26,23 +25,21 @@ public class UserPortfolioCommandServiceImpl implements UserPortfolioCommandServ
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> UserHandler.NOT_FOUND);
-        UserPortfolio userPortfolio = UserPortfolioConverter.toUserPortfolio(user);
+        UserPortfolio userPortfolio = UserPortfolio.builder()
+                .user(user)
+                .build();
         userPortfolioRepository.save(userPortfolio);
     }
 
     @Override
-    public void updateUserPortfolio(Long userId, UpdateUserPortfolioRequest request) {
+    public void updateUserPortfolio(Long userId, Long totalPoint, Long totalPrediction,
+                                    Long successCount, Long failCount,
+                                    Double virtualProfitKrw, Double virtualProfitPercent) {
         UserPortfolio portfolio = userPortfolioRepository.findByUserId(userId)
                 .orElseThrow(() -> UserPortfolioHandler.NOT_FOUND);
 
-        portfolio.update(
-                request.getTotalPoint(),
-                request.getTotalPrediction(),
-                request.getSuccessCount(),
-                request.getFailCount(),
-                request.getVirtualProfitKrw(),
-                request.getVirtualProfitPercent()
-        );
+        portfolio.updateUserPortfolio(totalPoint, totalPrediction, successCount, failCount,
+                virtualProfitKrw, virtualProfitPercent);
     }
 
     @Override

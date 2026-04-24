@@ -4,13 +4,14 @@ import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "report_request")
 @Getter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class ReportRequest extends BaseTimeEntity {
@@ -27,10 +28,12 @@ public class ReportRequest extends BaseTimeEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "request_status", nullable = false)
     private RequestStatus requestStatus = RequestStatus.PENDING;
 
+    @Builder.Default
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount = 0;
 

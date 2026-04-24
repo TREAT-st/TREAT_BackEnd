@@ -1,7 +1,6 @@
 package com.example.demo.domain.report.service;
 
 import com.example.demo.domain.report.entity.Report;
-import com.example.demo.domain.report.exception.ReportErrorStatus;
 import com.example.demo.domain.report.exception.ReportHandler;
 import com.example.demo.domain.report.repository.ReportRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,7 @@ public class ReportCommandServiceImpl implements ReportCommandService {
     @Override
     public Report createReport(Report report) {
         if (reportRepository.findByReportRequestId(report.getReportRequest().getId()).isPresent()) {
-            throw new ReportHandler(ReportErrorStatus.REPORT_ALREADY_EXISTS);
+            throw ReportHandler.ALREADY_EXISTS;
         }
 
         return reportRepository.save(report);

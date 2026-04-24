@@ -15,6 +15,7 @@ public class FavoriteStockConverter {
                 .user(user)
                 .stockCode(request.getStockCode())
                 .ticker(request.getTicker())
+                .isAlertEnabled(false)
                 .build();
     }
 
@@ -28,16 +29,15 @@ public class FavoriteStockConverter {
                 .build();
     }
 
-    public static FavoriteStockSimplePageResponse toFavoriteStockPageDto(Page<FavoriteStock> favoriteStockPage) {
+    public static FavoriteStockPageResponse toFavoriteStockPageDto(Page<FavoriteStock> favoriteStockPage) {
         List<FavoriteStockDto> content = favoriteStockPage.getContent().stream()
                 .map(FavoriteStockConverter::toFavoriteStockDto)
                 .collect(Collectors.toList());
 
-        return FavoriteStockSimplePageResponse.builder()
+        return FavoriteStockPageResponse.builder()
                 .content(content)
                 .page(favoriteStockPage.getNumber())
                 .totalPages(favoriteStockPage.getTotalPages())
-                .totalElements(favoriteStockPage.getTotalElements())
                 .hasNext(favoriteStockPage.hasNext())
                 .build();
     }

@@ -4,11 +4,12 @@ import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.reportRequest.entity.ReportRequest;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "report")
 @Getter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class Report extends BaseTimeEntity {

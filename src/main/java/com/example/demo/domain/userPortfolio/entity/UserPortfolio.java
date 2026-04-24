@@ -4,11 +4,12 @@ import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "userPortfolio")
 @Getter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserPortfolio extends BaseTimeEntity {
@@ -46,7 +47,7 @@ public class UserPortfolio extends BaseTimeEntity {
     @Column(name = "virtual_profit_percent", nullable = false)
     private Double virtualProfitPercent = 0.0;
 
-    public void update(Long totalPoint, Long totalPrediction, Long successCount,
+    public void updateUserPortfolio(Long totalPoint, Long totalPrediction, Long successCount,
                        Long failCount, Double virtualProfitKrw, Double virtualProfitPercent) {
         this.totalPoint = totalPoint;
         this.totalPrediction = totalPrediction;

@@ -8,7 +8,7 @@ public class UserPortfolioRequestDto {
 
     @Getter
     @NoArgsConstructor
-    public static class UpdateUserPortfolioRequest {
+    public static class UserPortfolioRequest {
         @NotNull
         private Long totalPoint;
         @NotNull

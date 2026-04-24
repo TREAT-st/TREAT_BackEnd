@@ -4,6 +4,7 @@ import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(
@@ -16,7 +17,7 @@ import lombok.*;
         }
 )
 @Getter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class FavoriteStock extends BaseTimeEntity {
@@ -36,6 +37,7 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "ticker", nullable = false, length = 20)
     private String ticker;
 
+    @Builder.Default
     @Column(name = "is_alert_enabled", nullable = false)
     private Boolean isAlertEnabled = false;
 

@@ -1,8 +1,7 @@
 package com.example.demo.api.notification.mapper;
 
-import com.example.demo.api.notification.dto.NotificationRequestDto.SendNotificationRequest;
-import com.example.demo.api.notification.dto.NotificationResponseDto.NotificationPageResponse;
-import com.example.demo.api.notification.dto.NotificationResponseDto.NotificationResponse;
+import com.example.demo.api.notification.dto.NotificationRequestDto.*;
+import com.example.demo.api.notification.dto.NotificationResponseDto.*;
 import com.example.demo.domain.notification.entity.Notification;
 import com.example.demo.domain.user.entity.User;
 import org.springframework.data.domain.Page;
@@ -12,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class NotificationConverter {
 
-    public static Notification toNotification(User user, SendNotificationRequest request) {
+    public static Notification toNotification(User user, NotificationRequest request) {
         return Notification.builder()
                 .user(user)
                 .sourceId(request.getSourceId())

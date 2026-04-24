@@ -24,11 +24,10 @@ public class FavoriteStockResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class FavoriteStockSimplePageResponse {
+    public static class FavoriteStockPageResponse {
         private List<FavoriteStockDto> content;
         private int page;
         private int totalPages;
-        private long totalElements;
         private boolean hasNext;
     }
 }
