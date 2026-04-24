@@ -29,7 +29,13 @@ public class NotificationUseCase {
         return notificationQueryService.getNotificationListByPage(userId, pageable);
     }
 
-    public Long readNotification(Long notificationId) {
+    public Long readNotification(User user, Long notificationId) {
+        Notification notification = notificationQueryService.getNotificationById(notificationId);
+
+        if (!notification.getUser().getId().equals(user.getId())) {
+            throw NotificationHandler.FORBIDDEN;
+        }
+
         return notificationCommandService.readNotification(notificationId);
     }
 

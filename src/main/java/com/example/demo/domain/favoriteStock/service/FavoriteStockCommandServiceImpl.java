@@ -20,42 +20,19 @@ public class FavoriteStockCommandServiceImpl implements FavoriteStockCommandServ
             throw FavoriteStockHandler.ALREADY_EXISTS;
         }
 
-        favoriteStockRepository.save(favoriteStock);
-
-        return favoriteStock.getId();
+        return favoriteStockRepository.save(favoriteStock).getId();
     }
 
     @Override
-    public boolean turnOnFavoriteStockAlarm(Long favoriteStockId) {
+    public void updateFavoriteStockAlarm(Long favoriteStockId, boolean isEnabled) {
         FavoriteStock favoriteStock = favoriteStockRepository.findById(favoriteStockId)
                 .orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
-
-        if (!favoriteStock.getIsAlertEnabled()) {
-            favoriteStock.setIsAlertEnabled(true);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean turnOffFavoriteStockAlarm(Long favoriteStockId) {
-        FavoriteStock favoriteStock = favoriteStockRepository.findById(favoriteStockId)
-                .orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
-
-        if (favoriteStock.getIsAlertEnabled()) {
-            favoriteStock.setIsAlertEnabled(false);
-            return true;
-        }
-        else {
-            return false;
-        }
+        favoriteStock.updateAlertEnabled(isEnabled);
     }
 
     //  TODO: hard
     @Override
-    public Void deleteFavoriteStock(Long favoriteStockId) {
+    public void deleteFavoriteStock(Long favoriteStockId) {
         favoriteStockRepository.deleteById(favoriteStockId);
-        return null;
     }
 }

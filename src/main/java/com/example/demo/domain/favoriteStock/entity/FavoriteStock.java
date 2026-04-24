@@ -41,7 +41,7 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "is_alert_enabled", nullable = false)
     private Boolean isAlertEnabled = false;
 
-    public void setIsAlertEnabled(boolean alertEnabled) {
-        this.isAlertEnabled = alertEnabled;
+    public void updateAlertEnabled(boolean isEnabled) {
+        this.isAlertEnabled = isEnabled;
     }
 }

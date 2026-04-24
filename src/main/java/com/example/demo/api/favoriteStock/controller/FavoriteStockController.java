@@ -47,9 +47,19 @@ public class FavoriteStockController {
         return ApiResponseDto.onSuccess(FavoriteStockConverter.toFavoriteStockPageDto(favoriteStocksPage));
     }
 
+    @Operation(summary = "관심 종목의 알림 업데이트", description = "user의 favorite-stock에 등록된 종목의 알림을 켜거나 끔니다.")
+    @PatchMapping("/{favoriteStockId}")
+    public ApiResponseDto<Long> updateFavoriteStock(
+            User user, @PathVariable Long favoriteStockId, @RequestParam boolean isEnabled) {
+        return ApiResponseDto.onSuccess(
+                favoriteStockUseCase.updateFavoriteStockAlarm(user, favoriteStockId, isEnabled));
+    }
+
     @Operation(summary = "user의 관심 종목에서 종목 삭제", description = "user의 관심 종목에서 해당 종목을 삭제합니다.")
-    @DeleteMapping("/{favoriteStockId}/delete")
-    public ApiResponseDto<Void> deleteUserFavoriteStock(@PathVariable Long favoriteStockId) {
-        return ApiResponseDto.onSuccess(favoriteStockUseCase.deleteFavoriteStock(favoriteStockId));
+    @DeleteMapping("/{favoriteStockId}")
+    public ApiResponseDto<Void> deleteUserFavoriteStock(User user, @PathVariable Long favoriteStockId) {
+        favoriteStockUseCase.deleteFavoriteStock(user, favoriteStockId);
+
+        return ApiResponseDto.onSuccess(null);
     }
 }

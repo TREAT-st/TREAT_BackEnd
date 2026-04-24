@@ -9,11 +9,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class FavoriteStockQueryServiceImpl implements FavoriteStockQueryService {
     private final FavoriteStockRepository favoriteStockRepository;
+
+    @Override
+    public FavoriteStock getFavoriteStockById(Long id) {
+        return favoriteStockRepository.findById(id).orElseThrow(() -> FavoriteStockHandler.NOT_FOUND);
+    }
 
     @Override
     public Page<FavoriteStock> getUserFavoriteStockListByPage(Long userId, Pageable pageable) {

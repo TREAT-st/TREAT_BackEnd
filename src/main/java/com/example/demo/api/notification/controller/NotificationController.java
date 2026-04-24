@@ -48,8 +48,8 @@ public class NotificationController {
 
     @Operation(summary = "사용자의 알림을 '읽음' 상태로 만듭니다.")
     @PatchMapping("/{notificationId}")
-    public ApiResponseDto<Long> updateNotification(@PathVariable Long notificationId) {
-        return ApiResponseDto.onSuccess(notificationUseCase.readNotification(notificationId));
+    public ApiResponseDto<Long> updateNotification(User user, @PathVariable Long notificationId) {
+        return ApiResponseDto.onSuccess(notificationUseCase.readNotification(user, notificationId));
     }
 
     // TODO: @AuthUser 적용하기
