@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class FavoriteStockUseCase {
-    private final FavoriteStockCommandService favoriteStockCommandService;
     private final FavoriteStockQueryService favoriteStockQueryService;
+    private final FavoriteStockCommandService favoriteStockCommandService;
     private final UserQueryService userQueryService;
 
     public Long addFavoriteStock(Long userId, FavoriteStockRequestDto request) {

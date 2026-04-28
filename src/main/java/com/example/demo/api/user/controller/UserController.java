@@ -1,12 +1,11 @@
 package com.example.demo.api.user.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
-import com.example.demo.api.user.dto.UserRequestDto.RegisterUserRequest;
-import com.example.demo.api.user.dto.UserRequestDto.UpdateUserRequest;
-import com.example.demo.api.user.dto.UserResponseDto.RegisterUserResponse;
-import com.example.demo.api.user.dto.UserResponseDto.UpdateUserResponse;
+import com.example.demo.api.user.dto.UserRequestDto.*;
+import com.example.demo.api.user.dto.UserResponseDto.*;
 import com.example.demo.api.user.mapper.UserConverter;
 import com.example.demo.api.user.service.UserUseCase;
+import com.example.demo.common.annotation.AuthUser;
 import com.example.demo.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,22 +28,20 @@ public class UserController {
         return ApiResponseDto.onSuccess(UserConverter.toRegisterResponse(registeredUser));
     }
 
+    @Operation(summary = "사용자 정보 조회", description = "user의 정보를 조회합니다.")
+    @GetMapping("/{userId}")
+    public ApiResponseDto<UserResponse> getUserByUsername(@PathVariable Long userId) {
+        User user = userUseCase.getUserByUserId(userId);
+
+        return ApiResponseDto.onSuccess(UserConverter.toUserResponse(user));
+    }
+
     @Operation(summary = "사용자 정보 수정", description = "user의 정보를 수정합니다.")
-    @PatchMapping("/{userId}")
-    // TODO: @AuthUser 적용 후 @PathVariable 제거
-    public ApiResponseDto<UpdateUserResponse> updateUser(@PathVariable Long userId,
+    @PatchMapping
+    public ApiResponseDto<UpdateUserResponse> updateUser(@AuthUser User user,
                                                          @RequestBody UpdateUserRequest request) {
-        User user = userUseCase.editUserAccount(userId, request);
+        User updatedUser = userUseCase.editUserAccount(user.getId(), request);
 
-        return ApiResponseDto.onSuccess(UserConverter.toUpdateUserResponse(user));
+        return ApiResponseDto.onSuccess(UserConverter.toUpdateUserResponse(updatedUser));
     }
-
-    // 사용자 삭제 테스트용
-    /*
-    @Operation(summary = "사용자 삭제", description = "사용자 삭제 테스트용입니다.")
-    @DeleteMapping
-    public ApiResponseDto<Long> deleteUser(@RequestBody Long userId) {
-        return ApiResponseDto.onSuccess(userUseCase.deleteUser(userId));
-    }
-    */
 }

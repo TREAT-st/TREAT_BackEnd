@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class NotificationUseCase {
-    private final NotificationCommandService notificationCommandService;
     private final NotificationQueryService notificationQueryService;
+    private final NotificationCommandService notificationCommandService;
     private final UserQueryService userQueryService;
 
     @Transactional

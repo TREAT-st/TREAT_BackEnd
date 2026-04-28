@@ -1,7 +1,8 @@
 package com.example.demo.api.user.mapper;
 
-import com.example.demo.api.user.dto.UserRequestDto;
+import com.example.demo.api.user.dto.UserRequestDto.*;
 import com.example.demo.api.user.dto.UserResponseDto;
+import com.example.demo.api.user.dto.UserResponseDto.*;
 import com.example.demo.domain.user.entity.Role;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.entity.UserStatus;
@@ -9,7 +10,7 @@ import com.example.demo.api.user.dto.UserResponseDto.UpdateUserResponse;
 
 public class UserConverter {
 
-    public static User toUser(UserRequestDto.RegisterUserRequest request) {
+    public static User toUser(RegisterUserRequest request) {
         return User.builder()
                 .username(request.getProvider().name() + "_" + request.getProviderUserId())
                 .kakaoEmail(request.getKakaoEmail())
@@ -26,12 +27,28 @@ public class UserConverter {
                 .build();
     }
 
-    public static UserResponseDto.RegisterUserResponse toRegisterResponse(User user) {
-        return UserResponseDto.RegisterUserResponse.builder()
+    public static RegisterUserResponse toRegisterResponse(User user) {
+        return RegisterUserResponse.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
                 .role(user.getRole())
                 .status(user.getStatus())
+                .build();
+    }
+
+    public static UserResponse toUserResponse(User user) {
+        return UserResponse.builder()
+                .userId(user.getId())
+                .kakaoEmail(user.getKakaoEmail())
+                .profileImg(user.getProfileImg())
+                .name(user.getName())
+                .birthdate(user.getBirthDate())
+                .gender(user.getGender())
+                .nickname(user.getNickname())
+                .role(user.getRole())
+                .accountNumber(user.getAccountNumber())
+                .status(user.getStatus())
+                .provider(user.getProvider())
                 .build();
     }
 
