@@ -1,7 +1,9 @@
 package com.example.demo.domain.userPortfolio.service;
 
+import com.example.demo.domain.user.entity.User;
+
 public interface UserPortfolioCommandService {
-    void createPortfolio(Long userId);
+    void createPortfolio(User user);
     void updateUserPortfolio(Long userId, Long totalPoint, Long totalPrediction,
                              Long successCount, Long failCount,
                              Double virtualProfitKrw, Double virtualProfitPercent);

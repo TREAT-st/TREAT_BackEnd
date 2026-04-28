@@ -19,9 +19,17 @@ import org.springframework.web.bind.annotation.*;
 public class UserPortfolioController {
     private final UserPortfolioUseCase userPortfolioUseCase;
 
+    @Operation(summary = "포트폴리오 조회", description = "사용자의 포트폴리오를 조회합니다.")
+    @GetMapping("/{userId}/portfolio")
+    public ApiResponseDto<UserPortfolioResponse> getUserPortfolio(@PathVariable Long userId) {
+        UserPortfolio portfolio = userPortfolioUseCase.getUserPortfolio(userId);
+
+        return ApiResponseDto.onSuccess(UserPortfolioConverter.toUserPortfolioResponse(portfolio));
+    }
+
     @Operation(summary = "포트폴리오 수정", description = "사용자의 포트폴리오 통계를 수정합니다.")
     @PatchMapping("/{userId}/portfolio")
-    public ApiResponseDto<UserPortfolioResponse> updatePortfolio(
+    public ApiResponseDto<UserPortfolioResponse> updateUserPortfolio(
             @PathVariable Long userId,
             @RequestBody @Valid UserPortfolioRequest request) {
         UserPortfolio portfolio = userPortfolioUseCase.updateUserPortfolio(userId, request);
@@ -29,8 +37,8 @@ public class UserPortfolioController {
     }
 
     @Operation(summary = "포트폴리오 삭제", description = "사용자의 포트폴리오를 삭제합니다.")
-    @DeleteMapping("/{userId}/portfolio/delete")
-    public ApiResponseDto<Long> deletePortfolio(@PathVariable Long userId) {
+    @DeleteMapping("/{userId}/portfolio")
+    public ApiResponseDto<Long> deleteUserPortfolio(@PathVariable Long userId) {
         return ApiResponseDto.onSuccess(userPortfolioUseCase.deleteUserPortfolio(userId));
     }
 }

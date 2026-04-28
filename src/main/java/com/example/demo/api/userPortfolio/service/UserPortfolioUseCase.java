@@ -15,6 +15,11 @@ public class UserPortfolioUseCase {
     private final UserPortfolioCommandService userPortfolioCommandService;
     private final UserPortfolioQueryService userPortfolioQueryService;
 
+    @Transactional(readOnly = true)
+    public UserPortfolio getUserPortfolio(Long userId) {
+        return userPortfolioQueryService.getUserPortfolioByUserId(userId);
+    }
+
     public UserPortfolio updateUserPortfolio(Long userId, UserPortfolioRequest request) {
         userPortfolioCommandService.updateUserPortfolio(
                 userId,

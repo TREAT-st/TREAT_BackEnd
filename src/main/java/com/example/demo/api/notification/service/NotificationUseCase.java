@@ -8,41 +8,47 @@ import com.example.demo.domain.notification.exception.NotificationHandler;
 import com.example.demo.domain.notification.service.NotificationCommandService;
 import com.example.demo.domain.notification.service.NotificationQueryService;
 import com.example.demo.domain.user.entity.User;
+import com.example.demo.domain.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
-@Transactional
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class NotificationUseCase {
     private final NotificationCommandService notificationCommandService;
     private final NotificationQueryService notificationQueryService;
+    private final UserQueryService userQueryService;
 
-    public Notification sendNotification(User user, NotificationRequest request) {
+    @Transactional
+    public Notification sendNotification(Long userId, NotificationRequest request) {
+        User user = userQueryService.getUserById(userId);
         Notification notification = NotificationConverter.toNotification(user, request);
         return notificationCommandService.createNotification(notification);
     }
 
-    public Page<Notification> getNotificationList(User user, Pageable pageable) {
-        return notificationQueryService.getNotificationListByPage(user.getId(), pageable);
+    public Page<Notification> getNotificationList(Long userId, Pageable pageable) {
+        return notificationQueryService.getNotificationListByPage(userId, pageable);
     }
 
-    public Long readNotification(User user, Long notificationId) {
+    @Transactional
+    public Long readNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
 
-        if (!notification.getUser().getId().equals(user.getId())) {
+        if (!notification.getUser().getId().equals(userId)) {
             throw NotificationHandler.FORBIDDEN;
         }
 
         return notificationCommandService.readNotification(notificationId);
     }
 
-    public Long deleteNotification(User user, Long notificationId) {
+    @Transactional
+    public Long deleteNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
 
-        if (!notification.getUser().getId().equals(user.getId())) {
+        if (!notification.getUser().getId().equals(userId)) {
             throw NotificationHandler.FORBIDDEN;
         }
 

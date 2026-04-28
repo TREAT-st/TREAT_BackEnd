@@ -11,12 +11,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UserQueryServiceImpl implements UserQueryService {
-
     private final UserRepository userRepository;
 
     @Override
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
+                .orElseThrow(() -> UserHandler.NOT_FOUND);
+    }
+
+    @Override
+    public User getUserByKakaoEmail(String email) {
+        return userRepository.findByKakaoEmail(email)
+                .orElseThrow(() -> UserHandler.NOT_FOUND);
+    }
+
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> UserHandler.NOT_FOUND);
     }
 }

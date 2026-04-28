@@ -10,12 +10,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 public class UserRequestDto {
-
     @Getter
     @NoArgsConstructor
     public static class RegisterUserRequest {
         @NotBlank
         private String name;
+        @NotBlank
+        private String kakaoEmail;
+        private String profileImg;
         @NotNull
         private LocalDate birthDate;
         @NotNull
@@ -27,5 +29,16 @@ public class UserRequestDto {
         private SocialProvider provider;
         @NotBlank
         private String providerUserId;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class UpdateUserRequest {
+        private String name;
+        private String nickname;
+        private String profileImg;
+        private LocalDate birthDate;
+        private Gender gender;
+        private String accountNumber;
     }
 }
