@@ -21,7 +21,7 @@ public class MemberController {
     private final MemberQueryService memberQueryService;
 
     @Operation(summary = "내 정보 조회", description = "로그인한 멤버의 정보를 조회합니다. (JWT 필요)")
-    @GetMapping("/me")
+    @GetMapping("/info")
     public ApiResponseDto<MemberResponse.MemberInfoDto> getMe(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         Member member = memberQueryService.getMemberById(userDetails.getId());

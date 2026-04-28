@@ -17,6 +17,7 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
+        // TODO: 응답 형식을 ApiResponseDto 통일 형식에 맞게 filter 단위에서 처리하도록 개선
         log.error("OAuth2 로그인 실패: {}", exception.getMessage());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");

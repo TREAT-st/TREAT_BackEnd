@@ -16,6 +16,9 @@ public class StaticVariable {
     public static final String NOTIFICATION_READ = "isRead";
     public static final String PAGINATION_SORTING_BY_ID  = "id";
 
+    //OAuth2
+    public static final String KAKAO_OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization/kakao";
+
     //JWT
     public static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24; // 1일
     public static final long REFRESH_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 7; // 7일

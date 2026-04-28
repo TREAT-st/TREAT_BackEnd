@@ -2,6 +2,7 @@ package com.example.demo.security.oauth.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
 import com.example.demo.common.annotation.DisableSwaggerSecurity;
+import com.example.demo.common.consts.StaticVariable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,7 +41,7 @@ public class OAuthController {
     @DisableSwaggerSecurity
     @GetMapping("/kakao")
     public void kakaoLogin(HttpServletResponse response) throws IOException {
-        response.sendRedirect("/oauth2/authorization/kakao");
+        response.sendRedirect(StaticVariable.KAKAO_OAUTH2_AUTHORIZATION_URI);
     }
 
     /**

@@ -3,7 +3,6 @@ package com.example.demo.common.config;
 import com.example.demo.common.annotation.*;
 import com.example.demo.common.annotation.ApiErrorExceptionsExample;
 import com.example.demo.common.annotation.ApiErrorStatusExample;
-import com.example.demo.common.annotation.DisableSwaggerSecurity;
 import com.example.demo.common.annotation.ExplainError;
 import com.example.demo.common.exception.BaseErrorCode;
 import com.example.demo.common.exception.GeneralException;
@@ -94,18 +93,12 @@ public class SwaggerConfig {
     @Bean
     public OperationCustomizer customize() {
         return (Operation operation, HandlerMethod handlerMethod) -> {
-            DisableSwaggerSecurity methodAnnotation =
-                    handlerMethod.getMethodAnnotation(DisableSwaggerSecurity.class);
             ApiErrorExceptionsExample apiErrorExceptionsExample =
                     handlerMethod.getMethodAnnotation(ApiErrorExceptionsExample.class);
             ApiErrorStatusExample apiErrorStatusExample =
                     handlerMethod.getMethodAnnotation(ApiErrorStatusExample.class);
 
             List<String> tags = getTags(handlerMethod);
-            // DisableSecurity 어노테이션있을시 스웨거 시큐리티 설정 삭제
-            if (methodAnnotation != null) {
-                operation.setSecurity(Collections.emptyList());
-            }
             // 태그 중복 설정시 제일 구체적인 값만 태그로 설정
             if (!tags.isEmpty()) {
                 operation.setTags(Collections.singletonList(tags.get(0)));
