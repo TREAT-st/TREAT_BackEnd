@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 "/api/v1/test/health-check",
                                 "/api/v1/users"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo

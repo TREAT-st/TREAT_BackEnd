@@ -19,9 +19,10 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserUseCase userUseCase;
 
+    //  테스트용 api. 카카오 OAuth 쪽에서 진행하는게 맞음.
     @Operation(summary = "회원 가입", description = "사용자를 등록하고 포트폴리오를 자동 생성합니다.")
     @PostMapping
-    public ApiResponseDto<RegisterUserResponse> registerUser(@RequestBody RegisterUserRequest request) {
+    public ApiResponseDto<RegisterUserResponse> registerUserAccount(@RequestBody RegisterUserRequest request) {
         User user = UserConverter.toUser(request);
         User registeredUser = userUseCase.signUpWithUserPortfolio(user);
 
@@ -30,7 +31,7 @@ public class UserController {
 
     @Operation(summary = "사용자 정보 조회", description = "user의 정보를 조회합니다.")
     @GetMapping("/{userId}")
-    public ApiResponseDto<UserResponse> getUserByUsername(@PathVariable Long userId) {
+    public ApiResponseDto<UserResponse> getUserAccountInfo(@PathVariable Long userId) {
         User user = userUseCase.getUserByUserId(userId);
 
         return ApiResponseDto.onSuccess(UserConverter.toUserResponse(user));
@@ -38,7 +39,7 @@ public class UserController {
 
     @Operation(summary = "사용자 정보 수정", description = "user의 정보를 수정합니다.")
     @PatchMapping
-    public ApiResponseDto<UpdateUserResponse> updateUser(@AuthUser User user,
+    public ApiResponseDto<UpdateUserResponse> updateUserAccount(@AuthUser User user,
                                                          @RequestBody UpdateUserRequest request) {
         User updatedUser = userUseCase.editUserAccount(user.getId(), request);
 

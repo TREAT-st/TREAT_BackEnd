@@ -24,6 +24,7 @@ public class UserUseCase {
         return registeredUser;
     }
 
+    @Transactional(readOnly = true)
     public User getUserByUserId(Long userId) {
         return userQueryService.getUserById(userId);
     }
@@ -38,9 +39,5 @@ public class UserUseCase {
                 request.getGender(),
                 request.getAccountNumber()
         );
-    }
-
-    public Long deleteUser(Long userId) {
-        return userCommandService.deleteUser(userId);
     }
 }

@@ -28,6 +28,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> UserHandler.NOT_FOUND);
         user.updateUserInfo(name, nickname, profileImg, birthDate, gender, accountNumber);
+
         return user;
     }
 

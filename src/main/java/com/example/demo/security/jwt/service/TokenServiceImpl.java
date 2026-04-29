@@ -17,9 +17,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
 
@@ -119,7 +123,20 @@ public class TokenServiceImpl implements TokenService{
             throw new JwtAuthenticationException(ErrorStatus.AUTH_INVALID_TOKEN);
         }
 
-        // User가 UserDetails를 구현하므로 DB에서 로드한 실제 엔티티를 principal로 사용
+        // 클레임에서 권한 정보 가져오기
+        Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("auth").toString().split(","))
+                .filter(auth -> !auth.isBlank())  // 빈 문자열 포함 금지
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toList());
+
+        /* @AuthUser 미적용
+
+        // UserDetails 객체를 만들어서 Authentication return
+        // UserDetails: interface, User: UserDetails를 구현한 class
+        UserDetails principal = new User(claims.getSubject(), "", authorities);
+        return new UsernamePasswordAuthenticationToken(principal, "", authorities);
+         */
+
         User user = userQueryService.getUserByUsername(claims.getSubject());
         return new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities());
     }

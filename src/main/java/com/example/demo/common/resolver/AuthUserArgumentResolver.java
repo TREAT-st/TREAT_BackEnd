@@ -32,11 +32,10 @@ public class AuthUserArgumentResolver implements HandlerMethodArgumentResolver {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
-        User user = (User) authentication.getPrincipal();
         AuthUser annotation = parameter.getParameterAnnotation(AuthUser.class);
 
         if (!ClassUtils.isAssignable(parameter.getParameterType(), user.getClass())) {

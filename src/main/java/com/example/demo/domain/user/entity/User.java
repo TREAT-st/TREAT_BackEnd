@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -34,12 +35,13 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "username", unique = true, nullable = false)
     private String username;
 
-    @Column(unique = true)
+    @Column(name = "kakao_email", unique = true)
     private String kakaoEmail;
 
+    @Column(name = "profile_img")
     private String profileImg;
 
     @Column(name = "name", nullable = false, length = 50)
@@ -85,7 +87,7 @@ public class User extends BaseTimeEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(this.role.name()));
+        return Collections.singleton(new SimpleGrantedAuthority(this.role.getKey()));
     }
 
     @Override

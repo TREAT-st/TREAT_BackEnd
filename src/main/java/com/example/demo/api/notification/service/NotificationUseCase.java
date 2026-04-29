@@ -26,6 +26,7 @@ public class NotificationUseCase {
     public Notification sendNotification(Long userId, NotificationRequest request) {
         User user = userQueryService.getUserById(userId);
         Notification notification = NotificationConverter.toNotification(user, request);
+
         return notificationCommandService.createNotification(notification);
     }
 

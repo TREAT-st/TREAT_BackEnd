@@ -1,7 +1,6 @@
 package com.example.demo.security.jwt.service;
 
 
-import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -23,7 +23,7 @@ public class Notification extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
+    @Column(name = "source_id", nullable = false)
     private Long sourceId;
 
     @Enumerated(EnumType.STRING)

@@ -29,16 +29,6 @@ public class UserPortfolioController {
         return ApiResponseDto.onSuccess(UserPortfolioConverter.toUserPortfolioResponse(portfolio));
     }
 
-    @Operation(summary = "포트폴리오 수정", description = "사용자의 포트폴리오 통계를 수정합니다.")
-    @PatchMapping
-    public ApiResponseDto<UserPortfolioResponse> updateUserPortfolio(
-            @AuthUser User user,
-            @RequestBody @Valid UserPortfolioRequest request) {
-        UserPortfolio portfolio = userPortfolioUseCase.updateUserPortfolio(user.getId(), request);
-
-        return ApiResponseDto.onSuccess(UserPortfolioConverter.toUserPortfolioResponse(portfolio));
-    }
-
     @Operation(summary = "포트폴리오 삭제", description = "사용자의 포트폴리오를 삭제합니다.")
     @DeleteMapping
     public ApiResponseDto<Long> deleteUserPortfolio(@AuthUser User user) {

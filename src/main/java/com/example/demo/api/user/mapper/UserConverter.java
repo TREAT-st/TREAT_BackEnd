@@ -1,7 +1,6 @@
 package com.example.demo.api.user.mapper;
 
 import com.example.demo.api.user.dto.UserRequestDto.*;
-import com.example.demo.api.user.dto.UserResponseDto;
 import com.example.demo.api.user.dto.UserResponseDto.*;
 import com.example.demo.domain.user.entity.Role;
 import com.example.demo.domain.user.entity.User;

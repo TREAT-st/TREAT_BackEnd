@@ -20,20 +20,6 @@ public class UserPortfolioUseCase {
         return userPortfolioQueryService.getUserPortfolioByUserId(userId);
     }
 
-    public UserPortfolio updateUserPortfolio(Long userId, UserPortfolioRequest request) {
-        userPortfolioCommandService.updateUserPortfolio(
-                userId,
-                request.getTotalPoint(),
-                request.getTotalPrediction(),
-                request.getSuccessCount(),
-                request.getFailCount(),
-                request.getVirtualProfitKrw(),
-                request.getVirtualProfitPercent()
-        );
-
-        return userPortfolioQueryService.getUserPortfolioByUserId(userId);
-    }
-
     public Long deleteUserPortfolio(Long userId) {
         Long portfolioId = userPortfolioQueryService.getUserPortfolioByUserId(userId).getId();
         return userPortfolioCommandService.deletePortfolio(portfolioId);

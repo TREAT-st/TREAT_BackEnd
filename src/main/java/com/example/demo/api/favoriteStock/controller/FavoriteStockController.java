@@ -29,7 +29,7 @@ public class FavoriteStockController {
     public ApiResponseDto<Long> addUserFavoriteStock(
             @AuthUser User user,
             @RequestBody FavoriteStockRequestDto favoriteStockRequest) {
-        return ApiResponseDto.onSuccess(favoriteStockUseCase.addFavoriteStock(user.getId(), favoriteStockRequest));
+        return ApiResponseDto.onSuccess(favoriteStockUseCase.addFavoriteStock(user, favoriteStockRequest));
     }
 
     @Operation(summary = "user의 관심 종목들 목록", description = "user의 관심 종목들을 pagination으로 조회합니다.")
@@ -44,16 +44,6 @@ public class FavoriteStockController {
                 .getFavoriteStockPageByUserId(user.getId(), pageable);
 
         return ApiResponseDto.onSuccess(FavoriteStockConverter.toFavoriteStockPageDto(favoriteStocksPage));
-    }
-
-    @Operation(summary = "관심 종목의 알림 업데이트", description = "user의 favorite-stock에 등록된 종목의 알림을 켜거나 끕니다.")
-    @PatchMapping("/{favoriteStockId}")
-    public ApiResponseDto<Long> updateFavoriteStock(
-            @AuthUser User user,
-            @PathVariable Long favoriteStockId,
-            @RequestParam boolean isEnabled) {
-        return ApiResponseDto.onSuccess(
-                favoriteStockUseCase.updateFavoriteStockAlarm(user.getId(), favoriteStockId, isEnabled));
     }
 
     @Operation(summary = "user의 관심 종목에서 종목 삭제", description = "user의 관심 종목에서 해당 종목을 삭제합니다.")

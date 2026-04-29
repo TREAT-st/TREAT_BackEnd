@@ -49,17 +49,13 @@ public class NotificationController {
 
     @Operation(summary = "사용자의 알림을 '읽음' 상태로 만듭니다.")
     @PatchMapping("/{notificationId}")
-    public ApiResponseDto<Long> updateNotification(
-            @AuthUser User user,
-            @PathVariable Long notificationId) {
+    public ApiResponseDto<Long> updateNotification(@AuthUser User user, @PathVariable Long notificationId) {
         return ApiResponseDto.onSuccess(notificationUseCase.readNotification(user.getId(), notificationId));
     }
 
     @Operation(summary = "user의 notification을 삭제", description = "user의 notification을 삭제합니다.")
     @DeleteMapping("/{notificationId}")
-    public ApiResponseDto<Long> deleteNotification(
-            @AuthUser User user,
-            @PathVariable Long notificationId) {
+    public ApiResponseDto<Long> deleteNotification(@AuthUser User user, @PathVariable Long notificationId) {
         return ApiResponseDto.onSuccess(notificationUseCase.deleteNotification(user.getId(), notificationId));
     }
 }

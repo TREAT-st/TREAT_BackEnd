@@ -26,17 +26,6 @@ public class UserPortfolioCommandServiceImpl implements UserPortfolioCommandServ
     }
 
     @Override
-    public void updateUserPortfolio(Long userId, Long totalPoint, Long totalPrediction,
-                                    Long successCount, Long failCount,
-                                    Double virtualProfitKrw, Double virtualProfitPercent) {
-        UserPortfolio portfolio = userPortfolioRepository.findByUserId(userId)
-                .orElseThrow(() -> UserPortfolioHandler.NOT_FOUND);
-
-        portfolio.updateUserPortfolio(totalPoint, totalPrediction, successCount, failCount,
-                virtualProfitKrw, virtualProfitPercent);
-    }
-
-    @Override
     public Long deletePortfolio(Long portfolioId) {
         UserPortfolio portfolio = userPortfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> UserPortfolioHandler.NOT_FOUND);
