@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -35,17 +36,19 @@ public class Member extends BaseTimeEntity implements UserDetails {
     private String username;
 
     private String profileImg;
+    //TODO: 카카오에서 닉네임 받아서 그대로 사용하는건지 / 닉네임 입력칸을 따로 만드는 건지 확인
+    //private String name;
 
-    private String name;
+    //private String nickname;
 
-    private String nickname;
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
 
     public static Member of(MemberRequest.MemberRegisterDto memberRequest) {
         return Member.builder()
                 .profileImg(memberRequest.getProfileImg())
-                .name(memberRequest.getName())
-                .nickname(memberRequest.getNickname())
+                .username(memberRequest.getName())
                 .kakaoEmail(memberRequest.getKakaoEmail())
                 .build();
     }
@@ -55,14 +58,13 @@ public class Member extends BaseTimeEntity implements UserDetails {
     }
 
     public void modifyInfo(MemberRequest.MemberModifyDto memberRequest) {
-        this.name = memberRequest.getName();
-        this.nickname = memberRequest.getNickname();
+        this.username = memberRequest.getName();
         this.profileImg = memberRequest.getProfileImg();
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER")); // TODO: social 작업 끝나면 바로 admin, User enum타입으로 변경
+        return Collections.singleton(new SimpleGrantedAuthority(this.role.getKey()));
     }
 
     @Override
