@@ -4,7 +4,6 @@ import com.example.demo.api.user.dto.UserRequestDto.UpdateUserRequest;
 import com.example.demo.common.annotation.UseCase;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.service.UserCommandService;
-import com.example.demo.domain.user.service.UserQueryService;
 import com.example.demo.domain.userPortfolio.service.UserPortfolioCommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class UserUseCase {
-    private final UserQueryService userQueryService;
     private final UserCommandService userCommandService;
     private final UserPortfolioCommandService userPortfolioCommandService;
 
@@ -22,11 +20,6 @@ public class UserUseCase {
         userPortfolioCommandService.createPortfolio(registeredUser);
 
         return registeredUser;
-    }
-
-    @Transactional(readOnly = true)
-    public User getUserByUserId(Long userId) {
-        return userQueryService.getUserById(userId);
     }
 
     public User editUserAccount(Long userId, UpdateUserRequest request) {

@@ -16,9 +16,6 @@ public class UserPortfolioCommandServiceImpl implements UserPortfolioCommandServ
 
     @Override
     public void createPortfolio(User user) {
-        if (userPortfolioRepository.existsUserPortfolioByUserId(user.getId())) {
-            throw UserPortfolioHandler.ALREADY_EXISTS;
-        }
         UserPortfolio userPortfolio = UserPortfolio.builder()
                 .user(user)
                 .build();

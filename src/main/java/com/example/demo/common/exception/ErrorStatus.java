@@ -26,8 +26,6 @@ public enum ErrorStatus implements BaseErrorCode{
     _UNAUTHORIZED(UNAUTHORIZED, 4001, "로그인이 필요합니다."),
     _FORBIDDEN(FORBIDDEN, 4002, "금지된 요청입니다."),
 
-<<<<<<< HEAD
-=======
     // user (4050-4099)
     // userPortfolio (4100-4149)
     // notification (4150-4199)
@@ -35,7 +33,6 @@ public enum ErrorStatus implements BaseErrorCode{
     // reportRequest (4250-4299)
     // report (4300-4349)
 
->>>>>>> a28538d (feat: CRD 비지니스 로직 ver.1)
     // 인증 관련 오류 (4350~4399)
     @ExplainError("카카오 로그인 시 이메일 동의를 하지 않아 이메일을 가져오지 못했습니다.")
     AUTH_OAUTH2_EMAIL_NOT_FOUND_FROM_PROVIDER(BAD_REQUEST, 4350, "카카오 계정에서 이메일을 가져올 수 없습니다. 이메일 제공 동의가 필요합니다."),

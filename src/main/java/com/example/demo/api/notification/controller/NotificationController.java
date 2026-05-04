@@ -30,7 +30,7 @@ public class NotificationController {
     public ApiResponseDto<NotificationResponse> sendNotification(
             @AuthUser User user,
             @RequestBody @Valid NotificationRequest request) {
-        Notification notification = notificationUseCase.sendNotification(user.getId(), request);
+        Notification notification = notificationUseCase.sendNotification(user, request);
 
         return ApiResponseDto.onSuccess(NotificationConverter.toNotificationResponse(notification));
     }

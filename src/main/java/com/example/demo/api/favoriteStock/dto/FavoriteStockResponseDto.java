@@ -2,13 +2,14 @@ package com.example.demo.api.favoriteStock.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 public class FavoriteStockResponseDto {
-    @Data
+
+    @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
@@ -20,7 +21,7 @@ public class FavoriteStockResponseDto {
         private Boolean isAlertEnabled;
     }
 
-    @Data
+    @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor

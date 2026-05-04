@@ -20,11 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationUseCase {
     private final NotificationQueryService notificationQueryService;
     private final NotificationCommandService notificationCommandService;
-    private final UserQueryService userQueryService;
 
+    //  TODO: 내부 처리해야 함. 테스트 용으로 만든 것.
     @Transactional
-    public Notification sendNotification(Long userId, NotificationRequest request) {
-        User user = userQueryService.getUserById(userId);
+    public Notification sendNotification(User user, NotificationRequest request) {
         Notification notification = NotificationConverter.toNotification(user, request);
 
         return notificationCommandService.createNotification(notification);
@@ -37,22 +36,19 @@ public class NotificationUseCase {
     @Transactional
     public Long readNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
-
-        if (!notification.getUser().getId().equals(userId)) {
+        if (!notification.getUser().getId().equals(userId))
             throw NotificationHandler.FORBIDDEN;
-        }
+        notification.markAsRead();
 
-        return notificationCommandService.readNotification(notificationId);
+        return notification.getId();
     }
 
     @Transactional
     public Long deleteNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
-
-        if (!notification.getUser().getId().equals(userId)) {
+        if (!notification.getUser().getId().equals(userId))
             throw NotificationHandler.FORBIDDEN;
-        }
 
-        return notificationCommandService.deleteNotification(notificationId);
+        return notificationCommandService.deleteNotification(notification);
     }
 }

@@ -5,7 +5,6 @@ import com.example.demo.api.user.dto.UserResponseDto.*;
 import com.example.demo.domain.user.entity.Role;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.entity.UserStatus;
-import com.example.demo.api.user.dto.UserResponseDto.UpdateUserResponse;
 
 public class UserConverter {
 

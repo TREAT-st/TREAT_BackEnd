@@ -10,6 +10,7 @@ import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
 import com.example.demo.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +29,7 @@ public class FavoriteStockController {
     @PostMapping
     public ApiResponseDto<Long> addUserFavoriteStock(
             @AuthUser User user,
-            @RequestBody FavoriteStockRequestDto favoriteStockRequest) {
+            @RequestBody @Valid FavoriteStockRequestDto favoriteStockRequest) {
         return ApiResponseDto.onSuccess(favoriteStockUseCase.addFavoriteStock(user, favoriteStockRequest));
     }
 
