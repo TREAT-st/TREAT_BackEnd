@@ -3,8 +3,8 @@ package com.example.demo.security.jwt.service;
 import com.example.demo.common.exception.ErrorStatus;
 import com.example.demo.common.exception.GeneralException;
 import com.example.demo.common.service.RedisService;
-import com.example.demo.domain.member.entity.Member;
-import com.example.demo.domain.member.service.MemberQueryService;
+import com.example.demo.domain.user.entity.User;
+import com.example.demo.domain.user.service.UserQueryService;
 import com.example.demo.security.exception.JwtAuthenticationException;
 import com.example.demo.security.jwt.dto.JwtToken;
 import io.jsonwebtoken.*;
@@ -18,7 +18,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -34,23 +33,23 @@ public class TokenServiceImpl implements TokenService{
     private final Key key;      //security yml 파일 생성 후 app.jwt.secret에 값 넣어주기(보안을 위해 따로 연락주세요)
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RedisService redisService;
-    private final MemberQueryService memberQueryService;
+    private final UserQueryService userQueryService;
 
     public TokenServiceImpl(@Value("${app.jwt.secret}") String key,
                             AuthenticationManagerBuilder authenticationManagerBuilder,
                             RedisService redisService,
-                            MemberQueryService memberQueryService) {
+                            UserQueryService userQueryService) {
         byte[] keyBytes = Decoders.BASE64.decode(key);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.authenticationManagerBuilder = authenticationManagerBuilder;
         this.redisService = redisService;
-        this.memberQueryService = memberQueryService;
+        this.userQueryService = userQueryService;
     }
     @Override       //TODO oauth2적용시 필요 없음
     public JwtToken login(String kakaoEmail) {
-        Member member = memberQueryService.getByKakaoEmail(kakaoEmail);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(member, "",
-                member.getAuthorities());
+        User user = userQueryService.getUserByKakaoEmail(kakaoEmail);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, "",
+                user.getAuthorities());
         return generateToken(authentication);
     }
 
@@ -67,9 +66,9 @@ public class TokenServiceImpl implements TokenService{
         // 새로운 Authentication 객체 생성
         Claims claims = parseClaims(refreshToken);
         String username = claims.getSubject();
-        Member member = memberQueryService.getMemberByUsername(username);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(member, "",
-                member.getAuthorities());
+        User user = userQueryService.getUserByUsername(username);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, "",
+                user.getAuthorities());
 
         // 새 토큰 생성
         JwtToken newTokens = generateToken(authentication);
@@ -130,10 +129,16 @@ public class TokenServiceImpl implements TokenService{
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
 
+        /* @AuthUser 미적용
+
         // UserDetails 객체를 만들어서 Authentication return
         // UserDetails: interface, User: UserDetails를 구현한 class
         UserDetails principal = new User(claims.getSubject(), "", authorities);
         return new UsernamePasswordAuthenticationToken(principal, "", authorities);
+         */
+
+        User user = userQueryService.getUserByUsername(claims.getSubject());
+        return new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities());
     }
 
     @Override

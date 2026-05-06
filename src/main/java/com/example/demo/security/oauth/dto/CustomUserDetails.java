@@ -1,6 +1,6 @@
 package com.example.demo.security.oauth.dto;
 
-import com.example.demo.domain.member.entity.Member;
+import com.example.demo.domain.user.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -35,33 +35,33 @@ public class CustomUserDetails implements OAuth2User, UserDetails {
         this.authorities = authorities;
     }
 
-    public static CustomUserDetails create(Member member) {
+    public static CustomUserDetails create(User user) {
         List<GrantedAuthority> authorities = Collections.
-                singletonList(new SimpleGrantedAuthority(member.getRole().getKey()));
+                singletonList(new SimpleGrantedAuthority(user.getRole().getKey()));
 
         return new CustomUserDetails(
-                member.getId(),
-                member.getUsername(),
-                member.getKakaoEmail(),
+                user.getId(),
+                user.getUsername(),
+                user.getKakaoEmail(),
                 null,
                 authorities
         );
     }
 
-    public static CustomUserDetails create(Member member, Map<String, Object> attributes) {
-        CustomUserDetails userDetails = CustomUserDetails.create(member);
+    public static CustomUserDetails create(User user, Map<String, Object> attributes) {
+        CustomUserDetails userDetails = CustomUserDetails.create(user);
         userDetails.setAttributes(attributes);
         return userDetails;
     }
 
-    public static CustomUserDetails create(Member member, OAuth2AccessToken oAuth2AccessToken) {
+    public static CustomUserDetails create(User user, OAuth2AccessToken oAuth2AccessToken) {
         List<GrantedAuthority> authorities = Collections.
-                singletonList(new SimpleGrantedAuthority(member.getRole().getKey()));
+                singletonList(new SimpleGrantedAuthority(user.getRole().getKey()));
 
         return new CustomUserDetails(
-                member.getId(),
-                member.getUsername(),
-                member.getKakaoEmail(),
+                user.getId(),
+                user.getUsername(),
+                user.getKakaoEmail(),
                 oAuth2AccessToken,
                 authorities
         );

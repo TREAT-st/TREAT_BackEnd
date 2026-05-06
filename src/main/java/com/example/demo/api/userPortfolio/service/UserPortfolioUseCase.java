@@ -1,0 +1,27 @@
+package com.example.demo.api.userPortfolio.service;
+
+import com.example.demo.api.userPortfolio.dto.UserPortfolioRequestDto.*;
+import com.example.demo.common.annotation.UseCase;
+import com.example.demo.domain.userPortfolio.entity.UserPortfolio;
+import com.example.demo.domain.userPortfolio.service.UserPortfolioCommandService;
+import com.example.demo.domain.userPortfolio.service.UserPortfolioQueryService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
+
+@UseCase
+@Transactional
+@RequiredArgsConstructor
+public class UserPortfolioUseCase {
+    private final UserPortfolioQueryService userPortfolioQueryService;
+    private final UserPortfolioCommandService userPortfolioCommandService;
+
+    @Transactional(readOnly = true)
+    public UserPortfolio getUserPortfolio(Long userId) {
+        return userPortfolioQueryService.getUserPortfolioByUserId(userId);
+    }
+
+    public Long deleteUserPortfolio(Long userId) {
+        Long portfolioId = userPortfolioQueryService.getUserPortfolioByUserId(userId).getId();
+        return userPortfolioCommandService.deletePortfolio(portfolioId);
+    }
+}

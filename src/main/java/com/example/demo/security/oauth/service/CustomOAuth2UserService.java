@@ -1,9 +1,9 @@
 package com.example.demo.security.oauth.service;
 
 import com.example.demo.common.exception.ErrorStatus;
-import com.example.demo.domain.member.entity.Member;
-import com.example.demo.domain.member.entity.Role;
-import com.example.demo.domain.member.repository.MemberRepository;
+import com.example.demo.domain.user.entity.Role;
+import com.example.demo.domain.user.entity.User;
+import com.example.demo.domain.user.repository.UserRepository;
 import com.example.demo.security.oauth.dto.CustomUserDetails;
 import com.example.demo.security.oauth.dto.KakaoOAuth2User;
 import com.example.demo.security.oauth.factory.OAuth2UserInfoFactory;
@@ -26,7 +26,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
-    private final MemberRepository memberRepository;
+    private final UserRepository userRepository;
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService = new DefaultOAuth2UserService();
@@ -40,21 +40,21 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         if (!StringUtils.hasText(oAuth2UserInfo.getEmail())) {
             throw new GeneralException(ErrorStatus.AUTH_OAUTH2_EMAIL_NOT_FOUND_FROM_PROVIDER);
         }
-        Optional<Member> byEmail = memberRepository.findByKakaoEmail(oAuth2UserInfo.getEmail());
-        Member member = byEmail.orElseGet(() -> registerMember(oAuth2UserInfo));
+        Optional<User> byEmail = userRepository.findByKakaoEmail(oAuth2UserInfo.getEmail());
+        User user = byEmail.orElseGet(() -> registerUser(oAuth2UserInfo));
 
-        return CustomUserDetails.create(member, oAuth2AccessToken);
+        return CustomUserDetails.create(user, oAuth2AccessToken);
     }
 
-    private Member registerMember(KakaoOAuth2User oAuth2UserInfo) {
-        Member register = Member.builder()
+    private User registerUser(KakaoOAuth2User oAuth2UserInfo) {
+        User register = User.builder()
                 .kakaoEmail(oAuth2UserInfo.getEmail())
                 .username(oAuth2UserInfo.getNickname())
                 .profileImg(oAuth2UserInfo.getProfileImg())
                 .role(Role.USER)           //회원가입시에만 guest로 두고 이후 사용에는 user로 돌린다
                 .build();
 
-        return memberRepository.save(register);
+        return userRepository.save(register);
     }
 
 
