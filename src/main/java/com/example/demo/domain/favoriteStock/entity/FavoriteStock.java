@@ -3,9 +3,8 @@ package com.example.demo.domain.favoriteStock.entity;
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import com.example.demo.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(
@@ -18,13 +17,15 @@ import lombok.NoArgsConstructor;
         }
 )
 @Getter
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class FavoriteStock extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "favorite_stock_id")
-    private Integer favoriteStockId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -33,10 +34,14 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 
-    @Column(name = "is_alert_enabled", nullable = false)
-    private Boolean isAlertEnabled;
+    @Column(name = "ticker", nullable = false, length = 20)
+    private String ticker;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "alert_period", nullable = false)
-    private AlertPeriod alertPeriod;
+    @Builder.Default
+    @Column(name = "is_alert_enabled", nullable = false)
+    private Boolean isAlertEnabled = false;
+
+    public void updateAlertEnabled(boolean isEnabled) {
+        this.isAlertEnabled = isEnabled;
+    }
 }
