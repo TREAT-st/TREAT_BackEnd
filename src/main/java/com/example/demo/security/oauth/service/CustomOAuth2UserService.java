@@ -3,6 +3,7 @@ package com.example.demo.security.oauth.service;
 import com.example.demo.common.exception.ErrorStatus;
 import com.example.demo.domain.user.entity.Role;
 import com.example.demo.domain.user.entity.User;
+import com.example.demo.domain.user.entity.UserStatus;
 import com.example.demo.domain.user.repository.UserRepository;
 import com.example.demo.security.oauth.dto.CustomUserDetails;
 import com.example.demo.security.oauth.dto.KakaoOAuth2User;
@@ -51,6 +52,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 .kakaoEmail(oAuth2UserInfo.getEmail())
                 .username(oAuth2UserInfo.getNickname())
                 .profileImg(oAuth2UserInfo.getProfileImg())
+                .status(UserStatus.ACTIVE)
                 .role(Role.USER)           //회원가입시에만 guest로 두고 이후 사용에는 user로 돌린다
                 .build();
 

@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -41,36 +41,71 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
-          RDS_DATABASE_URL: ${{ secrets.RDS_DATABASE_URL }}
-          RDS_DATABASE_USERNAME: ${{ secrets.RDS_DATABASE_USERNAME }}
-          RDS_DATABASE_PASSWORD: ${{ secrets.RDS_DATABASE_PASSWORD }}
         run: |
+          set -Eeuo pipefail
+          trap 'rm -f key.pem' EXIT
+
           echo "$EC2_SSH_KEY" > key.pem
           chmod 600 key.pem
 
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
+          echo "Connecting to EC2 host: $EC2_HOST"
+          ssh -vv \
+            -o StrictHostKeyChecking=no \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -i key.pem \
+            $EC2_USER@$EC2_HOST \
+            "S3_BUCKET='$S3_BUCKET' EC2_USER='$EC2_USER' bash -s" << 'EOF'
+            set -Eeuo pipefail
+
+            APP_DIR="/home/$EC2_USER/app"
+            APP_JAR="$APP_DIR/treat-app.jar"
+            APP_LOG="$APP_DIR/app.log"
+
+            echo "[deploy] whoami=$(whoami)"
+            echo "[deploy] host=$(hostname)"
+            echo "[deploy] app dir=$APP_DIR"
+            mkdir -p "$APP_DIR"
+
             # 기존 프로세스 종료
-            PID=\$(pgrep -f "treat-app.jar") && kill \$PID || true
+            PID="$(pgrep -f "treat-app.jar" || true)"
+            if [ -n "$PID" ]; then
+              echo "[deploy] stopping existing process: $PID"
+              kill $PID || true
+            else
+              echo "[deploy] no existing process"
+            fi
             sleep 3
 
             # S3에서 최신 JAR 다운로드
-            aws s3 cp s3://$S3_BUCKET/treat-app.jar /home/$EC2_USER/app/treat-app.jar
-
-            # 환경변수 설정 (&가 쉘 연산자로 해석되지 않도록 따옴표 처리)
-            export RDS_DATABASE_URL="$RDS_DATABASE_URL"
-            export RDS_DATABASE_USERNAME="$RDS_DATABASE_USERNAME"
-            export RDS_DATABASE_PASSWORD="$RDS_DATABASE_PASSWORD"
+            echo "[deploy] downloading jar from s3://$S3_BUCKET/treat-app.jar"
+            aws s3 cp "s3://$S3_BUCKET/treat-app.jar" "$APP_JAR"
+            ls -lh "$APP_JAR"
 
             # 실행
+            echo "[deploy] starting application"
             nohup java \
               -Xms128m -Xmx400m \
               -XX:MetaspaceSize=128m \
               -XX:MaxMetaspaceSize=128m \
-              -jar /home/$EC2_USER/app/treat-app.jar \
+              -jar "$APP_JAR" \
               --spring.profiles.active=dev \
-              < /dev/null > /home/$EC2_USER/app/app.log 2>&1 &
+              < /dev/null > "$APP_LOG" 2>&1 &
+            APP_PID=$!
             disown
+
+            echo "[deploy] started pid=$APP_PID"
+            sleep 10
+
+            echo "[deploy] process check"
+            if ps -p "$APP_PID" > /dev/null; then
+              ps -f -p "$APP_PID"
+              echo "[deploy] app log tail"
+              tail -n 120 "$APP_LOG" || true
+            else
+              echo "[deploy] application process exited during startup"
+              echo "[deploy] app log tail"
+              tail -n 200 "$APP_LOG" || true
+              exit 1
+            fi
           EOF
-
-          rm -f key.pem
-

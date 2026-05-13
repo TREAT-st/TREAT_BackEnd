@@ -44,27 +44,27 @@ public class OAuthController {
         response.sendRedirect(StaticVariable.KAKAO_OAUTH2_AUTHORIZATION_URI);
     }
 
-    /**
-     * 로컬 테스트 전용: OAuth2 성공 후 리다이렉트되는 콜백 페이지
-     * application.yml의 oauth2.redirect-uri가 http://localhost:8080/oauth2/redirect 일 때 사용
-     */
-    @Operation(
-            summary = "OAuth2 콜백 (로컬 테스트용)",
-            description = """
-                    카카오 로그인 성공 후 리다이렉트되는 엔드포인트입니다.
-                    `accessToken` 파라미터에 JWT 액세스 토큰이 포함되어 있습니다.
-                    이 토큰을 복사해 Swagger의 Authorize에 입력하세요.
-                    """
-    )
-    @DisableSwaggerSecurity
-    @GetMapping("/kakao/callback")
-    public ApiResponseDto<Map<String, String>> kakaoCallback(
-            @Parameter(description = "OAuth2 성공 핸들러가 발급한 JWT 액세스 토큰")
-            @RequestParam(required = false) String accessToken) {
-        if (accessToken == null) {
-            return ApiResponseDto.onFailure(4001, "accessToken이 없습니다.", null);
-        }
-        log.info("카카오 로그인 콜백 - accessToken 발급 완료");
-        return ApiResponseDto.onSuccess(Map.of("accessToken", accessToken));
-    }
+//    /**
+//     * 로컬 테스트 전용: OAuth2 성공 후 리다이렉트되는 콜백 페이지
+//     * application.yml의 oauth2.redirect-uri가 http://localhost:8080/oauth2/redirect 일 때 사용
+//     */
+//    @Operation(
+//            summary = "OAuth2 콜백 (로컬 테스트용)",
+//            description = """
+//                    카카오 로그인 성공 후 리다이렉트되는 엔드포인트입니다.
+//                    `accessToken` 파라미터에 JWT 액세스 토큰이 포함되어 있습니다.
+//                    이 토큰을 복사해 Swagger의 Authorize에 입력하세요.
+//                    """
+//    )
+//    @DisableSwaggerSecurity
+//    @GetMapping("/kakao/callback")
+//    public ApiResponseDto<Map<String, String>> kakaoCallback(
+//            @Parameter(description = "OAuth2 성공 핸들러가 발급한 JWT 액세스 토큰")
+//            @RequestParam(required = false) String accessToken) {
+//        if (accessToken == null) {
+//            return ApiResponseDto.onFailure(4001, "accessToken이 없습니다.", null);
+//        }
+//        log.info("카카오 로그인 콜백 - accessToken 발급 완료");
+//        return ApiResponseDto.onSuccess(Map.of("accessToken", accessToken));
+//    }
 }

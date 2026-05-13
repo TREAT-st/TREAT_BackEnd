@@ -44,17 +44,17 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(name = "profile_img")
     private String profileImg;
 
-    @Column(name = "name", nullable = false, length = 50)
+    @Column(name = "name", length = 50)
     private String name;
 
-    @Column(name = "birth_date", nullable = false)
+    @Column(name = "birth_date")
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false)
+    @Column(name = "gender")
     private Gender gender;
 
-    @Column(name = "nickname", unique = true, nullable = false, length = 50)
+    @Column(name = "nickname", unique = true, length = 50)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
