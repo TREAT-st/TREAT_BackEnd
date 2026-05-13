@@ -15,14 +15,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
-@Transactional(readOnly = true)
+@Transactional
 @RequiredArgsConstructor
 public class NotificationUseCase {
     private final NotificationQueryService notificationQueryService;
     private final NotificationCommandService notificationCommandService;
 
     //  TODO: 내부 처리해야 함. 테스트 용으로 만든 것.
-    @Transactional
     public Notification sendNotification(User user, NotificationRequest request) {
         Notification notification = NotificationConverter.toNotification(user, request);
 
@@ -33,7 +32,6 @@ public class NotificationUseCase {
         return notificationQueryService.getNotificationListByPage(userId, pageable);
     }
 
-    @Transactional
     public Long readNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
         if (!notification.getUser().getId().equals(userId))
@@ -43,7 +41,6 @@ public class NotificationUseCase {
         return notification.getId();
     }
 
-    @Transactional
     public Long deleteNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
         if (!notification.getUser().getId().equals(userId))
