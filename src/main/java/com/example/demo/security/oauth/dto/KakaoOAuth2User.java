@@ -16,7 +16,6 @@ public class KakaoOAuth2User extends OAuth2UserInfo {
         this.nickname = (String) profile.get("nickname");
         this.profileImg = (String) profile.get("profile_image_url");
 
-        System.out.println("nickname = " + this.nickname);
     }
 
     @Override
