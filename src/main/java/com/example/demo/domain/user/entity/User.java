@@ -76,9 +76,9 @@ public class User extends BaseTimeEntity implements UserDetails {
     private String providerUserId;
 
     public void updateUserInfo(String nickname, String profileImg, String accountNumber) {
-        if (nickname != null) this.nickname = nickname;
-        if (profileImg != null) this.profileImg = profileImg;
-        if (accountNumber != null) this.accountNumber = accountNumber;
+        if (nickname != null && !nickname.trim().isEmpty()) this.nickname = nickname;
+        if (profileImg != null && !profileImg.trim().isEmpty()) this.profileImg = profileImg;
+        if (accountNumber != null && !accountNumber.trim().isEmpty()) this.accountNumber = accountNumber;
     }
 
     @Override

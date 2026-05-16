@@ -7,7 +7,7 @@ public class KakaoOAuth2User extends OAuth2UserInfo {
     private String nickname;
     private String profileImg;
 
-
+    //카카오 API 응답과 프로젝트 entity 매칭
     public KakaoOAuth2User(Map<String, Object> attributes) {
         super((Map<String, Object>) attributes.get("kakao_account"));
         this.id = (Long) attributes.get("id");
@@ -15,6 +15,8 @@ public class KakaoOAuth2User extends OAuth2UserInfo {
         Map<String, Object> profile = (Map<String, Object>) account.get("profile");
         this.nickname = (String) profile.get("nickname");
         this.profileImg = (String) profile.get("profile_image_url");
+
+        System.out.println("nickname = " + this.nickname);
     }
 
     @Override
