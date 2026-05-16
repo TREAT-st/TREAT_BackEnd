@@ -45,10 +45,14 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    //s3
+    implementation 'software.amazon.awssdk:s3:2.25.26'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
+
 
 
 }
