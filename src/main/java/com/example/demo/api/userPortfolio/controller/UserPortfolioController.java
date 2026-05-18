@@ -1,7 +1,6 @@
 package com.example.demo.api.userPortfolio.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
-import com.example.demo.api.userPortfolio.dto.UserPortfolioRequestDto.*;
 import com.example.demo.api.userPortfolio.dto.UserPortfolioResponseDto.UserPortfolioResponse;
 import com.example.demo.api.userPortfolio.mapper.UserPortfolioConverter;
 import com.example.demo.api.userPortfolio.service.UserPortfolioUseCase;
@@ -10,7 +9,6 @@ import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.userPortfolio.entity.UserPortfolio;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
