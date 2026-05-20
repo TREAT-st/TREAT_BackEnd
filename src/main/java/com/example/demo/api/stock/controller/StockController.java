@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class StockController {
     private final StockUseCase stockUseCase;
-    
+
     @Operation(summary = "전일(가장 최근 일자) 시가/종가 조회", description = "종목코드로 전날의(가장 최근 날짜) 시가와 종가를 KIS API에서 조회하고 DB에 저장합니다.")
     @GetMapping("/{stockCode}/today-price")
     public ApiResponseDto<StockPriceResponse> getLatestStockPrice(@PathVariable String stockCode) {
