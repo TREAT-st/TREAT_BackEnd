@@ -74,7 +74,7 @@ public class KisTokenService {
         try {
             LocalDateTime expiry = LocalDateTime.parse(expiredAt, EXPIRED_FORMATTER);
             Duration ttl = Duration.between(LocalDateTime.now(), expiry).minusMinutes(5);
-            return ttl.isNegative() ? Duration.ofMinutes(1) : ttl;
+            return (ttl.isNegative() || ttl.isZero()) ? Duration.ofMinutes(1) : ttl;
         } catch (Exception e) {
             log.warn("KIS 토큰 만료 시각 파싱 실패. 기본값 23시간 적용. expiredAt={}", expiredAt);
             return Duration.ofHours(23);
