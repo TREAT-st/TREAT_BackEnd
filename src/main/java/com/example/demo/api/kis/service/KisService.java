@@ -1,10 +1,15 @@
 package com.example.demo.api.kis.service;
 
 import com.example.demo.api.kis.dto.KisResponseDto;
+import com.example.demo.domain.stock.exception.StockHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +48,18 @@ public class KisService {
                 .header("appsecret", appSecret)
                 .header("tr_id", "FHKST03010100")  // 실전: FHKST03010100 / 모의: VFHKST03010100
                 .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        res -> Mono.error(StockHandler.kisApiError()))
+                .onStatus(HttpStatusCode::is5xxServerError,
+                        res -> Mono.error(StockHandler.kisApiError()))
                 .bodyToMono(KisResponseDto.class)
+                .map(response -> {
+                    if (!"0".equals(response.getRtCd())) {
+                        throw StockHandler.kisApiError();
+                    }
+                    return response;
+                })
+                .timeout(Duration.ofSeconds(5))
                 .block();
     }
 }

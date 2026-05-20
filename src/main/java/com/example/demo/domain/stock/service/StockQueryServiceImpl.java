@@ -1,12 +1,14 @@
 package com.example.demo.domain.stock.service;
 
 import com.example.demo.domain.stock.entity.Stock;
-import com.example.demo.domain.stock.exception.StockErrorStatus;
 import com.example.demo.domain.stock.exception.StockHandler;
 import com.example.demo.domain.stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -18,6 +20,11 @@ public class StockQueryServiceImpl implements StockQueryService {
     @Override
     public Stock getStockByCode(String stockCode) {
         return stockRepository.findByStockCode(stockCode)
-                .orElseThrow(() -> StockHandler.NOT_FOUND);
+                .orElseThrow(StockHandler::notFound);
+    }
+
+    @Override
+    public Set<String> getAllStockCodes() {
+        return new HashSet<>(stockRepository.findAllStockCodes());
     }
 }

@@ -18,7 +18,8 @@ public enum StockErrorStatus implements BaseErrorCode {
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4350, "stock을 찾지 못 했습니다."),
     STOCK_ALREADY_EXISTS(HttpStatus.CONFLICT, 4351, "이미 등록된 stock입니다."),
     STOCK_PRICE_NOT_AVAILABLE(HttpStatus.BAD_GATEWAY, 4352, "시가/종가 데이터가 없습니다. 공휴일이거나 거래 정지 종목일 수 있습니다."),
-    STOCK_PRICE_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4353, "KIS API 응답에 데이터가 없습니다.");
+    STOCK_PRICE_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4353, "KIS API 응답에 데이터가 없습니다."),
+    KIS_API_ERROR(HttpStatus.BAD_GATEWAY, 4354, "KIS API 호출에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

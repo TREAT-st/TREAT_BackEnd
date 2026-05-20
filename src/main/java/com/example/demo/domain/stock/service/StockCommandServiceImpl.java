@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @Transactional
@@ -24,9 +25,14 @@ public class StockCommandServiceImpl implements StockCommandService {
             BigDecimal closePrice,
             LocalDate inquiryDate) {
         Stock stock = stockRepository.findByStockCode(stockCode)
-                .orElseThrow(() -> StockHandler.NOT_FOUND);
+                .orElseThrow(StockHandler::notFound);
         stock.updatePrice(openPrice, closePrice, inquiryDate);
 
         return stock;
+    }
+
+    @Override
+    public void saveAllStocks(List<Stock> stocks) {
+        stockRepository.saveAll(stocks);
     }
 }
