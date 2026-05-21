@@ -57,4 +57,4 @@ cloud:
     region:
       static: ${AWS_REGION}
     s3:
-      bucket: ${S3_BUCKET}
+      bucket: ${S3_BUCKET} #http가 아니고 treat이기 때문에 base url쪽 수정
