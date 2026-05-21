@@ -1,7 +1,6 @@
 package com.example.demo.security.jwt.service;
 
 import com.example.demo.common.exception.ErrorStatus;
-import com.example.demo.common.exception.GeneralException;
 import com.example.demo.common.service.RedisService;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.service.UserQueryService;
@@ -57,7 +56,7 @@ public class TokenServiceImpl implements TokenService{
     public JwtToken issueTokens(String refreshToken) {
         // Refresh Token 유효성 검사
         if (!validateToken(refreshToken) || !existsRefreshToken(refreshToken)) {
-            throw new GeneralException(ErrorStatus.AUTH_INVALID_REFRESH_TOKEN);
+            throw new JwtAuthenticationException(ErrorStatus.AUTH_INVALID_REFRESH_TOKEN);
         }
 
         // 이전 리프레시 토큰 삭제
@@ -169,6 +168,7 @@ public class TokenServiceImpl implements TokenService{
         redisService.deleteValue(refreshToken);
         return true;
     }
+
 
     @Override
     public boolean existsRefreshToken(String refreshToken) {
