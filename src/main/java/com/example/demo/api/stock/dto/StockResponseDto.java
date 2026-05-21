@@ -21,4 +21,20 @@ public class StockResponseDto {
         private BigDecimal closePrice;
         private LocalDate inquiryDate;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UploadExcelResponse {
+        private String s3Uri;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ImportStockResponse {
+        private int savedCount;
+    }
 }

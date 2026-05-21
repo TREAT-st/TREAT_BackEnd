@@ -28,4 +28,12 @@ public class StockHandler extends GeneralException {
     public static StockHandler kisApiError() {
         return new StockHandler(StockErrorStatus.KIS_API_ERROR);
     }
+
+    public static StockHandler s3FileIoError() {
+        return new StockHandler(StockErrorStatus.S3_FILE_IO_ERROR);
+    }
+
+    public static StockHandler invalidFile() {
+        return new StockHandler(StockErrorStatus.INVALID_FILE);
+    }
 }

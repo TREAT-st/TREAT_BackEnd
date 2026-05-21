@@ -1,11 +1,11 @@
 package com.example.demo.api.stock.service;
 
+import com.example.demo.common.service.S3Service;
 import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.stock.service.StockCommandService;
 import com.example.demo.domain.stock.service.StockQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -13,8 +13,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,18 +27,15 @@ public class StockExcelService {
 
     private final StockQueryService stockQueryService;
     private final StockCommandService stockCommandService;
+    private final S3Service s3Service;
 
-    public int importFromExcel(String filePath) throws IOException, InvalidFormatException {
-        File file = new File(filePath);
+    public int importFromExcel(String s3Uri) throws IOException {
         List<Stock> stocks = new ArrayList<>();
-        //String fileName = file.getName();
-        //String dateStr = fileName.replaceAll(".*_(\\d{8})\\.xlsx", "$1");
-        //LocalDate inquiryDate = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-
         Set<String> existingCodes = stockQueryService.getAllStockCodes();
         Set<String> seenInFile = new HashSet<>();
 
-        try (Workbook workbook = new XSSFWorkbook(file)) {
+        try (InputStream inputStream = s3Service.downloadFile(s3Uri);
+             Workbook workbook = new XSSFWorkbook(inputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -47,7 +44,6 @@ public class StockExcelService {
 
                 String stockCode = getCellStringValue(row.getCell(0));
                 String stockName  = getCellStringValue(row.getCell(1));
-                //BigDecimal closePrice = getCellNumericValue(row.getCell(2));
 
                 if (stockCode.isEmpty() || stockName.isEmpty()) continue;
                 if (!seenInFile.add(stockCode)) {

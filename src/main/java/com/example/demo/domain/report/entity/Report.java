@@ -25,7 +25,4 @@ public class Report extends BaseTimeEntity {
 
     @Column(name = "report_html_url", nullable = false)
     private String reportHtmlUrl;
-
-    @Column(name = "report_pdf_url", nullable = false)
-    private String reportPdfUrl;
 }
