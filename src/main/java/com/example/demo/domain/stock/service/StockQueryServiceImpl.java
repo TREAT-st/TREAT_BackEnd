@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,5 +29,10 @@ public class StockQueryServiceImpl implements StockQueryService {
     @Override
     public Set<String> getAllStockCodes() {
         return new HashSet<>(stockRepository.findAllStockCodes());
+    }
+
+    @Override
+    public Page<Stock> getAllStocks(Pageable pageable) {
+        return stockRepository.findAll(pageable);
     }
 }

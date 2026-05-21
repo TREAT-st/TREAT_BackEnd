@@ -34,7 +34,7 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 
-    @Column(name = "stock_name", nullable = false, length = 20)
+    @Column(name = "stock_name", nullable = false, length = 100)
     private String stockName;
 
     @Builder.Default

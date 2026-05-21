@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class StockResponseDto {
 
@@ -36,5 +37,26 @@ public class StockResponseDto {
     @AllArgsConstructor
     public static class ImportStockResponse {
         private int savedCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StockItemResponse {
+        private String stockCode;
+        private String stockName;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StockPageResponse {
+        private List<StockItemResponse> content;
+        private int page;
+        private long totalElements;
+        private int totalPages;
+        private boolean hasNext;
     }
 }

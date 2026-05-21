@@ -23,10 +23,10 @@ public class Stock extends BaseTimeEntity {
     @Column(name = "stock_id")
     private Long id;
 
-    @Column(name = "stock_code", nullable = false, unique = true)
+    @Column(name = "stock_code", nullable = false, unique = true, length = 20)
     private String stockCode;
 
-    @Column(name = "stock_name",  nullable = false)
+    @Column(name = "stock_name", nullable = false, length = 100)
     private String stockName;
 
     @Column(name = "open_price")

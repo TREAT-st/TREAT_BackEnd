@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
@@ -72,8 +74,11 @@ public class KisTokenService {
 
     private Duration calculateTtl(String expiredAt) {
         try {
-            LocalDateTime expiry = LocalDateTime.parse(expiredAt, EXPIRED_FORMATTER);
-            Duration ttl = Duration.between(LocalDateTime.now(), expiry).minusMinutes(5);
+            ZonedDateTime expiry = LocalDateTime.parse(expiredAt, EXPIRED_FORMATTER)
+                    .atZone(ZoneId.of("Asia/Seoul"));
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+            Duration ttl = Duration.between(now, expiry).minusMinutes(5);
+
             return (ttl.isNegative() || ttl.isZero()) ? Duration.ofMinutes(1) : ttl;
         } catch (Exception e) {
             log.warn("KIS 토큰 만료 시각 파싱 실패. 기본값 23시간 적용. expiredAt={}", expiredAt);

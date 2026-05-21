@@ -11,8 +11,11 @@ import com.example.demo.common.service.S3Service;
 import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.stock.exception.StockHandler;
 import com.example.demo.domain.stock.service.StockCommandService;
+import com.example.demo.domain.stock.service.StockQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +31,7 @@ import java.util.List;
 public class StockUseCase {
 
     private final StockCommandService stockCommandService;
+    private final StockQueryService stockQueryService;
     private final KisService kisService;
     private final S3Service s3Service;
     private final StockExcelService stockExcelService;
@@ -102,5 +106,10 @@ public class StockUseCase {
         } catch (IOException e) {
             throw StockHandler.s3FileIoError();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Stock> getAllStocks(Pageable pageable) {
+        return stockQueryService.getAllStocks(pageable);
     }
 }
