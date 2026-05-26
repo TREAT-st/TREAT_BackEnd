@@ -58,11 +58,11 @@ public class SecurityConfig {
                                 "/api/tokens/logout",
                                 "/api/auth/kakao",
                                 "/api/auth/kakao/callback",
+                                "/api/auth/token",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",
-                                "/api/v1/test/health-check",
-                                "/api/v1/users"
+                                "/api/v1/test/health-check"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
                         .anyRequest().authenticated())

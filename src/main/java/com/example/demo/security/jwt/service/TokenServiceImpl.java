@@ -54,10 +54,25 @@ public class TokenServiceImpl implements TokenService{
     }
 
     @Override
+    public JwtToken issueTokensByAuthCode(String code) {
+        String username = redisService.getAuthCode(code);
+        if (username == null) {
+            throw new GeneralException(ErrorStatus.AUTH_INVALID_AUTH_CODE);
+        }
+        // 일회용 - 즉시 삭제
+        redisService.deleteAuthCode(code);
+
+        User user = userQueryService.getUserByUsername(username);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, "",
+                user.getAuthorities());
+        return generateToken(authentication);
+    }
+
+    @Override
     public JwtToken issueTokens(String refreshToken) {
         // Refresh Token 유효성 검사
         if (!validateToken(refreshToken) || !existsRefreshToken(refreshToken)) {
-            throw new GeneralException(ErrorStatus.AUTH_INVALID_REFRESH_TOKEN);
+            throw new JwtAuthenticationException(ErrorStatus.AUTH_INVALID_REFRESH_TOKEN);
         }
 
         // 이전 리프레시 토큰 삭제
@@ -169,6 +184,7 @@ public class TokenServiceImpl implements TokenService{
         redisService.deleteValue(refreshToken);
         return true;
     }
+
 
     @Override
     public boolean existsRefreshToken(String refreshToken) {
