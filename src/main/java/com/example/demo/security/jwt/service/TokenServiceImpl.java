@@ -1,6 +1,7 @@
 package com.example.demo.security.jwt.service;
 
 import com.example.demo.common.exception.ErrorStatus;
+import com.example.demo.common.exception.GeneralException;
 import com.example.demo.common.service.RedisService;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.service.UserQueryService;
@@ -47,6 +48,21 @@ public class TokenServiceImpl implements TokenService{
     @Override       //TODO oauth2적용시 필요 없음
     public JwtToken login(String kakaoEmail) {
         User user = userQueryService.getUserByKakaoEmail(kakaoEmail);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, "",
+                user.getAuthorities());
+        return generateToken(authentication);
+    }
+
+    @Override
+    public JwtToken issueTokensByAuthCode(String code) {
+        String username = redisService.getAuthCode(code);
+        if (username == null) {
+            throw new GeneralException(ErrorStatus.AUTH_INVALID_AUTH_CODE);
+        }
+        // 일회용 - 즉시 삭제
+        redisService.deleteAuthCode(code);
+
+        User user = userQueryService.getUserByUsername(username);
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, "",
                 user.getAuthorities());
         return generateToken(authentication);

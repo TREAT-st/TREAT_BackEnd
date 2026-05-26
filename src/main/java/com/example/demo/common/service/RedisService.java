@@ -35,4 +35,21 @@ public class RedisService {
         redisTemplate.delete(token);
     }
 
+    // FOR OAuth2 일회용 auth code (whiteList)
+    private static final String AUTH_CODE_PREFIX = "auth:code:";
+
+    public void setAuthCode(String code, String username) {
+        ValueOperations<String, String> values = redisTemplate.opsForValue();
+        values.set(AUTH_CODE_PREFIX + code, username, Duration.ofMinutes(3));
+    }
+
+    public String getAuthCode(String code) {
+        ValueOperations<String, String> values = redisTemplate.opsForValue();
+        return values.get(AUTH_CODE_PREFIX + code);
+    }
+
+    public void deleteAuthCode(String code) {
+        redisTemplate.delete(AUTH_CODE_PREFIX + code);
+    }
+
 }

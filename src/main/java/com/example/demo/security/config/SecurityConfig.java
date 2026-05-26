@@ -58,6 +58,7 @@ public class SecurityConfig {
                                 "/api/tokens/logout",
                                 "/api/auth/kakao",
                                 "/api/auth/kakao/callback",
+                                "/api/auth/token",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",
