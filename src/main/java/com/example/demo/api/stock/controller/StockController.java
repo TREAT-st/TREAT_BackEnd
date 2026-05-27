@@ -39,7 +39,7 @@ public class StockController {
     }
 
     @Operation(summary = "S3 엑셀 파일 DB 저장",
-            description = "S3에 업로드된 코스피200 엑셀 파일을 읽어 종목 정보를 DB에 저장합니다.")
+            description = "S3에 업로드된 코스피200 엑셀 파일을 읽어 종목 정보를 DB에 저장합니다. \n/stocks/excel/upload에서 응답받은 uri를 입력해주세요.")
     @PostMapping("/excel/import")
     public ApiResponseDto<ImportStockResponse> importStockFromS3(
             @RequestBody @Valid ImportStockRequest request) {
