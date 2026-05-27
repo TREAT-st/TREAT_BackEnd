@@ -8,7 +8,6 @@ import com.example.demo.domain.notification.exception.NotificationHandler;
 import com.example.demo.domain.notification.service.NotificationCommandService;
 import com.example.demo.domain.notification.service.NotificationQueryService;
 import com.example.demo.domain.user.entity.User;
-import com.example.demo.domain.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,10 +27,6 @@ public class NotificationUseCase {
         return notificationCommandService.createNotification(notification);
     }
 
-    public Page<Notification> getNotificationList(Long userId, Pageable pageable) {
-        return notificationQueryService.getNotificationListByPage(userId, pageable);
-    }
-
     public Long readNotification(Long userId, Long notificationId) {
         Notification notification = notificationQueryService.getNotificationById(notificationId);
         if (!notification.getUser().getId().equals(userId))
@@ -39,6 +34,11 @@ public class NotificationUseCase {
         notification.markAsRead();
 
         return notification.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Notification> getNotificationList(Long userId, Pageable pageable) {
+        return notificationQueryService.getNotificationListByPage(userId, pageable);
     }
 
     public Long deleteNotification(Long userId, Long notificationId) {

@@ -26,6 +26,7 @@ public class FavoriteStockUseCase {
         return favoriteStockCommandService.addFavoriteStock(favoriteStock);
     }
 
+    @Transactional(readOnly = true)
     public Page<FavoriteStock> getFavoriteStockPageByUserId(Long userId, Pageable pageable) {
         return favoriteStockQueryService.getUserFavoriteStockListByPage(userId, pageable);
     }
