@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import static com.example.demo.common.consts.StaticVariable.CREATED_DATE;
+
 @Tag(name = "[사용자 알림 페이지] 사용자 알림 API")
 @RestController
 @RequestMapping("/api/v1/users/notifications")
@@ -41,7 +43,7 @@ public class NotificationController {
             @AuthUser User user,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("createdDate")));
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc(CREATED_DATE)));
         Page<Notification> notificationPage = notificationUseCase.getNotificationList(user.getId(), pageable);
 
         return ApiResponseDto.onSuccess(NotificationConverter.toNotificationPageResponse(notificationPage));

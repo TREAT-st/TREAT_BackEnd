@@ -39,10 +39,10 @@ public class UserConverter {
                 .userId(user.getId())
                 .kakaoEmail(user.getKakaoEmail())
                 .profileImg(user.getProfileImg())
-                .name(user.getName())
+                .name(user.getName()) // 최초 닉네임
                 .birthdate(user.getBirthDate())
                 .gender(user.getGender())
-                .nickname(user.getNickname())
+                .nickname(user.getNickname()) //수정 가능한 닉네임.
                 .role(user.getRole())
                 .accountNumber(user.getAccountNumber())
                 .status(user.getStatus())

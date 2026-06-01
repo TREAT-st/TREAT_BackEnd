@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 public interface UserCommandService {
     User registerUser(User user);
-    User updateUser(Long userId, String name, String nickname, String profileImg,
-                    LocalDate birthDate, Gender gender, String accountNumber);
+    User updateUser(Long userId, String nickname, String profileImg, String accountNumber);
     Long deleteUser(Long userId);
 }
