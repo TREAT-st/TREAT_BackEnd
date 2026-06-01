@@ -8,4 +8,5 @@ import lombok.Data;
 public class FavoriteStockRequestDto {
     private String stockCode;
     private String ticker;
+    private Integer days;
 }
