@@ -7,6 +7,5 @@ import lombok.Data;
 @Builder
 public class FavoriteStockRequestDto {
     private String stockCode;
-    private String ticker;
-    private Integer days;
+    private String stockName;
 }

@@ -17,7 +17,7 @@ public class FavoriteStockResponseDto {
         private Long favoriteStockId;
         private Long userId;
         private String stockCode;
-        private String ticker;
+        private String stockName;
         private Boolean isAlertEnabled;
     }
 

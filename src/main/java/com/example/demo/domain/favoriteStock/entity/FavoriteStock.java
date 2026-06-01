@@ -34,8 +34,8 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 
-    @Column(name = "ticker", nullable = false, length = 20)
-    private String ticker;
+    @Column(name = "stock_name", nullable = false, length = 100)
+    private String stockName;
 
     @Column(name = "days", nullable = false)
     private Integer days;
