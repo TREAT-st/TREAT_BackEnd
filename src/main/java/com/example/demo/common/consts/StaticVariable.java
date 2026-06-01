@@ -1,5 +1,8 @@
 package com.example.demo.common.consts;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 public class StaticVariable {
     public static final String USER = "type_user";
     public static final String EXPERT = "type_expert";
@@ -15,6 +18,7 @@ public class StaticVariable {
     public static final String ADVICE_ID = "id";
     public static final String NOTIFICATION_READ = "isRead";
     public static final String PAGINATION_SORTING_BY_ID  = "id";
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     //OAuth2
     public static final String KAKAO_OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization/kakao";
@@ -23,5 +27,11 @@ public class StaticVariable {
     public static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24; // 1일
     public static final long REFRESH_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 7; // 7일
     public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+
+    //KIS
+    public static final String TOKEN_KEY = "kis:access_token";
+    public static final DateTimeFormatter EXPIRED_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 }
 

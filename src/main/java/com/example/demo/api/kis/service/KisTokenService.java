@@ -2,6 +2,7 @@ package com.example.demo.api.kis.service;
 
 import com.example.demo.api.kis.dto.KisTokenResponseDto;
 import com.example.demo.common.service.RedisService;
+import com.example.demo.common.util.RedisUtil;
 import com.example.demo.domain.stock.exception.StockHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,24 +13,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.example.demo.common.consts.StaticVariable.TOKEN_KEY;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class KisTokenService {
-
-    private static final String TOKEN_KEY = "kis:access_token";
-    private static final DateTimeFormatter EXPIRED_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private final WebClient webClient;
     private final RedisService redisService;
+    private final RedisUtil redisUtil;
 
     @Value("${kis.app-key}")
     private String appKey;
@@ -65,24 +60,10 @@ public class KisTokenService {
 
         String token = Objects.requireNonNull(tokenResponse).getAccessToken();
 
-        Duration ttl = calculateTtl(tokenResponse.getAccessTokenTokenExpired());
+        Duration ttl = redisUtil.calculateTtl(tokenResponse.getAccessTokenTokenExpired());
         redisService.setKisTokenExpiresValueWithTtl(TOKEN_KEY, token, ttl);
         log.info("KIS 토큰 Redis 저장 완료. TTL={}s", ttl.getSeconds());
 
         return token;
-    }
-
-    private Duration calculateTtl(String expiredAt) {
-        try {
-            ZonedDateTime expiry = LocalDateTime.parse(expiredAt, EXPIRED_FORMATTER)
-                    .atZone(ZoneId.of("Asia/Seoul"));
-            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
-            Duration ttl = Duration.between(now, expiry).minusMinutes(5);
-
-            return (ttl.isNegative() || ttl.isZero()) ? Duration.ofMinutes(1) : ttl;
-        } catch (Exception e) {
-            log.warn("KIS 토큰 만료 시각 파싱 실패. 기본값 23시간 적용. expiredAt={}", expiredAt);
-            return Duration.ofHours(23);
-        }
     }
 }
