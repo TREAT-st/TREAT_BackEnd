@@ -69,6 +69,4 @@ public class TokenApiController {
         cookieUtil.expireRefreshTokenCookie(response);
         return ApiResponseDto.onSuccess(null);
     }
-
-
 }
