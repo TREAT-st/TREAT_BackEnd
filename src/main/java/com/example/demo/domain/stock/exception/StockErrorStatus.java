@@ -21,7 +21,8 @@ public enum StockErrorStatus implements BaseErrorCode {
     STOCK_PRICE_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4353, "KIS API 응답에 데이터가 없습니다."),
     KIS_API_ERROR(HttpStatus.BAD_GATEWAY, 4354, "KIS API 호출에 실패했습니다."),
     S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4355, "S3 파일 처리 중 오류가 발생했습니다."),
-    INVALID_FILE(HttpStatus.BAD_REQUEST, 4356, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다.");
+    INVALID_FILE(HttpStatus.BAD_REQUEST, 4356, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
+    STOCK_CODE_ERROR(HttpStatus.BAD_REQUEST, 4357, "유효하지 않은 종목 코드 형식입니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

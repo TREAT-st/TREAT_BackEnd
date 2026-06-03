@@ -1,28 +1,28 @@
 package com.example.demo.api.kis.service;
 
+import com.example.demo.api.kis.client.KisFeignClient;
+import com.example.demo.api.kis.dto.KisTokenRequestDto;
 import com.example.demo.api.kis.dto.KisTokenResponseDto;
 import com.example.demo.common.service.RedisService;
 import com.example.demo.common.util.RedisUtil;
 import com.example.demo.domain.stock.exception.StockHandler;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.Objects;
 
+import static com.example.demo.common.consts.StaticVariable.GRANT_TYPE;
 import static com.example.demo.common.consts.StaticVariable.TOKEN_KEY;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class KisTokenService {
-    private final WebClient webClient;
+
+    private final KisFeignClient kisFeignClient;   // ✅ WebClient → FeignClient
     private final RedisService redisService;
     private final RedisUtil redisUtil;
 
@@ -34,36 +34,33 @@ public class KisTokenService {
 
     public String getAccessToken() {
         String cached = redisService.getValue(TOKEN_KEY);
-        if (cached != null) {
+        if (cached != null && !cached.isBlank()) {
             log.debug("KIS 토큰 캐시 히트");
             return cached;
         }
 
         log.info("KIS 토큰 신규 발급 요청");
-        Map<String, String> body = Map.of(
-                "grant_type", "client_credentials",
-                "appkey", appKey,
-                "appsecret", appSecret
-        );
 
-        KisTokenResponseDto tokenResponse = webClient.post()
-                .uri("/oauth2/tokenP")
-                .bodyValue(body)
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError,
-                        res -> Mono.error(StockHandler.kisApiError()))
-                .onStatus(HttpStatusCode::is5xxServerError,
-                        res -> Mono.error(StockHandler.kisApiError()))
-                .bodyToMono(KisTokenResponseDto.class)
-                .timeout(Duration.ofSeconds(5))
-                .block();
+        try {
+            KisTokenResponseDto tokenResponse = kisFeignClient.issueToken(
+                    new KisTokenRequestDto(GRANT_TYPE, appKey, appSecret)
+            );
 
-        String token = Objects.requireNonNull(tokenResponse).getAccessToken();
+            if (tokenResponse == null || tokenResponse.getAccessToken() == null
+                    || tokenResponse.getAccessToken().isBlank()) {
+                throw StockHandler.kisApiError();
+            }
 
-        Duration ttl = redisUtil.calculateTtl(tokenResponse.getAccessTokenTokenExpired());
-        redisService.setKisTokenExpiresValueWithTtl(TOKEN_KEY, token, ttl);
-        log.info("KIS 토큰 Redis 저장 완료. TTL={}s", ttl.getSeconds());
+            String token = tokenResponse.getAccessToken();
+            Duration ttl = redisUtil.calculateTtl(tokenResponse.getAccessTokenTokenExpired());
+            redisService.setKisTokenExpiresValueWithTtl(TOKEN_KEY, token, ttl);
+            log.info("KIS 토큰 Redis 저장 완료. TTL={}s", ttl.getSeconds());
 
-        return token;
+            return token;
+
+        } catch (FeignException e) {
+            log.error("KIS 토큰 발급 실패. status={}", e.status());
+            throw StockHandler.kisApiError();
+        }
     }
 }

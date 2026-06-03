@@ -17,6 +17,10 @@ public class RedisUtil {
 
     /** 토큰의 TTL을 계산해서 반환한다. 반환 형식: "yyyy-MM-dd HH:mm:ss" **/
     public Duration calculateTtl(String expiredAt) {
+        if (expiredAt == null || expiredAt.isBlank()) {
+            return Duration.ofHours(23);
+        }
+
         try {
             ZonedDateTime expiry = LocalDateTime.parse(expiredAt, EXPIRED_FORMATTER)
                     .atZone(SEOUL_ZONE);

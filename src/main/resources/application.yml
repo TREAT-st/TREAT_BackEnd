@@ -66,3 +66,9 @@ cloud:
         kospi200: ${S3_BUCKET_KOSPI200:treat-kospi200}
         #finance-reports: ${S3_BUCKET_FINANCE_REPORTS:treat-finance-reports}
         #static: ${S3_BUCKET_STATIC:treat-static}
+  openfeign:
+    client:
+      config:
+        kisClient:
+          connect-timeout: 3000  # 3초
+          read-timeout: 5000     # 5초

@@ -14,6 +14,7 @@ import com.example.demo.domain.stock.exception.StockHandler;
 import com.example.demo.domain.stock.service.StockCommandService;
 import com.example.demo.domain.stock.service.StockQueryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,9 +26,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.example.demo.common.consts.StaticVariable.DATE_FORMATTER;
-import static com.example.demo.common.consts.StaticVariable.KOSPI200_FILE_KEY;
+import static com.example.demo.common.consts.StaticVariable.*;
 
+@Slf4j
 @UseCase
 @RequiredArgsConstructor
 public class StockUseCase {
@@ -70,13 +71,16 @@ public class StockUseCase {
     }
 
     public StockPriceResponse getLatestStockPriceByStockCode(String stockCode) {
+        stockQueryService.getStockByCode(stockCode);
+
         for (int i = 1; i <= 10; i++) {
-            LocalDate targetDate = LocalDate.now().minusDays(i);
+            LocalDate targetDate = LocalDate.now(SEOUL_ZONE).minusDays(i);
 
             if (dateUtil.isWeekend(targetDate)) continue;
 
             String dateStr = targetDate.format(DATE_FORMATTER);
             KisResponseDto response = kisService.getDailyStockPrice(stockCode, dateStr, dateStr);
+            if(response == null) continue;
 
             List<KisResponseDto.DailyData> output2 = response.getOutput2();
             if (output2 == null || output2.isEmpty()) continue;
@@ -85,11 +89,15 @@ public class StockUseCase {
             String rawClose = output2.get(0).getClosePrice();
             if (rawOpen == null || rawOpen.isBlank() || rawClose == null || rawClose.isBlank()) continue;
 
-            BigDecimal openPrice  = new BigDecimal(rawOpen);
-            BigDecimal closePrice = new BigDecimal(rawClose);
+            try {
+                BigDecimal openPrice  = new BigDecimal(rawOpen.trim());
+                BigDecimal closePrice = new BigDecimal(rawClose.trim());
 
-            Stock stock = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
-            return StockConverter.toStockPriceResponse(stock);
+                Stock stock = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
+                return StockConverter.toStockPriceResponse(stock);
+            } catch (NumberFormatException e) {
+                continue;
+            }
         }
 
         throw StockHandler.stockPriceResponseEmpty();

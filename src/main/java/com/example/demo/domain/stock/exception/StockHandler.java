@@ -36,4 +36,8 @@ public class StockHandler extends GeneralException {
     public static StockHandler invalidFile() {
         return new StockHandler(StockErrorStatus.INVALID_FILE);
     }
+
+    public static StockHandler invalidStockCode() {
+        return new StockHandler(StockErrorStatus.STOCK_CODE_ERROR);
+    }
 }

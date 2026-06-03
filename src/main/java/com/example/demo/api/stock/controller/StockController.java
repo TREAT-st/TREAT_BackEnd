@@ -10,11 +10,13 @@ import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.domain.stock.entity.Stock;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,10 +44,12 @@ public class StockController {
         return ApiResponseDto.onSuccess(stockUseCase.importStockFromS3());
     }
 
+    @Validated
     @Operation(summary = "전일(가장 최근 일자) 시가/종가 조회",
             description = "종목코드로 전날의(가장 최근 날짜) 시가와 종가를 KIS API에서 조회하고 DB에 저장합니다.")
     @GetMapping("/{stockCode}/latest-price")
-    public ApiResponseDto<StockPriceResponse> getLatestStockPrice(@PathVariable String stockCode) {
+    public ApiResponseDto<StockPriceResponse> getLatestStockPrice(
+            @PathVariable @Pattern(regexp = "\\d{6}", message = "종목코드는 6자리 숫자입니다.") String stockCode) {
         return ApiResponseDto.onSuccess(stockUseCase.getLatestStockPriceByStockCode(stockCode));
     }
 
