@@ -32,8 +32,7 @@ public class StockController {
     @Operation(summary = "코스피200 엑셀 파일 S3 업로드",
             description = "로컬에서 다운로드한 KRX 코스피200 엑셀 파일을 S3에 업로드합니다.")
     @PostMapping(value = "/excel/upload", consumes = "multipart/form-data")
-    public ApiResponseDto<UploadExcelResponse> uploadStockExcel(
-            @RequestPart("file") MultipartFile file) {
+    public ApiResponseDto<UploadExcelResponse> uploadStockExcel(@RequestPart("file") MultipartFile file) {
         return ApiResponseDto.onSuccess(stockUseCase.uploadStockExcel(file));
     }
 

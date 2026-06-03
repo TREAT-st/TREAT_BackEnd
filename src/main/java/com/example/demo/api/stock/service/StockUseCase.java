@@ -96,7 +96,8 @@ public class StockUseCase {
                 Stock stock = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
                 return StockConverter.toStockPriceResponse(stock);
             } catch (NumberFormatException e) {
-                continue;
+                log.warn("KIS 가격 데이터 파싱 실패. stockCode={}, date={}, open={}, close={}",
+                        stockCode, dateStr, rawOpen, rawClose);
             }
         }
 
