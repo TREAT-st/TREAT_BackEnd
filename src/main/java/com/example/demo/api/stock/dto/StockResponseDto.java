@@ -37,6 +37,8 @@ public class StockResponseDto {
     @AllArgsConstructor
     public static class ImportStockResponse {
         private int savedCount;
+        private int updatedCount;
+        private int deletedCount;
     }
 
     @Getter

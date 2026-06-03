@@ -1,7 +1,6 @@
 package com.example.demo.api.stock.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
-import com.example.demo.api.stock.dto.StockRequestDto.ImportStockRequest;
 import com.example.demo.api.stock.dto.StockResponseDto.ImportStockResponse;
 import com.example.demo.api.stock.dto.StockResponseDto.StockPageResponse;
 import com.example.demo.api.stock.dto.StockResponseDto.StockPriceResponse;
@@ -10,9 +9,7 @@ import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.domain.stock.entity.Stock;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,11 +36,10 @@ public class StockController {
     }
 
     @Operation(summary = "S3 엑셀 파일 DB 저장",
-            description = "S3에 업로드된 코스피200 엑셀 파일을 읽어 종목 정보를 DB에 저장합니다. \n/stocks/excel/upload에서 응답받은 uri를 입력해주세요.")
+            description = "S3에 업로드된 코스피200 엑셀 파일을 읽어 종목 정보를 DB에 저장합니다.")
     @PostMapping("/excel/import")
-    public ApiResponseDto<ImportStockResponse> importStockFromS3(
-            @RequestBody @Valid ImportStockRequest request) {
-        return ApiResponseDto.onSuccess(stockUseCase.importStockFromS3(request.getS3Uri()));
+    public ApiResponseDto<ImportStockResponse> importStockFromS3() {
+        return ApiResponseDto.onSuccess(stockUseCase.importStockFromS3());
     }
 
     @Operation(summary = "전일(가장 최근 일자) 시가/종가 조회",

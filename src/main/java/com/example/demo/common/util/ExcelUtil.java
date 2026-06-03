@@ -1,10 +1,16 @@
 package com.example.demo.common.util;
 
 import com.example.demo.domain.stock.exception.StockHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Locale;
+
+import static com.example.demo.common.consts.StaticVariable.*;
+
+@Slf4j
 @Component
 public class ExcelUtil {
 
@@ -23,9 +29,19 @@ public class ExcelUtil {
         if (file == null || file.isEmpty()) {
             throw StockHandler.invalidFile();
         }
+
         String filename = file.getOriginalFilename();
-        if (filename == null || !filename.toLowerCase().endsWith(".xlsx")) {
+        if (filename == null || !filename.trim().toLowerCase(Locale.ROOT).endsWith(XLSX_EXTENSION)) {
             throw StockHandler.invalidFile();
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw StockHandler.invalidFile();
+        }
+
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.equals(XLSX_CONTENT_TYPE)) {
+            log.warn("예상과 다른 Content-Type. filename={}, contentType={}", filename, contentType);
         }
     }
 }

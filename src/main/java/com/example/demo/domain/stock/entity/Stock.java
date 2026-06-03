@@ -43,4 +43,8 @@ public class Stock extends BaseTimeEntity {
         this.closePrice = closePrice;
         this.inquiryDate = inquiryDate;
     }
+
+    public void updateName(String stockName) {
+        this.stockName = stockName;
+    }
 }
