@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 
-@Tag(name = "[주식] 주식 종목 API")
+@Tag(name = "[주식] 주식 종목 API.")
+@Validated
 @RestController
 @RequestMapping("/api/v1/stocks")
 @RequiredArgsConstructor
@@ -43,7 +44,6 @@ public class StockController {
         return ApiResponseDto.onSuccess(stockUseCase.importStockFromS3());
     }
 
-    @Validated
     @Operation(summary = "전일(가장 최근 일자) 시가/종가 조회",
             description = "종목코드로 전날의(가장 최근 날짜) 시가와 종가를 KIS API에서 조회하고 DB에 저장합니다.")
     @GetMapping("/{stockCode}/latest-price")
