@@ -22,7 +22,9 @@ public enum StockErrorStatus implements BaseErrorCode {
     KIS_API_ERROR(HttpStatus.BAD_GATEWAY, 4354, "KIS API 호출에 실패했습니다."),
     S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4355, "S3 파일 처리 중 오류가 발생했습니다."),
     INVALID_FILE(HttpStatus.BAD_REQUEST, 4356, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
-    STOCK_CODE_ERROR(HttpStatus.BAD_REQUEST, 4357, "유효하지 않은 종목 코드 형식입니다.");
+    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, 4357, "파일의 크기가 너무 큽니다."),
+    STOCK_CODE_ERROR(HttpStatus.BAD_REQUEST, 4358, "유효하지 않은 종목 코드 형식입니다."),
+    STOCK_IS_EMPTY(HttpStatus.NOT_FOUND, 4359, "종목 정보가 비어있습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

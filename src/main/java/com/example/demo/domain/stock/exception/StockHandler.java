@@ -40,4 +40,12 @@ public class StockHandler extends GeneralException {
     public static StockHandler invalidStockCode() {
         return new StockHandler(StockErrorStatus.STOCK_CODE_ERROR);
     }
+
+    public static StockHandler fileSizeIsToLarge() {
+        return new StockHandler(StockErrorStatus.FILE_TOO_LARGE);
+    }
+
+    public static StockHandler emptyStock() {
+        return new StockHandler(StockErrorStatus.STOCK_IS_EMPTY);
+    }
 }

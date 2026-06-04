@@ -71,7 +71,11 @@ public class StockUseCase {
     }
 
     public StockPriceResponse getLatestStockPriceByStockCode(String stockCode) {
-        stockQueryService.getStockByCode(stockCode);
+        Stock stock = stockQueryService.getStockByCode(stockCode);
+
+        if (stock == null) {
+            throw StockHandler.notFound();
+        }
 
         for (int i = 1; i <= 10; i++) {
             LocalDate targetDate = LocalDate.now(SEOUL_ZONE).minusDays(i);
@@ -93,8 +97,8 @@ public class StockUseCase {
                 BigDecimal openPrice  = new BigDecimal(rawOpen.trim());
                 BigDecimal closePrice = new BigDecimal(rawClose.trim());
 
-                Stock stock = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
-                return StockConverter.toStockPriceResponse(stock);
+                Stock updatedStockPrice = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
+                return StockConverter.toStockPriceResponse(updatedStockPrice);
             } catch (NumberFormatException e) {
                 log.warn("KIS 가격 데이터 파싱 실패. stockCode={}, date={}, open={}, close={}",
                         stockCode, dateStr, rawOpen, rawClose);

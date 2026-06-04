@@ -66,7 +66,7 @@ public class StockExcelService {
         }
 
         if (excelStocks.isEmpty()) {
-            throw StockHandler.invalidFile();
+            throw StockHandler.emptyStock();
         }
 
         return excelStocks;

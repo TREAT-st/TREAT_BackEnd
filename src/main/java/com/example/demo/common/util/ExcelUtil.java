@@ -36,12 +36,13 @@ public class ExcelUtil {
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw StockHandler.invalidFile();
+            throw StockHandler.fileSizeIsToLarge();
         }
 
         String contentType = file.getContentType();
         if (contentType != null && !contentType.equals(XLSX_CONTENT_TYPE)) {
             log.warn("예상과 다른 Content-Type. filename={}, contentType={}", filename, contentType);
+            throw StockHandler.invalidFile();
         }
     }
 }
