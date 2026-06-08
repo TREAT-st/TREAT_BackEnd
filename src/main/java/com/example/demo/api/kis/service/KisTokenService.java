@@ -22,7 +22,7 @@ import static com.example.demo.common.consts.StaticVariable.TOKEN_KEY;
 @RequiredArgsConstructor
 public class KisTokenService {
 
-    private final KisFeignClient kisFeignClient;   // ✅ WebClient → FeignClient
+    private final KisFeignClient kisFeignClient;
     private final RedisService redisService;
     private final RedisUtil redisUtil;
 
