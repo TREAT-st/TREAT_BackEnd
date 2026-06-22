@@ -14,24 +14,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
-@Transactional(readOnly = true)
+@Transactional
 @RequiredArgsConstructor
 public class FavoriteStockUseCase {
     private final FavoriteStockQueryService favoriteStockQueryService;
     private final FavoriteStockCommandService favoriteStockCommandService;
 
-    @Transactional
     public Long addFavoriteStock(User user, FavoriteStockRequestDto request) {
         FavoriteStock favoriteStock = FavoriteStockConverter.toFavoriteStock(user, request);
 
         return favoriteStockCommandService.addFavoriteStock(favoriteStock);
     }
 
+    @Transactional(readOnly = true)
     public Page<FavoriteStock> getFavoriteStockPageByUserId(Long userId, Pageable pageable) {
         return favoriteStockQueryService.getUserFavoriteStockListByPage(userId, pageable);
     }
 
-    @Transactional
     public void deleteFavoriteStock(Long userId, Long favoriteStockId) {
         FavoriteStock favoriteStock = favoriteStockQueryService.getFavoriteStockById(favoriteStockId);
 

@@ -53,7 +53,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 .username(oAuth2UserInfo.getNickname())
                 .profileImg(oAuth2UserInfo.getProfileImg())
                 .status(UserStatus.ACTIVE)
-                .role(Role.USER)           //회원가입시에만 guest로 두고 이후 사용에는 user로 돌린다
+                .nickname(oAuth2UserInfo.getNickname())
+                .name(oAuth2UserInfo.getNickname())
+                .role(Role.USER)//회원가입시에만 guest로 두고 이후 사용에는 user로 돌린다
                 .build();
 
         return userRepository.save(register);

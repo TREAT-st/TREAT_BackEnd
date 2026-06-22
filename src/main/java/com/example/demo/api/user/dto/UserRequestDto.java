@@ -34,11 +34,8 @@ public class UserRequestDto {
     @Getter
     @NoArgsConstructor
     public static class UpdateUserRequest {
-        private String name;
         private String nickname;
         private String profileImg;
-        private LocalDate birthDate;
-        private Gender gender;
         private String accountNumber;
     }
 }

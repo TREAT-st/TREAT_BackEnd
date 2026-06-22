@@ -23,11 +23,10 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
-    public User updateUser(Long userId, String name, String nickname, String profileImg,
-                           LocalDate birthDate, Gender gender, String accountNumber) {
+    public User updateUser(Long userId, String nickname, String profileImg, String accountNumber) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> UserHandler.NOT_FOUND);
-        user.updateUserInfo(name, nickname, profileImg, birthDate, gender, accountNumber);
+        user.updateUserInfo(nickname, profileImg, accountNumber);
 
         return user;
     }

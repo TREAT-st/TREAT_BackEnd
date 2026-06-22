@@ -25,11 +25,8 @@ public class UserUseCase {
     public User editUserAccount(Long userId, UpdateUserRequest request) {
         return userCommandService.updateUser(
                 userId,
-                request.getName(),
                 request.getNickname(),
                 request.getProfileImg(),
-                request.getBirthDate(),
-                request.getGender(),
                 request.getAccountNumber()
         );
     }

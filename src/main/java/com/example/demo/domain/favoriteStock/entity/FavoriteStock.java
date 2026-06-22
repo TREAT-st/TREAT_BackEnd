@@ -37,6 +37,9 @@ public class FavoriteStock extends BaseTimeEntity {
     @Column(name = "ticker", nullable = false, length = 20)
     private String ticker;
 
+    @Column(name = "days", nullable = false)
+    private Integer days;
+
     @Builder.Default
     @Column(name = "is_alert_enabled", nullable = false)
     private Boolean isAlertEnabled = false;

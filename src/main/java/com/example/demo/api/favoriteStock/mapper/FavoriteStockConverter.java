@@ -15,6 +15,7 @@ public class FavoriteStockConverter {
                 .user(user)
                 .stockCode(request.getStockCode())
                 .ticker(request.getTicker())
+                .days(request.getDays())
                 .isAlertEnabled(false)
                 .build();
     }
