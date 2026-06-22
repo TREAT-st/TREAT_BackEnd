@@ -54,6 +54,8 @@ public enum ErrorStatus implements BaseErrorCode{
     AUTH_TOKEN_IS_UNSUPPORTED(UNAUTHORIZED, 4358, "지원하지 않는 토큰 형식입니다."),
     @ExplainError("토큰 값이 비어있습니다.")
     AUTH_IS_NULL(UNAUTHORIZED, 4359, "토큰이 존재하지 않습니다."),
+    @ExplainError("일회용 인증 코드가 만료되었거나 유효하지 않습니다. 카카오 로그인을 다시 시도해주세요.")
+    AUTH_INVALID_AUTH_CODE(UNAUTHORIZED, 4360, "유효하지 않은 인증 코드입니다. 다시 로그인해주세요."),
 
     // member (4050~4099)
     @ExplainError("존재하지 않는 NameType 입니다.")

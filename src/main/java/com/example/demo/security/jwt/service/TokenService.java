@@ -9,6 +9,7 @@ public interface TokenService {
 
     JwtToken login(String kakaoEmail);
     JwtToken issueTokens(String refreshToken);
+    JwtToken issueTokensByAuthCode(String code);
 
     JwtToken generateToken(Authentication authentication);
 
