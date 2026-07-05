@@ -14,8 +14,7 @@ public class FavoriteStockConverter {
         return FavoriteStock.builder()
                 .user(user)
                 .stockCode(request.getStockCode())
-                .ticker(request.getTicker())
-                .days(request.getDays())
+                .stockName(request.getStockName())
                 .isAlertEnabled(false)
                 .build();
     }
@@ -25,7 +24,7 @@ public class FavoriteStockConverter {
                 .favoriteStockId(favoriteStock.getId())
                 .userId(favoriteStock.getUser().getId())
                 .stockCode(favoriteStock.getStockCode())
-                .ticker(favoriteStock.getTicker())
+                .stockName(favoriteStock.getStockName())
                 .isAlertEnabled(favoriteStock.getIsAlertEnabled())
                 .build();
     }

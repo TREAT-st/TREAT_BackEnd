@@ -27,6 +27,13 @@ public class RedisService {
         return values.get(token);
     }
 
+    // KIS Access 토큰 유효기간
+    // key-value + 커스텀 TTL 설정
+    public void setKisTokenExpiresValueWithTtl(String key, String value, Duration ttl) {
+        ValueOperations<String, String> values = redisTemplate.opsForValue();
+        values.set(key, value, ttl);
+    }
+
     public void deleteValue(String token) {
         if (token != null && token.startsWith("Bearer ")) {
             // "Bearer " 접두사 제거
