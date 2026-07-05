@@ -68,14 +68,29 @@ jobs:
             mkdir -p "$APP_DIR"
 
             # 기존 프로세스 종료
-            PID="$(pgrep -f "treat-app.jar" || true)"
+            APP_PROCESS_PATTERN="java .*treat-app.jar|java .*demo-0.0.1-SNAPSHOT.jar"
+            PID="$(pgrep -f "$APP_PROCESS_PATTERN" || true)"
             if [ -n "$PID" ]; then
               echo "[deploy] stopping existing process: $PID"
               kill $PID || true
+
+              for i in {1..15}; do
+                if ! pgrep -f "$APP_PROCESS_PATTERN" > /dev/null; then
+                  echo "[deploy] existing process stopped"
+                  break
+                fi
+                echo "[deploy] waiting for existing process to stop... ($i/15)"
+                sleep 1
+              done
+
+              REMAINING_PID="$(pgrep -f "$APP_PROCESS_PATTERN" || true)"
+              if [ -n "$REMAINING_PID" ]; then
+                echo "[deploy] force killing existing process: $REMAINING_PID"
+                kill -9 $REMAINING_PID || true
+              fi
             else
               echo "[deploy] no existing process"
             fi
-            sleep 3
 
             # S3에서 최신 JAR 다운로드
             echo "[deploy] downloading jar from s3://$S3_BUCKET/treat-app.jar"
