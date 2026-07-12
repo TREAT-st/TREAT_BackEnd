@@ -75,6 +75,14 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(name = "provider_user_id", length = 100)
     private String providerUserId;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer point = 0;
+
+    public void addPoint(int amount) {
+        this.point = (this.point == null ? 0 : this.point) + amount;
+    }
+
     public void updateUserInfo(String nickname, String profileImg, String accountNumber) {
         if (nickname != null && !nickname.trim().isEmpty()) this.nickname = nickname;
         if (profileImg != null && !profileImg.trim().isEmpty()) this.profileImg = profileImg;
