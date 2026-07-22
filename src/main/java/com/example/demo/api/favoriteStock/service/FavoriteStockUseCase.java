@@ -1,6 +1,7 @@
 package com.example.demo.api.favoriteStock.service;
 
 import com.example.demo.api.favoriteStock.dto.FavoriteStockRequestDto;
+import com.example.demo.api.favoriteStock.dto.FavoriteStockResponseDto.DistinctStockResponse;
 import com.example.demo.api.favoriteStock.mapper.FavoriteStockConverter;
 import com.example.demo.common.annotation.UseCase;
 import com.example.demo.domain.favoriteStock.entity.FavoriteStock;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @UseCase
 @Transactional
@@ -39,5 +42,10 @@ public class FavoriteStockUseCase {
         }
 
         favoriteStockCommandService.deleteFavoriteStock(favoriteStockId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DistinctStockResponse> getDistinctStocks() {
+        return FavoriteStockConverter.toDistinctStockResponseList(favoriteStockQueryService.getDistinctStocks());
     }
 }

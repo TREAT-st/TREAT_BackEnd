@@ -21,7 +21,7 @@ public class UserController {
     private final UserUseCase userUseCase;
 
     //  테스트용 api. 카카오 OAuth 쪽에서 진행하는게 맞음.
-    @Operation(summary = "회원 가입", description = "사용자를 등록하고 포트폴리오를 자동 생성합니다.")
+    @Operation(summary = "회원 가입", description = "사용자를 등록하고 새 포트폴리오를 자동 생성합니다(테스트용 API입니다).")
     @PostMapping
     public ApiResponseDto<RegisterUserResponse> registerUserAccount(@RequestBody @Valid RegisterUserRequest request) {
         User user = UserConverter.toUser(request);

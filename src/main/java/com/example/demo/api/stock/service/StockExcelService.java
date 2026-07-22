@@ -12,6 +12,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.core.exception.SdkException;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ public class StockExcelService {
     private final S3Service s3Service;
     private final ExcelUtil excelUtil;
 
+    @Transactional
     public StockSyncResultDto syncKOSPI200FromExcel(String s3Uri) {
         Map<String, String> excelStocks = parseExcelFromS3(s3Uri);
         return stockCommandService.syncStocks(excelStocks);

@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,5 +36,10 @@ public class FavoriteStockQueryServiceImpl implements FavoriteStockQueryService 
     @Override
     public boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode) {
         return favoriteStockRepository.existsByUserIdAndStockCode(userId, stockCode);
+    }
+
+    @Override
+    public List<FavoriteStock> getDistinctStocks() {
+        return favoriteStockRepository.findDistinctStocks();
     }
 }
