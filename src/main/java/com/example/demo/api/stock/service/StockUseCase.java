@@ -110,6 +110,7 @@ public class StockUseCase {
         throw StockHandler.stockPriceResponseEmpty();
     }
 
+    @Transactional(readOnly = true)
     public Page<Stock> getAllStocks(Pageable pageable) {
         return stockQueryService.getAllStocks(pageable);
     }
