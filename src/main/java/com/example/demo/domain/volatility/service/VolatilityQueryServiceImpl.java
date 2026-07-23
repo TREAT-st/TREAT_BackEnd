@@ -17,7 +17,8 @@ public class VolatilityQueryServiceImpl implements VolatilityQueryService {
 
     @Override
     public List<Volatility> getAllVolatilityByDate(LocalDateTime start, LocalDateTime end) {
-        return volatilityRepository.findAllByCreatedDateBetweenOrderByCreatedDateDesc(start, end);
+        return volatilityRepository
+                .findAllByCreatedDateGreaterThanEqualAndCreatedDateLessThanOrderByCreatedDateDesc(start, end);
     }
 
     @Override

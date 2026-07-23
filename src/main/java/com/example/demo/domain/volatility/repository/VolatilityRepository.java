@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface VolatilityRepository extends JpaRepository<Volatility, Long> {
     List<Volatility> findAllByStockCodeOrderByCreatedDateDesc(String stockCode);
-    List<Volatility> findAllByCreatedDateBetweenOrderByCreatedDateDesc(LocalDateTime start, LocalDateTime end);
+    List<Volatility> findAllByCreatedDateGreaterThanEqualAndCreatedDateLessThanOrderByCreatedDateDesc(LocalDateTime start, LocalDateTime end);
 }
