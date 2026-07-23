@@ -11,8 +11,8 @@ public class VolatilityConverter {
 
     public static VolatilityInfo toVolatilityInfo(Volatility volatility) {
         return VolatilityInfo.builder()
-                .volatilityCode(volatility.getVolatilityCode())
-                .volatilityName(volatility.getVolatilityName())
+                .volatilityCode(volatility.getStockCode())
+                .volatilityName(volatility.getStockName())
                 .reportUrl(volatility.getReportUrl())
                 .build();
     }

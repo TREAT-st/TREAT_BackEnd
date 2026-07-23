@@ -20,7 +20,7 @@ public class VolatilityUseCase {
     }
 
     @Transactional(readOnly = true)
-    public VolatilityInfo getVolatilityByCode(String volatilityCode) {
-        return VolatilityConverter.toVolatilityInfo(volatilityQueryService.getVolatilityByCode(volatilityCode));
+    public VolatilityInfo getVolatilityByCode(String stockCode) {
+        return VolatilityConverter.toVolatilityInfo(volatilityQueryService.getVolatilityByCode(stockCode));
     }
 }

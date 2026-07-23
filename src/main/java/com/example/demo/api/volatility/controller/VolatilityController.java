@@ -23,8 +23,8 @@ public class VolatilityController {
     }
 
     @Operation(summary = "변동성 종목 단건 조회", description = "종목 코드로 변동성 종목을 조회합니다.")
-    @GetMapping("/{volatilityCode}")
-    public ApiResponseDto<VolatilityInfo> getVolatilityByCode(@PathVariable String volatilityCode) {
-        return ApiResponseDto.onSuccess(volatilityUseCase.getVolatilityByCode(volatilityCode));
+    @GetMapping("/{stockCode}")
+    public ApiResponseDto<VolatilityInfo> getVolatilityByCode(@PathVariable String stockCode) {
+        return ApiResponseDto.onSuccess(volatilityUseCase.getVolatilityByCode(stockCode));
     }
 }

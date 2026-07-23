@@ -21,8 +21,8 @@ public class VolatilityQueryServiceImpl implements VolatilityQueryService {
     }
 
     @Override
-    public Volatility getVolatilityByCode(String volatilityCode) {
-        return volatilityRepository.findByVolatilityCode(volatilityCode)
+    public Volatility getVolatilityByCode(String stockCode) {
+        return volatilityRepository.findByStockCode(stockCode)
                 .orElseThrow(() -> VolatilityHandler.NOT_FOUND);
     }
 }

@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface VolatilityRepository extends JpaRepository<Volatility, Long> {
-    Optional<Volatility> findByVolatilityCode(String volatilityCode);
+    Optional<Volatility> findByStockCode(String stockCode);
     List<Volatility> findAllByOrderByCreatedDateDesc();
 }

@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface VolatilityQueryService {
     List<Volatility> getAllVolatility();
-    Volatility getVolatilityByCode(String volatilityCode);
+    Volatility getVolatilityByCode(String stockCode);
 }

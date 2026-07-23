@@ -18,11 +18,11 @@ public class Volatility extends BaseTimeEntity {
     @Column(name = "volatility_id")
     private Long id;
 
-    @Column(name = "volatility_name", nullable = false, length = 50)
-    private String volatilityName;
+    @Column(name = "stock_name", nullable = false, length = 50)
+    private String stockName;
 
-    @Column(name = "volatility_code", nullable = false, unique = true, length = 20)
-    private String volatilityCode;
+    @Column(name = "stock_code", nullable = false, unique = true, length = 20)
+    private String stockCode;
 
     @Column(name = "report_url")
     private String reportUrl;
