@@ -11,14 +11,15 @@ public class VolatilityConverter {
 
     public static VolatilityInfo toVolatilityInfo(Volatility volatility) {
         return VolatilityInfo.builder()
-                .volatilityCode(volatility.getStockCode())
-                .volatilityName(volatility.getStockName())
+                .stockCode(volatility.getStockCode())
+                .stockName(volatility.getStockName())
                 .reportUrl(volatility.getReportUrl())
+                .createdDate(volatility.getCreatedDate())
                 .build();
     }
 
-    public static VolatilityListResponse toVolatilityListResponse(List<Volatility> volatilities) {
-        List<VolatilityInfo> content = volatilities.stream()
+    public static VolatilityListResponse toVolatilityListResponse(List<Volatility> volatilises) {
+        List<VolatilityInfo> content = volatilises.stream()
                 .map(VolatilityConverter::toVolatilityInfo)
                 .collect(Collectors.toList());
 

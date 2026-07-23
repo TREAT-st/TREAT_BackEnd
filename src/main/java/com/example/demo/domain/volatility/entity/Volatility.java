@@ -21,7 +21,7 @@ public class Volatility extends BaseTimeEntity {
     @Column(name = "stock_name", nullable = false, length = 50)
     private String stockName;
 
-    @Column(name = "stock_code", nullable = false, unique = true, length = 20)
+    @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 
     @Column(name = "report_url")
