@@ -31,4 +31,13 @@ public class FavoriteStockResponseDto {
         private int totalPages;
         private boolean hasNext;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DistinctStockResponse {
+        private String stockCode;
+        private String stockName;
+    }
 }

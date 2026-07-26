@@ -10,7 +10,7 @@ public class StaticVariable {
     public static final String SWAGGER_BEARER = "Bearer";
     public static final String BEARER = "Bearer ";
     public static final String AUTHORIZATION = "Authorization";
-    public static final String GRANT_TYPE = "authorization_code";
+    public static final String GRANT_TYPE = "client_credentials";
     public static final String REISSUE_ENDPOINT = "/api/v1/tokens/reissue";
     public static final String HEALTH_CHECK_ENDPOINT = "/api/v1/test/health-check";
     public static final String CREATED_DATE = "createdDate";

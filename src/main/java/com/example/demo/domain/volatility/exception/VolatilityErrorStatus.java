@@ -1,4 +1,4 @@
-package com.example.demo.domain.reportRequest.exception;
+package com.example.demo.domain.volatility.exception;
 
 import com.example.demo.common.annotation.ExplainError;
 import com.example.demo.common.exception.BaseErrorCode;
@@ -12,11 +12,10 @@ import java.util.Objects;
 
 @Getter
 @AllArgsConstructor
-public enum ReportRequestErrorStatus implements BaseErrorCode {
+public enum VolatilityErrorStatus implements BaseErrorCode {
 
-    //  Entity ReportRequest(4250~4299)
-    REPORT_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "리포트 요청을 찾지 못했습니다."),
-    INVALID_INITIAL_STATUS(HttpStatus.BAD_REQUEST, 4251, "리포트 요청 초기 상태가 올바르지 않습니다.");
+    // Entity Volatility(4300~4349)
+    VOLATILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 4300, "volatility를 찾지 못했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
