@@ -15,7 +15,9 @@ import java.util.Objects;
 public enum VolatilityErrorStatus implements BaseErrorCode {
 
     // Entity Volatility(4300~4349)
-    VOLATILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 4300, "volatility를 찾지 못했습니다.");
+    VOLATILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 4300, "volatility를 찾지 못했습니다."),
+    KRX_LAMBDA_INVOKE_ERROR(HttpStatus.BAD_GATEWAY, 4301, "KRX 종목 조회 Lambda 호출에 실패했습니다."),
+    KRX_LAMBDA_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4302, "KRX 종목 조회 Lambda 응답이 비어있습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

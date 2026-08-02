@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,8 +40,12 @@ public class KisService {
                     "0"
             );
 
-            if (response == null || !"0".equals(response.getRtCd())) {
-                log.error("KIS API 응답 오류. rt_cd={}, msg={}", Objects.requireNonNull(response).getRtCd(), response.getMsg1());
+            if (response == null) {
+                log.error("KIS API 응답이 비어있습니다. stockCode={}", stockCode);
+                throw StockHandler.kisApiError();
+            }
+            if (!"0".equals(response.getRtCd())) {
+                log.error("KIS API 응답 오류. rt_cd={}, msg={}", response.getRtCd(), response.getMsg1());
                 throw StockHandler.kisApiError();
             }
 

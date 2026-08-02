@@ -54,6 +54,10 @@ kis:
   app-key: ${KIS_APP_KEY}
   app-secret: ${KIS_APP_SECRET}
 
+krx:
+  lambda:
+    function-name: ${KRX_LAMBDA_FUNCTION_NAME:krxOhlcvFetcher}
+
 cloud:
   aws:
     region:

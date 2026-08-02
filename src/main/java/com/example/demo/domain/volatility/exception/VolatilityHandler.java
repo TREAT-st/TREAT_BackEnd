@@ -10,4 +10,12 @@ public class VolatilityHandler extends GeneralException {
     public VolatilityHandler(BaseErrorCode baseErrorCode) {
         super(baseErrorCode);
     }
+
+    public static VolatilityHandler krxLambdaInvokeError() {
+        return new VolatilityHandler(VolatilityErrorStatus.KRX_LAMBDA_INVOKE_ERROR);
+    }
+
+    public static VolatilityHandler krxLambdaResponseEmpty() {
+        return new VolatilityHandler(VolatilityErrorStatus.KRX_LAMBDA_RESPONSE_EMPTY);
+    }
 }
