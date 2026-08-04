@@ -31,7 +31,7 @@ public class VolatilityController {
         return ApiResponseDto.onSuccess(volatilityUseCase.runDetection());
     }
 
-    @Operation(summary = "변동성 리포트 생성 요청", description = "오늘 탐지된 변동성 종목에 대한 리포트 생성을 Lambda에 요청합니다.<br>" +
+    @Operation(summary = "변동성 리포트 생성 요청", description = "오늘 탐지된 변동성 종목에 대한 리포트 생성을 Lambda에 요청합니다. 기본값으로 하고 싶으면 gptModel을 지우시면 됩니다.<br>" +
             "모델 목록: gpt-5.6-sol, gpt-5.6-terra(기본값), gpt-5.6-luna, gpt-5.5, gpt-5.5-pro, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano, gpt-5.4-pro")
     @PostMapping(value = "/report", consumes = APPLICATION_JSON_VALUE)
     public ApiResponseDto<ReportGenerationResult> runReportGeneration(@RequestBody ReportGenerationRequest request) {
