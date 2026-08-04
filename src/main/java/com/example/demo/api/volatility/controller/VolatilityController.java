@@ -49,7 +49,7 @@ public class VolatilityController {
     @Operation(summary = "리포트 생성 완료 콜백", description = "ECS가 리포트 생성 완료 후 reportUrl을 전달합니다." +
             "테스트에서는 이 api를 실행해야 S3에 생성 및 저장된 리포트가 DB에 저장됩니다.<br>" + "형식은 종목 코드, 생성 일자(파일명의 일자, yyyymmdd), S3 URL입니다.")
     @PatchMapping(value = "/report/callback", consumes = APPLICATION_JSON_VALUE)
-    public ApiResponseDto<Void> reportCallback(@RequestBody ReportCallback request) {
+    public ApiResponseDto<Void> reportCallback(@RequestBody @Valid ReportCallback request) {
         volatilityUseCase.handleReportCallback(request);
         return ApiResponseDto.onSuccess(null);
     }
