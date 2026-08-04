@@ -2,6 +2,7 @@ package com.example.demo.domain.volatility.service;
 
 import com.example.demo.api.krx.dto.KrxOhlcvResponseDto;
 import com.example.demo.api.krx.service.KrxService;
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import com.example.demo.domain.volatility.util.VolatilityAlertEvaluator;
 import com.example.demo.domain.volatility.util.VolatilityIndicatorCalculator;
 import lombok.RequiredArgsConstructor;

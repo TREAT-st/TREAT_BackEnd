@@ -12,8 +12,9 @@ import com.example.demo.domain.volatility.entity.Volatility;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
 import com.example.demo.domain.volatility.service.VolatilityDetectionService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
-import com.example.demo.domain.volatility.service.VolatilitySignal;
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -44,6 +45,7 @@ public class VolatilityUseCase {
         return VolatilityConverter.toDetectionResult(top10);
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ReportGenerationResult runReportGeneration(ReportGenerationRequest request) {
         List<Volatility> todayVolatility = volatilityQueryService.getTodayVolatility();
         if (todayVolatility.isEmpty()) {
@@ -51,10 +53,9 @@ public class VolatilityUseCase {
         }
 
         String reportDate = LocalDate.now().format(REPORT_DATE_FORMATTER);
-        redisService.setVolatilityReportJob(reportDate, "PENDING");
-
         for (Volatility v : todayVolatility) {
             String jobId = "VOLATILITY_" + reportDate + "_" + v.getStockCode();
+            redisService.setVolatilityReportJob(reportDate, v.getStockCode(), "PENDING");
             reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
                     .jobId(jobId)
                     .stockCode(v.getStockCode())
@@ -71,6 +72,7 @@ public class VolatilityUseCase {
     public void runSingleReportGeneration(SingleReportRequest request) {
         String reportDate = LocalDate.now().format(REPORT_DATE_FORMATTER);
         String jobId = "VOLATILITY_" + reportDate + "_" + request.getStockCode();
+        redisService.setVolatilityReportJob(reportDate, request.getStockCode(), "PENDING");
         reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
                 .jobId(jobId)
                 .stockCode(request.getStockCode())
@@ -84,7 +86,7 @@ public class VolatilityUseCase {
     public void handleReportCallback(ReportCallback request) {
         LocalDate reportDate = LocalDate.parse(request.getReportDate(), REPORT_DATE_FORMATTER);
         volatilityCommandService.updateReportUrl(request.getStockCode(), reportDate, request.getReportUrl());
-        redisService.setVolatilityReportJob(request.getReportDate(), "COMPLETED");
+        redisService.setVolatilityReportJob(request.getReportDate(), request.getStockCode(), "COMPLETED");
     }
 
     @Transactional(readOnly = true)

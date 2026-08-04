@@ -1,5 +1,7 @@
 package com.example.demo.domain.volatility.service;
 
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
+
 import java.time.LocalDate;
 import java.util.List;
 

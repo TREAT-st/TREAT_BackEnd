@@ -2,6 +2,7 @@ package com.example.demo.domain.volatility.service;
 
 import com.example.demo.common.config.JpaAuditingConfig;
 import com.example.demo.domain.volatility.entity.Volatility;
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import com.example.demo.domain.volatility.repository.VolatilityRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

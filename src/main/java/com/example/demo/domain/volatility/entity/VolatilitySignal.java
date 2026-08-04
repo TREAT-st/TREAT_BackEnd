@@ -1,4 +1,4 @@
-package com.example.demo.domain.volatility.service;
+package com.example.demo.domain.volatility.entity;
 
 import java.util.List;
 

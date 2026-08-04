@@ -1,6 +1,7 @@
 package com.example.demo.domain.volatility.service;
 
 import com.example.demo.domain.volatility.entity.Volatility;
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.example.demo.domain.volatility.repository.VolatilityRepository;
 import lombok.RequiredArgsConstructor;

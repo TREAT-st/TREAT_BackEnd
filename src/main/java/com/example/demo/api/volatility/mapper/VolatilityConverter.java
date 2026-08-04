@@ -6,7 +6,7 @@ import com.example.demo.api.volatility.dto.VolatilityResponseDto.ReportGeneratio
 import com.example.demo.api.volatility.dto.VolatilityResponseDto.VolatilityInfo;
 import com.example.demo.api.volatility.dto.VolatilityResponseDto.VolatilityListResponse;
 import com.example.demo.domain.volatility.entity.Volatility;
-import com.example.demo.domain.volatility.service.VolatilitySignal;
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
 
 import java.util.List;
 import java.util.stream.Collectors;

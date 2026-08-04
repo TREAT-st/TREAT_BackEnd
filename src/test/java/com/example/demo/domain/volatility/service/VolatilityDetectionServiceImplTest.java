@@ -2,6 +2,7 @@ package com.example.demo.domain.volatility.service;
 
 import com.example.demo.api.krx.dto.KrxOhlcvResponseDto;
 import com.example.demo.api.krx.service.KrxService;
+import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
