@@ -55,7 +55,7 @@ public class VolatilityController {
     }
 
     @Operation(summary = "특정 날짜의 변동성 종목 전체 조회", description = "특정 날짜에 생성된 변동성 종목 전체를 조회합니다. 날짜 입력 형식은 \"yyyy-mm-dd\"입니다.")
-    @GetMapping("/volatilty-by-date")
+    @GetMapping("/volatility-by-date")
     public ApiResponseDto<VolatilityListResponse> getAllVolatilityByDate(@RequestParam LocalDate date) {
         return ApiResponseDto.onSuccess(volatilityUseCase.getAllVolatilityByDate(date));
     }
