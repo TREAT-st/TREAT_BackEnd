@@ -26,4 +26,8 @@ public class Volatility extends BaseTimeEntity {
 
     @Column(name = "report_url")
     private String reportUrl;
+
+    public void updateReportUrl(String reportUrl) {
+        this.reportUrl = reportUrl;
+    }
 }

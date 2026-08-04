@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,5 +25,13 @@ public class VolatilityQueryServiceImpl implements VolatilityQueryService {
     @Override
     public List<Volatility> getAllVolatilityByCode(String stockCode) {
         return volatilityRepository.findAllByStockCodeOrderByCreatedDateDesc(stockCode);
+    }
+
+    @Override
+    public List<Volatility> getTodayVolatility() {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().plusDays(1).atStartOfDay();
+        return volatilityRepository
+                .findAllByCreatedDateGreaterThanEqualAndCreatedDateLessThanOrderByCreatedDateDesc(start, end);
     }
 }

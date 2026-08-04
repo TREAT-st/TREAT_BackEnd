@@ -11,6 +11,10 @@ public class VolatilityHandler extends GeneralException {
         super(baseErrorCode);
     }
 
+    public static VolatilityHandler volatilityNotFound() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_FOUND);
+    }
+
     public static VolatilityHandler krxLambdaInvokeError() {
         return new VolatilityHandler(VolatilityErrorStatus.KRX_LAMBDA_INVOKE_ERROR);
     }

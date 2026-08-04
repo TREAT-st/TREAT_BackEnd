@@ -58,6 +58,10 @@ krx:
   lambda:
     function-name: ${KRX_LAMBDA_FUNCTION_NAME:krxOhlcvFetcher}
 
+report:
+  lambda:
+    function-name: ${REPORT_LAMBDA_FUNCTION_NAME:CreateReportByStockCode}
+
 cloud:
   aws:
     region:

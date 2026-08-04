@@ -14,6 +14,33 @@ public class VolatilityResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class DetectedStock {
+        private String stockCode;
+        private String stockName;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DetectionResult {
+        private List<DetectedStock> stocks;
+        private int detectedCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReportGenerationResult {
+        private String status;
+        private int requestedCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class VolatilityInfo {
         private String stockCode;
         private String stockName;

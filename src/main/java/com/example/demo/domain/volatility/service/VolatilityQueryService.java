@@ -8,4 +8,5 @@ import java.util.List;
 public interface VolatilityQueryService {
     List<Volatility> getAllVolatilityByDate(LocalDateTime start, LocalDateTime end);
     List<Volatility> getAllVolatilityByCode(String stockCode);
+    List<Volatility> getTodayVolatility();
 }
