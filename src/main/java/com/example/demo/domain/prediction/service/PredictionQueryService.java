@@ -8,4 +8,6 @@ public interface PredictionQueryService {
     Prediction getByIdAndUser(Long predictionId, Long userId);
 
     Prediction getById(Long predictionId);
+
+    long countByUserId(Long userId);
 }

@@ -6,6 +6,7 @@ import com.example.demo.api.user.dto.UserResponseDto.*;
 import com.example.demo.api.user.mapper.UserConverter;
 import com.example.demo.api.user.service.UserUseCase;
 import com.example.demo.common.annotation.AuthUser;
+import com.example.demo.domain.prediction.service.PredictionQueryService;
 import com.example.demo.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
     private final UserUseCase userUseCase;
+    private final PredictionQueryService predictionQueryService;
 
     //  테스트용 api. 카카오 OAuth 쪽에서 진행하는게 맞음.
     @Operation(summary = "회원 가입", description = "사용자를 등록하고 포트폴리오를 자동 생성합니다.")
@@ -33,7 +35,8 @@ public class UserController {
     @Operation(summary = "사용자 정보 조회", description = "user의 정보를 조회합니다.")
     @GetMapping
     public ApiResponseDto<UserResponse> getUserAccountInfo(@AuthUser User user) {
-        return ApiResponseDto.onSuccess(UserConverter.toUserResponse(user));
+        long playCount = predictionQueryService.countByUserId(user.getId());
+        return ApiResponseDto.onSuccess(UserConverter.toUserResponse(user, playCount));
     }
 
     @Operation(summary = "사용자 정보 수정", description = "user의 정보를 수정합니다.")

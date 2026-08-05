@@ -34,7 +34,7 @@ public class UserConverter {
                 .build();
     }
 
-    public static UserResponse toUserResponse(User user) {
+    public static UserResponse toUserResponse(User user, long playCount) {
         return UserResponse.builder()
                 .userId(user.getId())
                 .kakaoEmail(user.getKakaoEmail())
@@ -47,6 +47,8 @@ public class UserConverter {
                 .accountNumber(user.getAccountNumber())
                 .status(user.getStatus())
                 .provider(user.getProvider())
+                .point(user.getPoint())
+                .playCount(playCount)
                 .build();
     }
 

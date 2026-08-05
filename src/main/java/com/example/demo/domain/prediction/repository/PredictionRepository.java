@@ -11,4 +11,7 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
 
     // 스케줄러: 만기 지난 PENDING 예측 채점 대상 조회
     List<Prediction> findByStatusAndMaturityAtBefore(PredictionStatus status, LocalDateTime now);
+
+    // 마이페이지: 사용자 예측 게임 플레이 횟수
+    long countByUserId(Long userId);
 }

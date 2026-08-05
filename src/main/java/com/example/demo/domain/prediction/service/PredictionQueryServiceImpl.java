@@ -29,4 +29,9 @@ public class PredictionQueryServiceImpl implements PredictionQueryService {
         }
         return prediction;
     }
+
+    @Override
+    public long countByUserId(Long userId) {
+        return predictionRepository.countByUserId(userId);
+    }
 }
