@@ -2,7 +2,9 @@ package com.example.demo.domain.volatility.util;
 
 import org.junit.jupiter.api.Test;
 
+import static com.example.demo.domain.volatility.util.VolatilityIndicatorCalculator.MIN_VALID_TRADING_DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
@@ -78,6 +80,26 @@ class VolatilityIndicatorCalculatorTest {
     }
 
     @Test
+    void percentileRank_NaN_혼합_시계열은_유효_관측치_기준으로_계산() {
+        // 유효 관측치 [1.0, 2.0] 중 2.0 → 1.0 (100th percentile)
+        assertThat(VolatilityIndicatorCalculator.percentileRank(new double[]{Double.NaN, 1.0, 2.0}, 2.0))
+                .isCloseTo(1.0, within(TOLERANCE));
+
+        // 유효 관측치 [1.0, 2.0, 3.0] 중 2.0 → 중간 순위
+        double expected = (1 + (1 + 1) / 2.0) / 3.0;
+        assertThat(VolatilityIndicatorCalculator.percentileRank(new double[]{Double.NaN, 1.0, 2.0, 3.0}, 2.0))
+                .isCloseTo(expected, within(TOLERANCE));
+    }
+
+    @Test
+    void percentileRank_유효_관측치_2개_미만이면_NaN() {
+        // NaN 제외 후 유효값 1개
+        assertThat(VolatilityIndicatorCalculator.percentileRank(new double[]{Double.NaN, 3.0}, 3.0)).isNaN();
+        // 전부 NaN
+        assertThat(VolatilityIndicatorCalculator.percentileRank(new double[]{Double.NaN, Double.NaN}, 1.0)).isNaN();
+    }
+
+    @Test
     void calculate_전체_스냅샷_라운드트립() {
         // 40일치 -> vol20 시계열이 2개 이상 나와 quantile이 정의됨
         double[] close = new double[40];
@@ -91,6 +113,42 @@ class VolatilityIndicatorCalculatorTest {
         assertThat(snapshot.dailyReturnPct()).isNotNaN();
         assertThat(snapshot.vol20Quantile()).isNotNaN();
         assertThat(snapshot.vol20Quantile()).isBetween(0.0, 1.0);
+    }
+
+    @Test
+    void calculate_20개_입력은_예외() {
+        double[] data = ascendingClose(20);
+        assertThatThrownBy(() ->
+                VolatilityIndicatorCalculator.calculate(data, data, data, uniformVolume(20, 1000.0)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void calculate_21개_입력은_예외() {
+        double[] data = ascendingClose(21);
+        assertThatThrownBy(() ->
+                VolatilityIndicatorCalculator.calculate(data, data, data, uniformVolume(21, 1000.0)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void calculate_22개_입력은_vol20Quantile이_유효() {
+        // MIN_VALID_TRADING_DAYS = 22: vol20Series 값 2개 → percentileRank 정의됨
+        assertThat(MIN_VALID_TRADING_DAYS).isEqualTo(22);
+        double[] data = ascendingClose(22);
+        VolatilityIndicatorCalculator.IndicatorSnapshot snapshot =
+                VolatilityIndicatorCalculator.calculate(data, data, data, uniformVolume(22, 1000.0));
+        assertThat(snapshot.vol20AnnualizedPct()).isNotNaN();
+        assertThat(snapshot.vol20Quantile()).isNotNaN();
+        assertThat(snapshot.vol20Quantile()).isBetween(0.0, 1.0);
+    }
+
+    private static double[] ascendingClose(int n) {
+        double[] close = new double[n];
+        for (int i = 0; i < n; i++) {
+            close[i] = i + 1.0;
+        }
+        return close;
     }
 
     private static double[] uniformVolume(int n, double value) {

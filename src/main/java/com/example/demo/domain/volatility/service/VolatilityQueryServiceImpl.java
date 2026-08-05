@@ -29,8 +29,9 @@ public class VolatilityQueryServiceImpl implements VolatilityQueryService {
 
     @Override
     public List<Volatility> getTodayVolatility() {
-        LocalDateTime start = LocalDate.now().atStartOfDay();
-        LocalDateTime end = LocalDate.now().plusDays(1).atStartOfDay();
+        LocalDate today = LocalDate.now();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
         return volatilityRepository
                 .findAllByCreatedDateGreaterThanEqualAndCreatedDateLessThanOrderByCreatedDateDesc(start, end);
     }

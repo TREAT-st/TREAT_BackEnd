@@ -10,8 +10,9 @@ public class VolatilityIndicatorCalculator {
     static final int ROLLING_WINDOW = 20;
     private static final double TRADING_DAYS_PER_YEAR = 252.0;
 
-    /** calculate()가 요구하는 최소 유효 거래일 수. 오케스트레이션 단계의 스킵 기준으로 재사용. */
-    public static final int MIN_VALID_TRADING_DAYS = ROLLING_WINDOW;
+    /** calculate()가 요구하는 최소 유효 거래일 수. 오케스트레이션 단계의 스킵 기준으로 재사용.
+     * ROLLING_WINDOW + 2: dailyReturns()가 n-1개를 생성하고, percentileRank()는 2개 이상 필요. */
+    public static final int MIN_VALID_TRADING_DAYS = ROLLING_WINDOW + 2;
 
     private VolatilityIndicatorCalculator() {
     }
@@ -28,9 +29,17 @@ public class VolatilityIndicatorCalculator {
     }
 
     public static IndicatorSnapshot calculate(double[] close, double[] high, double[] low, double[] volume) {
+        if (close == null || high == null || low == null || volume == null) {
+            throw new IllegalArgumentException("OHLCV 배열이 null입니다.");
+        }
         int n = close.length;
-        if (n < ROLLING_WINDOW) {
-            throw new IllegalArgumentException("최소 " + ROLLING_WINDOW + "개의 거래일 데이터가 필요합니다.");
+        if (n < MIN_VALID_TRADING_DAYS) {
+            throw new IllegalArgumentException("최소 " + MIN_VALID_TRADING_DAYS + "개의 거래일 데이터가 필요합니다.");
+        }
+        if (high.length != n || low.length != n || volume.length != n) {
+            throw new IllegalArgumentException(
+                    "OHLCV 배열 길이가 일치하지 않습니다. close=" + n
+                            + " high=" + high.length + " low=" + low.length + " volume=" + volume.length);
         }
 
         double[] returns = dailyReturns(close);
@@ -136,22 +145,27 @@ public class VolatilityIndicatorCalculator {
      * series 원소가 2개 미만이거나 latest가 NaN이면 순위가 정의되지 않아 NaN 반환.
      */
     static double percentileRank(double[] series, double latest) {
-        if (series.length < 2 || Double.isNaN(latest)) {
+        if (Double.isNaN(latest)) {
             return Double.NaN;
         }
         int less = 0;
         int equal = 0;
+        int validCount = 0;
         for (double v : series) {
             if (Double.isNaN(v)) {
                 continue;
             }
+            validCount++;
             if (v < latest) {
                 less++;
             } else if (v == latest) {
                 equal++;
             }
         }
+        if (validCount < 2) {
+            return Double.NaN;
+        }
         double avgRank = less + (equal + 1) / 2.0;
-        return avgRank / series.length;
+        return avgRank / validCount;
     }
 }

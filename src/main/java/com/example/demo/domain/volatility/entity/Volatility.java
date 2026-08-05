@@ -23,7 +23,7 @@ public class Volatility extends BaseTimeEntity {
     @Column(name = "stock_name", nullable = false, length = 50)
     private String stockName;
 
-    @Pattern(regexp = "\\d{8}")
+    @Pattern(regexp = "\\d{6}")
     @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 

@@ -56,14 +56,19 @@ public class VolatilityUseCase {
         for (Volatility v : todayVolatility) {
             String jobId = "VOLATILITY_" + reportDate + "_" + v.getStockCode();
             redisService.setVolatilityReportJob(reportDate, v.getStockCode(), "PENDING");
-            reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
-                    .jobId(jobId)
-                    .stockCode(v.getStockCode())
-                    .stockName(v.getStockName())
-                    .reportDate(reportDate)
-                    .triggerType("VOLATILITY")
-                    .gptModel(request.getGptModel())
-                    .build());
+            try {
+                reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
+                        .jobId(jobId)
+                        .stockCode(v.getStockCode())
+                        .stockName(v.getStockName())
+                        .reportDate(reportDate)
+                        .triggerType("VOLATILITY")
+                        .gptModel(request.getGptModel())
+                        .build());
+            } catch (Exception e) {
+                redisService.setVolatilityReportJob(reportDate, v.getStockCode(), "FAILED");
+                throw e;
+            }
         }
 
         return VolatilityConverter.toReportGenerationResult(todayVolatility.size(), true);
@@ -73,14 +78,19 @@ public class VolatilityUseCase {
         String reportDate = LocalDate.now().format(REPORT_DATE_FORMATTER);
         String jobId = "VOLATILITY_" + reportDate + "_" + request.getStockCode();
         redisService.setVolatilityReportJob(reportDate, request.getStockCode(), "PENDING");
-        reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
-                .jobId(jobId)
-                .stockCode(request.getStockCode())
-                .stockName(request.getStockName())
-                .reportDate(reportDate)
-                .triggerType("VOLATILITY")
-                .gptModel(request.getGptModel())
-                .build());
+        try {
+            reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
+                    .jobId(jobId)
+                    .stockCode(request.getStockCode())
+                    .stockName(request.getStockName())
+                    .reportDate(reportDate)
+                    .triggerType("VOLATILITY")
+                    .gptModel(request.getGptModel())
+                    .build());
+        } catch (Exception e) {
+            redisService.setVolatilityReportJob(reportDate, request.getStockCode(), "FAILED");
+            throw e;
+        }
     }
 
     public void handleReportCallback(ReportCallback request) {

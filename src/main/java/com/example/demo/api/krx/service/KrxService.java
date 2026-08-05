@@ -18,7 +18,7 @@ public class KrxService {
         try {
             KrxOhlcvResponseDto response = krxLambdaClient.invokeGetTopMarketCapOhlcv(topN);
 
-            if (response == null || response.getStocks() == null) {
+            if (response == null || response.getStocks() == null || response.getStocks().isEmpty()) {
                 log.error("KRX Lambda 응답이 비어있습니다. topN={}", topN);
                 throw VolatilityHandler.krxLambdaResponseEmpty();
             }

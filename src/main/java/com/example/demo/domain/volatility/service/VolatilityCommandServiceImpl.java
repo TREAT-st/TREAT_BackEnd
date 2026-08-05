@@ -24,8 +24,9 @@ public class VolatilityCommandServiceImpl implements VolatilityCommandService {
 
     @Override
     public void saveTopVolatilityStocks(List<VolatilitySignal> topSignals) {
-        LocalDateTime start = now().atStartOfDay();
-        LocalDateTime end = now().plusDays(1).atStartOfDay();
+        LocalDate today = now();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
         volatilityRepository.deleteAllByCreatedDateBetween(start, end);
 
         List<Volatility> volatilities = topSignals.stream()
