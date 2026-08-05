@@ -37,6 +37,7 @@ public class PredictionResponseDto {
         private PredictionStatus status;   // PENDING / CORRECT / WRONG
         private String myPredictionText;   // "3%미만 상승"
         private BigDecimal actualRate;     // 실제 등락률(%). PENDING이면 null
+        private String actualRateText;     // "2.6% 상승" 형태. PENDING이면 null
         private Integer earnedPoint;       // 지급 포인트. PENDING이면 null
         private String title;              // "예측 적중!" / "예측이 빗나갔어요..."
         private String subtitle;

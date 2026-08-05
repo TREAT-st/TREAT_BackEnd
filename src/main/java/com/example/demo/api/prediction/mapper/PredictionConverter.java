@@ -9,6 +9,7 @@ import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.user.entity.User;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -87,12 +88,22 @@ public class PredictionConverter {
                 .status(p.getStatus())
                 .myPredictionText(p.getTarget().getDescription())
                 .actualRate(p.getActualRate())
+                .actualRateText(pending ? null : toChangeRateText(p.getActualRate()))
                 .earnedPoint(p.getEarnedPoint())
                 .title(title)
                 .subtitle(subtitle)
                 .reasonHeader(pending ? null : (rose ? "왜 올랐을까?" : "왜 떨어졌을까?"))
                 .reasons(pending ? List.of() : dummyReasons())
                 .build();
+    }
+
+    private static String toChangeRateText(BigDecimal actualRate) {
+        if (actualRate == null) return null;
+        String abs = actualRate.abs().setScale(1, RoundingMode.HALF_UP).toPlainString() + "%";
+        int sign = actualRate.signum();
+        if (sign > 0) return abs + " 상승";
+        if (sign < 0) return abs + " 하락";
+        return "변동 없음";
     }
 
     // 2-C: 더미 원인 데이터
