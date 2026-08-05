@@ -1,6 +1,7 @@
 package com.example.demo.api.report.client;
 
 import com.example.demo.api.report.dto.ReportLambdaRequestDto;
+import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -29,18 +30,25 @@ public class ReportLambdaClient {
             payload = objectMapper.writeValueAsString(request);
             log.info("[ReportLambda] payload: {}", payload);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("리포트 Lambda 요청 페이로드 생성 실패", e);
+            log.error("리포트 Lambda 요청 페이로드 생성 실패. stockCode={}", request.getStockCode(), e);
+            throw VolatilityHandler.reportLambdaInvokeError();
         }
 
-        InvokeResponse response = lambdaClient.invoke(InvokeRequest.builder()
-                .functionName(functionName)
-                .payload(SdkBytes.fromUtf8String(payload))
-                .build());
+        InvokeResponse response;
+        try {
+            response = lambdaClient.invoke(InvokeRequest.builder()
+                    .functionName(functionName)
+                    .payload(SdkBytes.fromUtf8String(payload))
+                    .build());
+        } catch (Exception e) {
+            log.error("리포트 Lambda 호출 실패. stockCode={}", request.getStockCode(), e);
+            throw VolatilityHandler.reportLambdaInvokeError();
+        }
 
         if (response.functionError() != null) {
-            throw new IllegalStateException(
-                    "리포트 Lambda 실행 오류: " + response.functionError()
-                            + ", payload=" + response.payload().asUtf8String());
+            log.error("리포트 Lambda 실행 오류. stockCode={}, functionError={}, payload={}",
+                    request.getStockCode(), response.functionError(), response.payload().asUtf8String());
+            throw VolatilityHandler.reportLambdaInvokeError();
         }
     }
 }

@@ -9,23 +9,28 @@ import com.example.demo.api.volatility.mapper.VolatilityConverter;
 import com.example.demo.common.annotation.UseCase;
 import com.example.demo.common.service.RedisService;
 import com.example.demo.domain.volatility.entity.Volatility;
+import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
 import com.example.demo.domain.volatility.service.VolatilityDetectionService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
 
+@Slf4j
 @UseCase
 @Transactional
 @RequiredArgsConstructor
@@ -49,52 +54,55 @@ public class VolatilityUseCase {
     public ReportGenerationResult runReportGeneration(ReportGenerationRequest request) {
         List<Volatility> todayVolatility = volatilityQueryService.getTodayVolatility();
         if (todayVolatility.isEmpty()) {
-            throw new IllegalStateException("오늘 탐지된 변동성 종목이 없습니다. 먼저 /detect를 실행하세요.");
+            throw VolatilityHandler.volatilityNotDetectedToday();
         }
 
         String reportDate = LocalDate.now().format(REPORT_DATE_FORMATTER);
+
+        // 한 종목이 실패해도 나머지 종목의 리포트 생성은 계속 요청한다.
+        List<String> failedStockCodes = new ArrayList<>();
         for (Volatility v : todayVolatility) {
-            String jobId = "VOLATILITY_" + reportDate + "_" + v.getStockCode();
-            redisService.setVolatilityReportJob(reportDate, v.getStockCode(), "PENDING");
             try {
-                reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
-                        .jobId(jobId)
-                        .stockCode(v.getStockCode())
-                        .stockName(v.getStockName())
-                        .reportDate(reportDate)
-                        .triggerType("VOLATILITY")
-                        .gptModel(request.getGptModel())
-                        .build());
+                invokeReportJob(reportDate, v.getStockCode(), v.getStockName(), request.getGptModel());
             } catch (Exception e) {
-                redisService.setVolatilityReportJob(reportDate, v.getStockCode(), "FAILED");
-                throw e;
+                log.error("리포트 생성 요청 실패, 다음 종목으로 진행. stockCode={}", v.getStockCode(), e);
+                failedStockCodes.add(v.getStockCode());
             }
         }
 
-        return VolatilityConverter.toReportGenerationResult(todayVolatility.size(), true);
+        return VolatilityConverter.toReportGenerationResult(todayVolatility.size(), failedStockCodes);
     }
 
     public void runSingleReportGeneration(SingleReportRequest request) {
         String reportDate = LocalDate.now().format(REPORT_DATE_FORMATTER);
-        String jobId = "VOLATILITY_" + reportDate + "_" + request.getStockCode();
-        redisService.setVolatilityReportJob(reportDate, request.getStockCode(), "PENDING");
+        invokeReportJob(reportDate, request.getStockCode(), request.getStockName(), request.getGptModel());
+    }
+
+    private void invokeReportJob(String reportDate, String stockCode, String stockName, String gptModel) {
+        String jobId = "VOLATILITY_" + reportDate + "_" + stockCode;
+        redisService.setVolatilityReportJob(reportDate, stockCode, "PENDING");
         try {
             reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
                     .jobId(jobId)
-                    .stockCode(request.getStockCode())
-                    .stockName(request.getStockName())
+                    .stockCode(stockCode)
+                    .stockName(stockName)
                     .reportDate(reportDate)
                     .triggerType("VOLATILITY")
-                    .gptModel(request.getGptModel())
+                    .gptModel(gptModel)
                     .build());
         } catch (Exception e) {
-            redisService.setVolatilityReportJob(reportDate, request.getStockCode(), "FAILED");
+            redisService.setVolatilityReportJob(reportDate, stockCode, "FAILED");
             throw e;
         }
     }
 
     public void handleReportCallback(ReportCallback request) {
-        LocalDate reportDate = LocalDate.parse(request.getReportDate(), REPORT_DATE_FORMATTER);
+        LocalDate reportDate;
+        try {
+            reportDate = LocalDate.parse(request.getReportDate(), REPORT_DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            throw VolatilityHandler.reportCallbackInvalidRequest();
+        }
         volatilityCommandService.updateReportUrl(request.getStockCode(), reportDate, request.getReportUrl());
         redisService.setVolatilityReportJob(request.getReportDate(), request.getStockCode(), "COMPLETED");
     }

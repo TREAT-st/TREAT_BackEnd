@@ -26,10 +26,23 @@ public class VolatilityConverter {
                 .build();
     }
 
-    public static ReportGenerationResult toReportGenerationResult(int requestedCount, boolean success) {
+    public static ReportGenerationResult toReportGenerationResult(int requestedCount, List<String> failedStockCodes) {
+        int failedCount = failedStockCodes.size();
+        String status;
+        if (failedCount == 0) {
+            status = "SUCCESS";
+        } else if (failedCount == requestedCount) {
+            status = "FAILURE";
+        } else {
+            status = "PARTIAL_SUCCESS";
+        }
+
         return ReportGenerationResult.builder()
-                .status(success ? "SUCCESS" : "FAILURE")
+                .status(status)
                 .requestedCount(requestedCount)
+                .successCount(requestedCount - failedCount)
+                .failedCount(failedCount)
+                .failedStockCodes(failedStockCodes)
                 .build();
     }
 

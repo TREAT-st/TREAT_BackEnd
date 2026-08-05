@@ -63,11 +63,25 @@ class VolatilityCommandServiceImplTest {
     }
 
     @Test
-    void 같은_종목이_다시_선정되면_새_row로_쌓인다() {
+    void 같은_날_다시_실행하면_오늘_기록을_교체한다() {
+        // 탐지는 하루 한 번이 기준이므로 재실행은 누적이 아니라 교체다(stock_code 중복 방지).
         volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")));
         volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")));
 
-        assertThat(volatilityRepository.findAllByStockCodeOrderByCreatedDateDesc("005930")).hasSize(2);
+        assertThat(volatilityRepository.findAllByStockCodeOrderByCreatedDateDesc("005930")).hasSize(1);
+    }
+
+    @Test
+    void 재실행_시_이전_선정_종목은_남지_않는다() {
+        volatilityCommandService.saveTopVolatilityStocks(List.of(
+                signal("005930", "삼성전자"),
+                signal("000660", "SK하이닉스")
+        ));
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("035420", "NAVER")));
+
+        assertThat(volatilityRepository.findAll())
+                .extracting(Volatility::getStockCode)
+                .containsExactly("035420");
     }
 
     @Test

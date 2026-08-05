@@ -61,6 +61,8 @@ krx:
 report:
   lambda:
     function-name: ${REPORT_LAMBDA_FUNCTION_NAME:CreateReportByStockCode}
+  callback:
+    secret: ${REPORT_CALLBACK_SECRET}
 
 cloud:
   aws:

@@ -22,4 +22,20 @@ public class VolatilityHandler extends GeneralException {
     public static VolatilityHandler krxLambdaResponseEmpty() {
         return new VolatilityHandler(VolatilityErrorStatus.KRX_LAMBDA_RESPONSE_EMPTY);
     }
+
+    public static VolatilityHandler volatilityNotDetectedToday() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_DETECTED_TODAY);
+    }
+
+    public static VolatilityHandler reportLambdaInvokeError() {
+        return new VolatilityHandler(VolatilityErrorStatus.REPORT_LAMBDA_INVOKE_ERROR);
+    }
+
+    public static VolatilityHandler reportCallbackUnauthorized() {
+        return new VolatilityHandler(VolatilityErrorStatus.REPORT_CALLBACK_UNAUTHORIZED);
+    }
+
+    public static VolatilityHandler reportCallbackInvalidRequest() {
+        return new VolatilityHandler(VolatilityErrorStatus.REPORT_CALLBACK_INVALID_REQUEST);
+    }
 }
