@@ -14,6 +14,6 @@ public enum PredictionDuration {
     TWO_WEEK("2주일", 14, 1);
 
     private final String description;
-    private final int days;    // 만기까지 일수
-    private final int weight;  // duration 짧을수록 가중치 ↑
+    private final int days;   // 제출일 기준 캘린더 일수
+    private final int weight; // duration 짧을수록 가중치 ↑
 }

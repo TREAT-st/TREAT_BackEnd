@@ -9,12 +9,30 @@ import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.user.entity.User;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 public class PredictionConverter {
 
     private static final int BASE_POINT = 1;
+    private static final LocalTime MARKET_CLOSE = LocalTime.of(15, 30);
+
+    /**
+     * 제출일 기준 N 캘린더 일 뒤 15:30을 만기로 설정.
+     * 만기일이 토요일이면 -1일(금), 일요일이면 -2일(금)로 당김.
+     */
+    private static LocalDateTime calcMaturityAt(int days) {
+        LocalDate date = LocalDate.now().plusDays(days);
+        if (date.getDayOfWeek() == DayOfWeek.SATURDAY) {
+            date = date.minusDays(1);
+        } else if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            date = date.minusDays(2);
+        }
+        return date.atTime(MARKET_CLOSE);
+    }
 
     /** 포인트 = 기본점수 × duration 가중치 × target 가중치 (문구: 목표치↑, duration↓ 일수록 高) */
     public static int calcPossiblePoint(PredictionDuration duration, PredictionTarget target) {
@@ -33,7 +51,7 @@ public class PredictionConverter {
                 .status(PredictionStatus.PENDING)
                 .possiblePoint(possiblePoint)
                 .basePrice(basePrice)
-                .maturityAt(LocalDateTime.now().plusDays(duration.getDays()))
+                .maturityAt(calcMaturityAt(duration.getDays()))
                 .build();
     }
 

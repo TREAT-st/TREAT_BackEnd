@@ -5,6 +5,7 @@ import com.example.demo.api.prediction.dto.PredictionRequestDto.CreatePrediction
 import com.example.demo.api.prediction.dto.PredictionRequestDto.GradePrediction;
 import com.example.demo.api.prediction.dto.PredictionResponseDto.CreatePredictionResult;
 import com.example.demo.api.prediction.dto.PredictionResponseDto.PredictionResult;
+import com.example.demo.api.prediction.scheduler.PredictionGradingScheduler;
 import com.example.demo.api.prediction.service.PredictionUseCase;
 import com.example.demo.common.annotation.AuthUser;
 import com.example.demo.domain.user.entity.User;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class PredictionController {
 
     private final PredictionUseCase predictionUseCase;
+    private final PredictionGradingScheduler predictionGradingScheduler;
 
     @Operation(summary = "주가 예측 제출",
             description = "종목/예측기간/상승폭을 받아 예측을 등록하고 획득 가능 포인트를 반환합니다. (결과는 만기 후 채점)")
@@ -51,5 +53,13 @@ public class PredictionController {
             @Valid @RequestBody GradePrediction request) {
         return ApiResponseDto.onSuccess(
                 predictionUseCase.gradeManually(user, predictionId, request.getMaturityPrice()));
+    }
+
+    @Operation(summary = "[데모/테스트] 스케줄러 수동 실행",
+            description = "만기 도래한 PENDING 예측을 즉시 일괄 채점합니다. 실서비스에서는 평일 16:30 자동 실행됩니다.")
+    @PostMapping("/scheduler/run")
+    public ApiResponseDto<String> runScheduler() {
+        predictionGradingScheduler.gradeMaturedPredictions();
+        return ApiResponseDto.onSuccess("스케줄러 실행 완료");
     }
 }
