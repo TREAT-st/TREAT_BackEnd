@@ -59,17 +59,4 @@ public class RedisService {
         redisTemplate.delete(AUTH_CODE_PREFIX + code);
     }
 
-    // FOR 변동성 리포트 생성 Job 상태 추적
-    private static final String VOLATILITY_REPORT_JOB_PREFIX = "volatility:report:job:";
-
-    public void setVolatilityReportJob(String reportDate, String stockCode, String status) {
-        ValueOperations<String, String> values = redisTemplate.opsForValue();
-        values.set(VOLATILITY_REPORT_JOB_PREFIX + reportDate + ":" + stockCode, status, Duration.ofHours(48));
-    }
-
-    public String getVolatilityReportJob(String reportDate, String stockCode) {
-        ValueOperations<String, String> values = redisTemplate.opsForValue();
-        return values.get(VOLATILITY_REPORT_JOB_PREFIX + reportDate + ":" + stockCode);
-    }
-
 }

@@ -56,8 +56,10 @@ public class VolatilityController {
         return ApiResponseDto.onSuccess(null);
     }
 
-    @Operation(summary = "리포트 생성 완료 콜백", description = "ECS가 리포트 생성 완료 후 reportUrl을 전달합니다." +
-            "테스트에서는 이 api를 실행해야 S3에 생성 및 저장된 리포트가 DB에 저장됩니다.<br>" + "형식은 종목 코드, 생성 일자(파일명의 일자, yyyymmdd), S3 URL입니다.")
+    @Operation(summary = "리포트 생성 완료 콜백", description = "ECS가 리포트 생성 완료 후 reportUrl을 전달합니다. " +
+            "테스트에서는 이 api를 실행해야 S3에 생성 및 저장된 리포트가 DB에 저장됩니다.<br>" +
+            "형식은 종목 코드, 생성 일자(파일명의 일자, yyyymmdd), S3 URL입니다.<br>" +
+            "callback-secret은 문서의 REPORT_CALLBACK_SECRET 환경 변수 넣어주면 됩니다.")
     @PatchMapping(value = "/report/callback", consumes = APPLICATION_JSON_VALUE)
     public ApiResponseDto<Void> reportCallback(
             @RequestHeader(value = CALLBACK_SECRET_HEADER, required = false) String secret,

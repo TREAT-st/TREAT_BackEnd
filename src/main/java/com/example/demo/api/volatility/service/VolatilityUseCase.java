@@ -7,7 +7,6 @@ import com.example.demo.api.volatility.dto.VolatilityResponseDto.ReportGeneratio
 import com.example.demo.api.volatility.dto.VolatilityResponseDto.VolatilityListResponse;
 import com.example.demo.api.volatility.mapper.VolatilityConverter;
 import com.example.demo.common.annotation.UseCase;
-import com.example.demo.common.service.RedisService;
 import com.example.demo.domain.volatility.entity.Volatility;
 import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
@@ -39,7 +38,6 @@ public class VolatilityUseCase {
     private final VolatilityDetectionService volatilityDetectionService;
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
-    private final RedisService redisService;
 
     private static final DateTimeFormatter REPORT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -80,20 +78,14 @@ public class VolatilityUseCase {
 
     private void invokeReportJob(String reportDate, String stockCode, String stockName, String gptModel) {
         String jobId = "VOLATILITY_" + reportDate + "_" + stockCode;
-        redisService.setVolatilityReportJob(reportDate, stockCode, "PENDING");
-        try {
-            reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
-                    .jobId(jobId)
-                    .stockCode(stockCode)
-                    .stockName(stockName)
-                    .reportDate(reportDate)
-                    .triggerType("VOLATILITY")
-                    .gptModel(gptModel)
-                    .build());
-        } catch (Exception e) {
-            redisService.setVolatilityReportJob(reportDate, stockCode, "FAILED");
-            throw e;
-        }
+        reportLambdaClient.invokeCreateReport(ReportLambdaRequestDto.builder()
+                .jobId(jobId)
+                .stockCode(stockCode)
+                .stockName(stockName)
+                .reportDate(reportDate)
+                .triggerType("VOLATILITY")
+                .gptModel(gptModel)
+                .build());
     }
 
     public void handleReportCallback(ReportCallback request) {
@@ -104,7 +96,6 @@ public class VolatilityUseCase {
             throw VolatilityHandler.reportCallbackInvalidRequest();
         }
         volatilityCommandService.updateReportUrl(request.getStockCode(), reportDate, request.getReportUrl());
-        redisService.setVolatilityReportJob(request.getReportDate(), request.getStockCode(), "COMPLETED");
     }
 
     @Transactional(readOnly = true)
