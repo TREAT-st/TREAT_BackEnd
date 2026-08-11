@@ -2,7 +2,7 @@ package com.example.demo.api.kis.service;
 
 import com.example.demo.api.kis.client.KisFeignClient;
 import com.example.demo.api.kis.dto.KisResponseDto;
-import com.example.demo.domain.stock.exception.StockHandler;
+import com.example.demo.api.kis.exception.KisHandler;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,18 +42,18 @@ public class KisService {
 
             if (response == null) {
                 log.error("KIS API 응답이 비어있습니다. stockCode={}", stockCode);
-                throw StockHandler.kisApiError();
+                throw KisHandler.kisApiError();
             }
             if (!"0".equals(response.getRtCd())) {
                 log.error("KIS API 응답 오류. rt_cd={}, msg={}", response.getRtCd(), response.getMsg1());
-                throw StockHandler.kisApiError();
+                throw KisHandler.kisApiError();
             }
 
             return response;
 
         } catch (FeignException e) {
             log.error("KIS API 호출 실패. status={}, stockCode={}", e.status(), stockCode);
-            throw StockHandler.kisApiError();
+            throw KisHandler.kisApiError();
         }
     }
 }

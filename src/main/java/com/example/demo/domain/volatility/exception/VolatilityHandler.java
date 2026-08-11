@@ -15,14 +15,6 @@ public class VolatilityHandler extends GeneralException {
         return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_FOUND);
     }
 
-    public static VolatilityHandler krxLambdaInvokeError() {
-        return new VolatilityHandler(VolatilityErrorStatus.KRX_LAMBDA_INVOKE_ERROR);
-    }
-
-    public static VolatilityHandler krxLambdaResponseEmpty() {
-        return new VolatilityHandler(VolatilityErrorStatus.KRX_LAMBDA_RESPONSE_EMPTY);
-    }
-
     public static VolatilityHandler volatilityNotDetectedToday() {
         return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_DETECTED_TODAY);
     }

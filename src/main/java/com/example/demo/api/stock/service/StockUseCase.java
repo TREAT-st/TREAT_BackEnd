@@ -1,6 +1,7 @@
 package com.example.demo.api.stock.service;
 
 import com.example.demo.api.kis.dto.KisResponseDto;
+import com.example.demo.api.kis.exception.KisHandler;
 import com.example.demo.api.kis.service.KisService;
 import com.example.demo.api.stock.dto.StockResponseDto.*;
 import com.example.demo.api.stock.dto.StockSyncResultDto;
@@ -107,7 +108,7 @@ public class StockUseCase {
             }
         }
 
-        throw StockHandler.stockPriceResponseEmpty();
+        throw KisHandler.kisResponseEmpty();
     }
 
     @Transactional(readOnly = true)

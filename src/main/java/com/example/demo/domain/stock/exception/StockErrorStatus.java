@@ -14,17 +14,13 @@ import java.util.Objects;
 @AllArgsConstructor
 public enum StockErrorStatus implements BaseErrorCode {
 
-    //  Entity Stock(4350~4399)
-    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4350, "stock을 찾지 못 했습니다."),
-    STOCK_ALREADY_EXISTS(HttpStatus.CONFLICT, 4351, "이미 등록된 stock입니다."),
-    STOCK_PRICE_NOT_AVAILABLE(HttpStatus.BAD_GATEWAY, 4352, "시가/종가 데이터가 없습니다. 공휴일이거나 거래 정지 종목일 수 있습니다."),
-    STOCK_PRICE_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4353, "KIS API 응답에 데이터가 없습니다."),
-    KIS_API_ERROR(HttpStatus.BAD_GATEWAY, 4354, "KIS API 호출에 실패했습니다."),
-    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4355, "S3 파일 처리 중 오류가 발생했습니다."),
-    INVALID_FILE(HttpStatus.BAD_REQUEST, 4356, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
-    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, 4357, "파일의 크기가 너무 큽니다."),
-    STOCK_CODE_ERROR(HttpStatus.BAD_REQUEST, 4358, "유효하지 않은 종목 코드 형식입니다."),
-    STOCK_IS_EMPTY(HttpStatus.NOT_FOUND, 4359, "종목 정보가 비어있습니다.");
+    //  Entity Stock(4250~4299)
+    //  KIS 연동 오류는 KisErrorStatus(4400~4449)로 분리했다.
+    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "stock을 찾지 못 했습니다."),
+    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다."),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, 4252, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
+    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, 4253, "파일의 크기가 너무 큽니다."),
+    STOCK_IS_EMPTY(HttpStatus.NOT_FOUND, 4254, "종목 정보가 비어있습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

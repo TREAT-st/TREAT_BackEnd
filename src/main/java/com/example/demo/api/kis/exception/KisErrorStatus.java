@@ -1,4 +1,4 @@
-package com.example.demo.domain.volatility.exception;
+package com.example.demo.api.kis.exception;
 
 import com.example.demo.common.annotation.ExplainError;
 import com.example.demo.common.exception.BaseErrorCode;
@@ -12,17 +12,12 @@ import java.util.Objects;
 
 @Getter
 @AllArgsConstructor
-public enum VolatilityErrorStatus implements BaseErrorCode {
+public enum KisErrorStatus implements BaseErrorCode {
 
-    // Entity Volatility(4300~4349)
-    // KRX 연동 오류는 KrxErrorStatus(4450~4499)로 분리했다.
-    VOLATILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 4300, "volatility를 찾지 못했습니다."),
-    @ExplainError("오늘 /detect를 실행하지 않아 리포트를 생성할 대상 종목이 없습니다.")
-    VOLATILITY_NOT_DETECTED_TODAY(HttpStatus.BAD_REQUEST, 4301, "오늘 탐지된 변동성 종목이 없습니다. 먼저 변동성 탐지를 실행해주세요."),
-    REPORT_LAMBDA_INVOKE_ERROR(HttpStatus.BAD_GATEWAY, 4302, "리포트 생성 Lambda 호출에 실패했습니다."),
-    @ExplainError("콜백 시크릿 헤더(X-Callback-Secret)가 없거나 일치하지 않습니다.")
-    REPORT_CALLBACK_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 4303, "리포트 콜백 인증에 실패했습니다."),
-    REPORT_CALLBACK_INVALID_REQUEST(HttpStatus.BAD_REQUEST, 4304, "리포트 콜백 요청 형식이 올바르지 않습니다.");
+    // KIS 연동(4400~4449)
+    KIS_API_ERROR(HttpStatus.BAD_GATEWAY, 4400, "KIS API 호출에 실패했습니다."),
+    @ExplainError("KIS가 응답은 했으나 조회 결과가 비어 있습니다. 휴장일이거나 거래 정지 종목일 수 있습니다.")
+    KIS_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4401, "KIS API 응답에 데이터가 없습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

@@ -5,7 +5,7 @@ import com.example.demo.api.kis.dto.KisTokenRequestDto;
 import com.example.demo.api.kis.dto.KisTokenResponseDto;
 import com.example.demo.common.service.RedisService;
 import com.example.demo.common.util.RedisUtil;
-import com.example.demo.domain.stock.exception.StockHandler;
+import com.example.demo.api.kis.exception.KisHandler;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +48,7 @@ public class KisTokenService {
 
             if (tokenResponse == null || tokenResponse.getAccessToken() == null
                     || tokenResponse.getAccessToken().isBlank()) {
-                throw StockHandler.kisApiError();
+                throw KisHandler.kisApiError();
             }
 
             String token = tokenResponse.getAccessToken();
@@ -60,7 +60,7 @@ public class KisTokenService {
 
         } catch (FeignException e) {
             log.error("KIS 토큰 발급 실패. status={}", e.status());
-            throw StockHandler.kisApiError();
+            throw KisHandler.kisApiError();
         }
     }
 }
