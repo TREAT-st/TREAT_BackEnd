@@ -11,6 +11,8 @@ import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.example.demo.common.consts.StaticVariable.*;
+
 public class VolatilityConverter {
 
     public static DetectionResult toDetectionResult(List<VolatilitySignal> signals) {
@@ -30,11 +32,11 @@ public class VolatilityConverter {
         int failedCount = failedStockCodes.size();
         String status;
         if (failedCount == 0) {
-            status = "SUCCESS";
+            status = REPORT_GENERATION_SUCCESS;
         } else if (failedCount == requestedCount) {
-            status = "FAILURE";
+            status = REPORT_GENERATION_FAILURE;
         } else {
-            status = "PARTIAL_SUCCESS";
+            status = REPORT_GENERATION_PARTIAL_SUCCESS;
         }
 
         return ReportGenerationResult.builder()
