@@ -74,11 +74,8 @@ public class StockUseCase {
 
     @Transactional
     public StockPriceResponse getLatestStockPriceByStockCode(String stockCode) {
-        Stock stock = stockQueryService.getStockByCode(stockCode);
-
-        if (stock == null) {
-            throw StockHandler.notFound();
-        }
+        // 존재하지 않는 종목이면 getStockByCode가 StockHandler.notFound()를 던진다.
+        stockQueryService.getStockByCode(stockCode);
 
         for (int i = 1; i <= 10; i++) {
             LocalDate targetDate = LocalDate.now(SEOUL_ZONE).minusDays(i);

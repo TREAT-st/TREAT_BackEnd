@@ -42,7 +42,7 @@ public class KisService {
 
             if (response == null) {
                 log.error("KIS API 응답이 비어있습니다. stockCode={}", stockCode);
-                throw KisHandler.kisApiError();
+                throw KisHandler.kisResponseEmpty();
             }
             if (!"0".equals(response.getRtCd())) {
                 log.error("KIS API 응답 오류. rt_cd={}, msg={}", response.getRtCd(), response.getMsg1());

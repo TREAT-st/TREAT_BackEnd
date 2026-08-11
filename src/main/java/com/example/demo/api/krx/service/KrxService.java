@@ -14,22 +14,27 @@ public class KrxService {
 
     private final KrxLambdaClient krxLambdaClient;
 
+    /**
+     * 호출 실패·실행 오류·응답 파싱 실패는 {@link KrxLambdaClient}가 각각의 도메인 예외로 변환해 던진다.
+     * 여기서는 "응답은 왔지만 종목이 비어 있는" 경우만 판정한다.
+     */
     public KrxOhlcvResponseDto getTopMarketCapOhlcv(int topN) {
-        try {
-            KrxOhlcvResponseDto response = krxLambdaClient.invokeGetTopMarketCapOhlcv(topN);
+        KrxOhlcvResponseDto response = krxLambdaClient.invokeGetTopMarketCapOhlcv(topN);
 
-            if (response == null || response.getStocks() == null || response.getStocks().isEmpty()) {
-                log.error("KRX Lambda 응답이 비어있습니다. topN={}", topN);
-                throw KrxHandler.krxLambdaResponseEmpty();
-            }
-
-            return response;
-
-        } catch (KrxHandler e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("KRX Lambda 호출 실패. topN={}", topN, e);
-            throw KrxHandler.krxLambdaInvokeError();
+        if (response == null || response.getStocks() == null || response.getStocks().isEmpty()) {
+            log.error("KRX Lambda 응답이 비어있습니다. topN={}", topN);
+            throw KrxHandler.krxLambdaResponseEmpty();
         }
+
+        // Lambda가 종목별로 실패를 격리하고 errors에 사유를 담아 보낸다. 조용히 누락되지 않도록 남긴다.
+        if (response.getErrors() != null && !response.getErrors().isEmpty()) {
+            log.warn("KRX Lambda가 {}건을 제외했습니다. 수신 {}건 / 요청 {}건. 사유={}",
+                    response.getErrors().size(), response.getStocks().size(), topN,
+                    response.getErrors().stream()
+                            .map(e -> e.getStockCode() + ":" + e.getReason())
+                            .toList());
+        }
+
+        return response;
     }
 }

@@ -38,6 +38,13 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
                 log.warn("변동성 분석 실패, 종목 스킵. stockCode={}, reason={}", stock.getStockCode(), e.getMessage());
             }
         }
+
+        int received = response.getStocks().size();
+        int skipped = received - signals.size();
+        if (skipped > 0) {
+            log.warn("변동성 분석 스킵 {}건 / 수신 {}건 (요청 {}건)", skipped, received, topN);
+        }
+
         return signals;
     }
 
