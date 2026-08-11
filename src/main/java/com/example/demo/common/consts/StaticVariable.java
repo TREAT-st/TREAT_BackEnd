@@ -24,6 +24,9 @@ public class StaticVariable {
     public static final String XLSX_CONTENT_TYPE =
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static final String KOSPI200_FILE_KEY = "kospi200.xlsx";
+    public static final String REPORT_GENERATION_SUCCESS = "success";
+    public static final String REPORT_GENERATION_FAILURE = "failure";
+    public static final String REPORT_GENERATION_PARTIAL_SUCCESS = "PARTIAL_SUCCESS";
 
     //OAuth2
     public static final String KAKAO_OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization/kakao";

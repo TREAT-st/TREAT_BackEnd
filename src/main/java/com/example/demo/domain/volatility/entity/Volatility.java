@@ -2,6 +2,8 @@ package com.example.demo.domain.volatility.entity;
 
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -21,9 +23,14 @@ public class Volatility extends BaseTimeEntity {
     @Column(name = "stock_name", nullable = false, length = 50)
     private String stockName;
 
+    @Pattern(regexp = "\\d{6}")
     @Column(name = "stock_code", nullable = false, length = 20)
     private String stockCode;
 
     @Column(name = "report_url")
     private String reportUrl;
+
+    public void updateReportUrl(String reportUrl) {
+        this.reportUrl = reportUrl;
+    }
 }

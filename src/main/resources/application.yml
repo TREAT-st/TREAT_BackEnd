@@ -54,6 +54,16 @@ kis:
   app-key: ${KIS_APP_KEY}
   app-secret: ${KIS_APP_SECRET}
 
+krx:
+  lambda:
+    function-name: ${KRX_LAMBDA_FUNCTION_NAME:krxOhlcvFetcher}
+
+report:
+  lambda:
+    function-name: ${REPORT_LAMBDA_FUNCTION_NAME:CreateReportByStockCode}
+  callback:
+    secret: ${REPORT_CALLBACK_SECRET}
+
 cloud:
   aws:
     region:

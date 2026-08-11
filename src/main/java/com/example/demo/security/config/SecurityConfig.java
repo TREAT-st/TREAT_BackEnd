@@ -65,6 +65,8 @@ public class SecurityConfig {
                                 "/api/v1/test/health-check"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
+                        // S3 이벤트로 트리거되는 Lambda가 호출하는 콜백. JWT 대신 X-Callback-Secret 헤더로 검증한다.
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/volatility/report/callback").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo

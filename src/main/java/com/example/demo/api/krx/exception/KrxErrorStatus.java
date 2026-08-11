@@ -1,4 +1,4 @@
-package com.example.demo.domain.stock.exception;
+package com.example.demo.api.krx.exception;
 
 import com.example.demo.common.annotation.ExplainError;
 import com.example.demo.common.exception.BaseErrorCode;
@@ -12,15 +12,17 @@ import java.util.Objects;
 
 @Getter
 @AllArgsConstructor
-public enum StockErrorStatus implements BaseErrorCode {
+public enum KrxErrorStatus implements BaseErrorCode {
 
-    //  Entity Stock(4250~4299)
-    //  KIS 연동 오류는 KisErrorStatus(4400~4449)로 분리했다.
-    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "stock을 찾지 못 했습니다."),
-    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다."),
-    INVALID_FILE(HttpStatus.BAD_REQUEST, 4252, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
-    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, 4253, "파일의 크기가 너무 큽니다."),
-    STOCK_IS_EMPTY(HttpStatus.NOT_FOUND, 4254, "종목 정보가 비어있습니다.");
+    // KRX 연동(4450~4499)
+    @ExplainError("Lambda 호출 자체가 실패했습니다. 네트워크·IAM 권한·스로틀링 등을 확인하세요.")
+    KRX_LAMBDA_INVOKE_ERROR(HttpStatus.BAD_GATEWAY, 4450, "KRX 종목 조회 Lambda 호출에 실패했습니다."),
+    @ExplainError("Lambda는 호출됐으나 조회된 종목이 없습니다. 휴장일이거나 Lambda 내부 필터링 결과가 비어 있을 수 있습니다.")
+    KRX_LAMBDA_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4451, "KRX 종목 조회 Lambda 응답이 비어있습니다."),
+    @ExplainError("Lambda는 호출됐으나 함수 내부에서 예외가 발생했습니다. Lambda 로그를 확인하세요.")
+    KRX_LAMBDA_EXECUTION_ERROR(HttpStatus.BAD_GATEWAY, 4452, "KRX 종목 조회 Lambda 실행 중 오류가 발생했습니다."),
+    @ExplainError("Lambda 응답 형식이 KrxOhlcvResponseDto와 맞지 않습니다. 양쪽 계약을 확인하세요.")
+    KRX_LAMBDA_RESPONSE_PARSE_ERROR(HttpStatus.BAD_GATEWAY, 4453, "KRX 종목 조회 Lambda 응답을 해석하지 못했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
@@ -52,4 +54,3 @@ public enum StockErrorStatus implements BaseErrorCode {
         return Objects.nonNull(annotation) ? annotation.value() : this.getMessage();
     }
 }
-

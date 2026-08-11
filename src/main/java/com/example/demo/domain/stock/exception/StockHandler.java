@@ -13,32 +13,12 @@ public class StockHandler extends GeneralException {
         return new StockHandler(StockErrorStatus.STOCK_NOT_FOUND);
     }
 
-    public static StockHandler stockAlreadyExists() {
-        return new StockHandler(StockErrorStatus.STOCK_ALREADY_EXISTS);
-    }
-
-    public static StockHandler stockPriceNotAvailable() {
-        return new StockHandler(StockErrorStatus.STOCK_PRICE_NOT_AVAILABLE);
-    }
-
-    public static StockHandler stockPriceResponseEmpty() {
-        return new StockHandler(StockErrorStatus.STOCK_PRICE_RESPONSE_EMPTY);
-    }
-
-    public static StockHandler kisApiError() {
-        return new StockHandler(StockErrorStatus.KIS_API_ERROR);
-    }
-
     public static StockHandler s3FileIoError() {
         return new StockHandler(StockErrorStatus.S3_FILE_IO_ERROR);
     }
 
     public static StockHandler invalidFile() {
         return new StockHandler(StockErrorStatus.INVALID_FILE);
-    }
-
-    public static StockHandler invalidStockCode() {
-        return new StockHandler(StockErrorStatus.STOCK_CODE_ERROR);
     }
 
     public static StockHandler fileSizeIsToLarge() {

@@ -1,4 +1,4 @@
-package com.example.demo.domain.stock.exception;
+package com.example.demo.api.kis.exception;
 
 import com.example.demo.common.annotation.ExplainError;
 import com.example.demo.common.exception.BaseErrorCode;
@@ -12,15 +12,12 @@ import java.util.Objects;
 
 @Getter
 @AllArgsConstructor
-public enum StockErrorStatus implements BaseErrorCode {
+public enum KisErrorStatus implements BaseErrorCode {
 
-    //  Entity Stock(4250~4299)
-    //  KIS 연동 오류는 KisErrorStatus(4400~4449)로 분리했다.
-    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "stock을 찾지 못 했습니다."),
-    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다."),
-    INVALID_FILE(HttpStatus.BAD_REQUEST, 4252, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
-    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, 4253, "파일의 크기가 너무 큽니다."),
-    STOCK_IS_EMPTY(HttpStatus.NOT_FOUND, 4254, "종목 정보가 비어있습니다.");
+    // KIS 연동(4400~4449)
+    KIS_API_ERROR(HttpStatus.BAD_GATEWAY, 4400, "KIS API 호출에 실패했습니다."),
+    @ExplainError("KIS가 응답은 했으나 조회 결과가 비어 있습니다. 휴장일이거나 거래 정지 종목일 수 있습니다.")
+    KIS_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4401, "KIS API 응답에 데이터가 없습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
@@ -52,4 +49,3 @@ public enum StockErrorStatus implements BaseErrorCode {
         return Objects.nonNull(annotation) ? annotation.value() : this.getMessage();
     }
 }
-
