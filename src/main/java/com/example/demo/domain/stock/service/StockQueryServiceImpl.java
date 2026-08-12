@@ -22,9 +22,13 @@ public class StockQueryServiceImpl implements StockQueryService {
                 .orElseThrow(StockHandler::notFound);
     }
 
+    /**
+     * isActive가 true일 때만 편입 종목으로 좁히고, 그 외(false·null)는 전체를 조회한다.
+     * isActive는 선택 파라미터라 null이 정상 입력이므로 == 비교로 언박싱하면 안 된다.
+     */
     @Override
     public Page<Stock> getAllStocks(Boolean isActive, Pageable pageable) {
-        return isActive == true
+        return Boolean.TRUE.equals(isActive)
                 ? stockRepository.findAllByIsActive(true, pageable)
                 : stockRepository.findAll(pageable);
     }
