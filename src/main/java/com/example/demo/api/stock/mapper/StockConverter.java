@@ -11,10 +11,6 @@ import java.util.stream.Collectors;
 
 public class StockConverter {
 
-    /**
-     * 시가·종가는 동기화 전이면 null일 수 있다. tradeDate로 그 시세가 언제 것인지 판단한다.
-     * isActive가 false면 코스피200에서 편출된 종목이라 시세가 더 이상 갱신되지 않는다.
-     */
     public static StockOpenAndClosePriceResponse toStockOpenAndClosePriceResponse(Stock stock) {
         return StockOpenAndClosePriceResponse.builder()
                 .stockCode(stock.getStockCode())

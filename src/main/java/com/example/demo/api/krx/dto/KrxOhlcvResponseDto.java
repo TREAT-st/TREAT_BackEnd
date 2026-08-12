@@ -6,12 +6,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * KRX(pykrx) 기반 시총 상위 OHLCV 조회 Lambda의 응답 계약.
- * 유효 거래일 20일 미만 등으로 제외된 종목은 stocks에서 빠지고 errors에 사유가 담긴다(종목별 실패 격리).
- * Lambda가 이미 정제(0값 행 제거)·트리밍(최근 60거래일)까지 마친 배열을 내려주므로
- * Java 쪽은 별도 가공 없이 바로 지표 계산에 사용한다.
- */
 @Getter
 @NoArgsConstructor
 public class KrxOhlcvResponseDto {

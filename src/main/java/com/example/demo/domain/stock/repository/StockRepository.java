@@ -11,11 +11,8 @@ import java.util.Optional;
 
 public interface StockRepository extends JpaRepository<Stock, Long> {
     Optional<Stock> findByStockCode(String stockCode);
-
-    List<Stock> findAllByStockCodeIn(Collection<String> stockCodes);
-
-    /** 편입 여부로 필터링. 전체를 원하면 findAll(pageable)을 쓴다. */
+    /** 시세 갱신 대상. 편출된 종목은 더 이상 시세를 받지 않으므로 활성 종목만 조회한다. */
+    List<Stock> findAllByStockCodeInAndIsActiveTrue(Collection<String> stockCodes);
     Page<Stock> findAllByIsActive(Boolean isActive, Pageable pageable);
-
     List<Stock> findAllByIsActive(Boolean isActive);
 }

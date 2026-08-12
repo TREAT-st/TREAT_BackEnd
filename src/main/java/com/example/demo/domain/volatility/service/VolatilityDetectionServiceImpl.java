@@ -18,9 +18,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class VolatilityDetectionServiceImpl implements VolatilityDetectionService {
-
-    // score(변동성)와 marketCapWeight(시총)의 결합 비중. 변동성 리포트의 핵심 가치(뚜렷한 변동 우선)를 지키기 위해
-    // 변동성 쪽에 더 큰 비중을 둔다.
     private static final double COMBINED_SCORE_WEIGHT = 0.7;
     private static final double MARKET_CAP_WEIGHT = 0.3;
 
@@ -63,10 +60,6 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
         return COMBINED_SCORE_WEIGHT * signal.score() + MARKET_CAP_WEIGHT * marketCapWeight;
     }
 
-    /**
-     * KRX Lambda가 이미 정제(0값 행 제거)·트리밍(최근 60거래일)까지 마친 배열을 내려주므로,
-     * 추가 가공 없이 바로 지표 계산에 사용한다.
-     */
     private VolatilitySignal analyze(KrxOhlcvResponseDto.StockOhlcv stock) {
         VolatilityIndicatorCalculator.IndicatorSnapshot snapshot = VolatilityIndicatorCalculator.calculate(
                 stock.getClose(), stock.getHigh(), stock.getLow(), stock.getVolume());

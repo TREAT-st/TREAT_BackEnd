@@ -41,13 +41,4 @@ public class FavoriteStockConverter {
                 .hasNext(favoriteStockPage.hasNext())
                 .build();
     }
-
-    public static List<DistinctStockResponse> toDistinctStockResponseList(List<FavoriteStock> favoriteStocks) {
-        return favoriteStocks.stream()
-                .map(f -> DistinctStockResponse.builder()
-                        .stockCode(f.getStockCode())
-                        .stockName(f.getStockName())
-                        .build())
-                .collect(Collectors.toList());
-    }
 }

@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,26 +37,44 @@ public class StockUseCase {
         KrxKospi200ResponseDto response = krxService.getKospi200Prices();
         LocalDate tradeDate = LocalDate.parse(response.getTradeDate(), DateTimeFormatter.BASIC_ISO_DATE);
 
+        // stocks에는 구성종목이 전부 들어온다. 시세를 못 받은 종목도 코드·이름은 있으므로
+        // 목록 동기화는 전체를 대상으로 하고, 시세 갱신만 가격이 있는 종목으로 좁힌다.
         Map<String, String> codeToName = response.getStocks().stream()
                 .collect(Collectors.toMap(
                         KrxKospi200ResponseDto.StockPrice::getStockCode,
                         KrxKospi200ResponseDto.StockPrice::getStockName));
 
-        StockSyncResultDto syncResult = stockCommandService.syncStocks(codeToName);
+        // errors에는 성격이 다른 둘이 섞여 온다. stocks에 있는지로 구분한다.
+        List<KrxKospi200ResponseDto.ErrorItem> errors =
+                response.getErrors() == null ? List.of() : response.getErrors();
+
+        // 종목명조차 못 받아 stocks에서 빠진 종목. 편출인지 알 수 없으므로 판정을 보류한다.
+        List<String> unresolvedStockCodes = errors.stream()
+                .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
+                .filter(code -> !codeToName.containsKey(code))
+                .distinct()
+                .toList();
+
+        // 목록에는 반영되지만 시세만 못 받은 종목(거래정지 등). 편출이 아니다.
+        List<String> priceUnavailableStockCodes = errors.stream()
+                .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
+                .filter(codeToName::containsKey)
+                .distinct()
+                .toList();
+
+        StockSyncResultDto syncResult =
+                stockCommandService.syncStocks(codeToName, Set.copyOf(unresolvedStockCodes));
 
         List<StockPriceSnapshot> snapshots = response.getStocks().stream()
+                .filter(KrxKospi200ResponseDto.StockPrice::hasPrice)
                 .map(s -> new StockPriceSnapshot(s.getStockCode(), s.getOpenPrice(), s.getClosePrice()))
                 .toList();
         int priceUpdatedCount = stockCommandService.updateStockPrices(snapshots, tradeDate);
 
-        List<String> excluded = response.getErrors() == null ? List.of()
-                : response.getErrors().stream()
-                        .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
-                        .toList();
-
-        log.info("코스피200 동기화 완료. tradeDate={} 신규={} 이름변경={} 편출={} 재편입={} 시세반영={}",
+        log.info("코스피200 동기화 완료. tradeDate={} 신규={} 이름변경={} 편출={} 재편입={} 시세반영={} 시세미수신={} 미해결={}",
                 tradeDate, syncResult.addedCount(), syncResult.updatedCount(),
-                syncResult.deactivatedCount(), syncResult.reactivatedCount(), priceUpdatedCount);
+                syncResult.deactivatedCount(), syncResult.reactivatedCount(), priceUpdatedCount,
+                priceUnavailableStockCodes.size(), unresolvedStockCodes.size());
 
         return SyncStocksResponse.builder()
                 .tradeDate(tradeDate)
@@ -64,7 +83,8 @@ public class StockUseCase {
                 .deactivatedCount(syncResult.deactivatedCount())
                 .reactivatedCount(syncResult.reactivatedCount())
                 .priceUpdatedCount(priceUpdatedCount)
-                .excludedStockCodes(excluded)
+                .unresolvedStockCodes(unresolvedStockCodes)
+                .priceUnavailableStockCodes(priceUnavailableStockCodes)
                 .build();
     }
 

@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +43,7 @@ class StockCommandServiceImplTest {
 
     @Test
     void 신규_종목은_활성으로_저장된다() {
-        StockSyncResultDto result = stockCommandService.syncStocks(source("005930", "삼성전자"));
+        StockSyncResultDto result = stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());
 
         assertThat(result.addedCount()).isEqualTo(1);
         assertThat(stockRepository.findByStockCode("005930"))
@@ -52,9 +53,9 @@ class StockCommandServiceImplTest {
 
     @Test
     void 편출된_종목은_삭제되지_않고_비활성으로_남는다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"));
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
 
-        StockSyncResultDto result = stockCommandService.syncStocks(source("005930", "삼성전자"));
+        StockSyncResultDto result = stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());
 
         assertThat(result.deactivatedCount()).isEqualTo(1);
         // 행 자체는 남아 있어야 한다
@@ -66,10 +67,10 @@ class StockCommandServiceImplTest {
 
     @Test
     void 재편입되면_다시_활성으로_되돌린다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"));
-        stockCommandService.syncStocks(source("005930", "삼성전자"));                       // 편출
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
+        stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());                       // 편출
         StockSyncResultDto result = stockCommandService.syncStocks(
-                source("005930", "삼성전자", "000660", "SK하이닉스"));                       // 재편입
+                source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());             // 재편입
 
         assertThat(result.reactivatedCount()).isEqualTo(1);
         assertThat(result.addedCount()).isZero();   // 새 행이 생기면 안 된다
@@ -80,10 +81,38 @@ class StockCommandServiceImplTest {
     }
 
     @Test
-    void 종목명이_바뀌면_갱신한다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자"));
+    void 시세를_못_받은_구성종목은_편출로_처리하지_않는다() {
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
 
-        StockSyncResultDto result = stockCommandService.syncStocks(source("005930", "삼성전자우"));
+        // 000660은 여전히 구성종목이지만 거래정지 등으로 시세를 못 받아 sourceStocks에서 빠진 상황
+        StockSyncResultDto result = stockCommandService.syncStocks(
+                source("005930", "삼성전자"), Set.of("000660"));
+
+        assertThat(result.deactivatedCount()).isZero();
+        assertThat(stockRepository.findByStockCode("000660"))
+                .get()
+                .satisfies(s -> assertThat(s.getIsActive()).isTrue());
+    }
+
+    @Test
+    void 시세를_못_받았어도_보류_목록에_없으면_편출_처리한다() {
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
+
+        // 보류 목록에 다른 종목만 있는 경우 — 000660은 정상적으로 편출 판정
+        StockSyncResultDto result = stockCommandService.syncStocks(
+                source("005930", "삼성전자"), Set.of("999999"));
+
+        assertThat(result.deactivatedCount()).isEqualTo(1);
+        assertThat(stockRepository.findByStockCode("000660"))
+                .get()
+                .satisfies(s -> assertThat(s.getIsActive()).isFalse());
+    }
+
+    @Test
+    void 종목명이_바뀌면_갱신한다() {
+        stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());
+
+        StockSyncResultDto result = stockCommandService.syncStocks(source("005930", "삼성전자우"), Set.of());
 
         assertThat(result.updatedCount()).isEqualTo(1);
         assertThat(stockRepository.findByStockCode("005930"))
@@ -93,8 +122,8 @@ class StockCommandServiceImplTest {
 
     @Test
     void 활성_비활성_종목을_구분해서_조회한다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"));
-        stockCommandService.syncStocks(source("005930", "삼성전자"));   // 000660 편출
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
+        stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());   // 000660 편출
 
         assertThat(stockRepository.findAllByIsActive(true))
                 .extracting(Stock::getStockCode)
@@ -109,7 +138,7 @@ class StockCommandServiceImplTest {
 
     @Test
     void 여러_종목의_시세를_한_번에_갱신한다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"));
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
         LocalDate tradeDate = LocalDate.of(2026, 8, 2);
 
         int updated = stockCommandService.updateStockPrices(List.of(
@@ -127,7 +156,7 @@ class StockCommandServiceImplTest {
 
     @Test
     void DB에_없는_종목의_시세는_건너뛴다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자"));
+        stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());
 
         int updated = stockCommandService.updateStockPrices(List.of(
                 new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500")),
@@ -139,15 +168,21 @@ class StockCommandServiceImplTest {
     }
 
     @Test
-    void 비활성_종목도_시세는_갱신된다() {
-        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"));
-        stockCommandService.syncStocks(source("005930", "삼성전자"));   // 000660 편출
+    void 편출된_종목의_시세는_갱신하지_않는다() {
+        stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"), Set.of());
+        stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());   // 000660 편출
 
         int updated = stockCommandService.updateStockPrices(List.of(
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500")),
                 new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"))
         ), LocalDate.of(2026, 8, 2));
 
         assertThat(updated).isEqualTo(1);
+        assertThat(stockRepository.findByStockCode("000660")).get().satisfies(s -> {
+            assertThat(s.getOpenPrice()).isNull();
+            assertThat(s.getClosePrice()).isNull();
+            assertThat(s.getTradeDate()).isNull();
+        });
     }
 
     private Map<String, String> source(String... codeAndName) {

@@ -17,11 +17,6 @@ import software.amazon.awssdk.services.lambda.model.InvokeResponse;
 
 import java.util.Map;
 
-/**
- * pykrx 기반 AWS Lambda(별도 배포)를 호출하는 클라이언트.
- * Lambda 함수 자체는 이 프로젝트가 아니라 별도로 배포된다 — 이 클라이언트는 각 함수의
- * 요청/응답 계약에 맞춰 호출만 담당한다.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -51,7 +46,6 @@ public class KrxLambdaClient {
         try {
             payload = objectMapper.writeValueAsString(requestPayload);
         } catch (JsonProcessingException e) {
-            // 고정 구조라 실패할 수 없다. 발생했다면 우리 코드 버그이므로 500으로 내보낸다.
             throw new IllegalStateException("KRX Lambda 요청 페이로드 생성 실패", e);
         }
 

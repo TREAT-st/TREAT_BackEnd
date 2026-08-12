@@ -31,7 +31,6 @@ public class ReportLambdaClient {
             payload = objectMapper.writeValueAsString(request);
             log.info("[ReportLambda] payload: {}", payload);
         } catch (JsonProcessingException e) {
-            // DTO 직렬화 실패는 우리 코드 버그이므로 500으로 내보낸다.
             throw new IllegalStateException("리포트 Lambda 요청 페이로드 생성 실패", e);
         }
 

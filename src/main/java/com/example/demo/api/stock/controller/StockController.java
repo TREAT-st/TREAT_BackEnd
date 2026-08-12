@@ -28,7 +28,9 @@ public class StockController {
 
     @Operation(summary = "코스피200 종목·시세 동기화 (KRX)",
             description = "KRX Lambda로 코스피200 구성종목과 가장 가까운 거래일의 시가/종가를 한 번에 받아 반영합니다.<br>" +
-                    "편출된 종목은 삭제하지 않고 비활성 처리하며, 재편입되면 다시 활성으로 되돌립니다.")
+                    "편출된 종목은 삭제하지 않고 비활성 처리하며, 재편입되면 다시 활성으로 되돌립니다.<br><br>" +
+                    "priceUnavailableStockCodes : 목록에는 반영됐지만 시세를 못 받은 종목(거래정지 등)<br>" +
+                    "unresolvedStockCodes : 종목명을 못 받아 목록에 반영하지 못한 종목(활성 상태 유지)")
     @PostMapping("/sync")
     public ApiResponseDto<SyncStocksResponse> syncKospi200FromKrx() {
         return ApiResponseDto.onSuccess(stockUseCase.syncKospi200FromKrx());

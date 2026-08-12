@@ -11,5 +11,4 @@ public interface FavoriteStockQueryService {
     Page<FavoriteStock> getUserFavoriteStockListByPage(Long userId, Pageable pageable);
     FavoriteStock getUserFavoriteStockByUserIdAndStockCode(Long userId, String stockCode);
     boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode);
-    List<FavoriteStock> getDistinctStocks();
 }

@@ -50,14 +50,6 @@ public class FavoriteStockController {
         return ApiResponseDto.onSuccess(FavoriteStockConverter.toFavoriteStockPageDto(favoriteStocksPage));
     }
 
-    // 변동성 신호 감지 및 리포트 생성 전용 API
-    @Operation(summary = "전체 관심 종목 중복 없이 조회", description = "모든 user들의 관심 종목을 중복 없이 조회합니다. " +
-            "변동성 신호 감지 및 리포트 생성을 위한 API입니다.")
-    @GetMapping("/all-list")
-    public ApiResponseDto<List<DistinctStockResponse>> getAllFavoriteStock() {
-        return ApiResponseDto.onSuccess(favoriteStockUseCase.getDistinctStocks());
-    }
-
     @Operation(summary = "user의 관심 종목에서 종목 삭제", description = "user의 관심 종목에서 해당 종목을 삭제합니다.")
     @DeleteMapping("/{favoriteStockId}")
     public ApiResponseDto<Void> deleteUserFavoriteStock(

@@ -7,10 +7,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 코스피200 구성종목과 해당 거래일의 시가·종가를 함께 내려주는 Lambda의 응답 계약.
- * 종목별 실패는 stocks에서 빠지고 errors에 사유가 담긴다(종목별 실패 격리).
- */
 @Getter
 @NoArgsConstructor
 public class KrxKospi200ResponseDto {
@@ -29,6 +25,10 @@ public class KrxKospi200ResponseDto {
     @JsonProperty("errors")
     private List<ErrorItem> errors;
 
+    /**
+     * 구성종목 한 건. 코드·이름은 항상 채워지고, 시세를 못 받은 종목은 가격이 null이다.
+     * 시세 실패가 편출을 뜻하지 않으므로 목록에서 빠지지 않는다(사유는 errors에 담긴다).
+     */
     @Getter
     @NoArgsConstructor
     public static class StockPrice {
@@ -43,6 +43,10 @@ public class KrxKospi200ResponseDto {
 
         @JsonProperty("closePrice")
         private BigDecimal closePrice;
+
+        public boolean hasPrice() {
+            return openPrice != null && closePrice != null;
+        }
     }
 
     @Getter
