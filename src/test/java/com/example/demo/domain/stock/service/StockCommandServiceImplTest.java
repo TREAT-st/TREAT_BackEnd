@@ -115,7 +115,7 @@ class StockCommandServiceImplTest {
         assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
             assertThat(s.getOpenPrice()).isEqualByComparingTo("71000");
             assertThat(s.getClosePrice()).isEqualByComparingTo("72500");
-            assertThat(s.getInquiryDate()).isEqualTo(tradeDate);
+            assertThat(s.getTradeDate()).isEqualTo(tradeDate);
         });
     }
 

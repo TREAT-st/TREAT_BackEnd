@@ -36,17 +36,17 @@ public class Stock extends BaseTimeEntity {
     @Column(name = "close_price")
     private BigDecimal closePrice;
 
-    @Column(name = "inquiry_date")
-    private LocalDate inquiryDate;
+    @Column(name = "trade_date")
+    private LocalDate tradeDate;
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    public void updatePrice(BigDecimal openPrice, BigDecimal closePrice, LocalDate inquiryDate) {
+    public void updatePrice(BigDecimal openPrice, BigDecimal closePrice, LocalDate tradeDate) {
         this.openPrice = openPrice;
         this.closePrice = closePrice;
-        this.inquiryDate = inquiryDate;
+        this.tradeDate = tradeDate;
     }
 
     public void updateName(String stockName) {

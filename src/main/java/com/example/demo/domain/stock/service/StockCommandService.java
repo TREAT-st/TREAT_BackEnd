@@ -12,5 +12,5 @@ public interface StockCommandService {
     StockSyncResultDto syncStocks(Map<String, String> sourceStocks);
 
     /** 여러 종목의 시세를 한 번에 갱신하고 실제 반영된 건수를 돌려준다. */
-    int updateStockPrices(List<StockPriceSnapshot> snapshots, LocalDate inquiryDate);
+    int updateStockPrices(List<StockPriceSnapshot> snapshots, LocalDate tradeDate);
 }

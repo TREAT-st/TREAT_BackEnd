@@ -28,7 +28,7 @@ public class StockCommandServiceImpl implements StockCommandService {
      * 변경 감지로 flush되며, DB에 없는 종목은 건너뛴다.
      */
     @Override
-    public int updateStockPrices(List<StockPriceSnapshot> snapshots, LocalDate inquiryDate) {
+    public int updateStockPrices(List<StockPriceSnapshot> snapshots, LocalDate tradeDate) {
         if (snapshots.isEmpty()) {
             return 0;
         }
@@ -40,7 +40,7 @@ public class StockCommandServiceImpl implements StockCommandService {
 
         for (Stock stock : stocks) {
             StockPriceSnapshot snapshot = byCode.get(stock.getStockCode());
-            stock.updatePrice(snapshot.openPrice(), snapshot.closePrice(), inquiryDate);
+            stock.updatePrice(snapshot.openPrice(), snapshot.closePrice(), tradeDate);
         }
 
         int missing = byCode.size() - stocks.size();
