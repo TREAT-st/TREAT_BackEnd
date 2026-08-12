@@ -30,6 +30,7 @@ public class StockConverter {
         return StockItemResponse.builder()
                 .stockCode(stock.getStockCode())
                 .stockName(stock.getStockName())
+                .isActive(stock.getIsActive())
                 .build();
     }
 

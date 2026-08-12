@@ -92,13 +92,19 @@ class StockCommandServiceImplTest {
     }
 
     @Test
-    void 활성_종목만_조회된다() {
+    void 활성_비활성_종목을_구분해서_조회한다() {
         stockCommandService.syncStocks(source("005930", "삼성전자", "000660", "SK하이닉스"));
-        stockCommandService.syncStocks(source("005930", "삼성전자"));
+        stockCommandService.syncStocks(source("005930", "삼성전자"));   // 000660 편출
 
-        assertThat(stockRepository.findAllByIsActiveTrue())
+        assertThat(stockRepository.findAllByIsActive(true))
                 .extracting(Stock::getStockCode)
                 .containsExactly("005930");
+        assertThat(stockRepository.findAllByIsActive(false))
+                .extracting(Stock::getStockCode)
+                .containsExactly("000660");
+        assertThat(stockRepository.findAll())
+                .extracting(Stock::getStockCode)
+                .containsExactlyInAnyOrder("005930", "000660");
     }
 
     @Test

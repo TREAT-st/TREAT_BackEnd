@@ -37,6 +37,8 @@ public class StockResponseDto {
     public static class StockItemResponse {
         private String stockCode;
         private String stockName;
+        /** 코스피200 편입 여부. false면 편출된 종목으로 시세가 더 이상 갱신되지 않는다. */
+        private Boolean isActive;
     }
 
     @Getter

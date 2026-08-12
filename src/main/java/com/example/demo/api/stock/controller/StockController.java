@@ -44,13 +44,17 @@ public class StockController {
         return ApiResponseDto.onSuccess(stockUseCase.getStockOpenAndClosePrice(stockCode));
     }
 
-    @Operation(summary = "모든 종목 조회", description = "Stock에 저장된 모든 종목의 코드와 이름을 페이지 단위로 조회합니다.")
+    @Operation(summary = "모든 종목 조회",
+            description = "Stock에 저장된 종목을 페이지 단위로 조회합니다.<br>" +
+                    "isActive=true : 코스피200에 현재 편입된 종목만<br>" +
+                    "isActive=false : 편입, 편출 전체 종목")
     @GetMapping("/all-stock")
     public ApiResponseDto<StockPageResponse> getAllStocks(
+            @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.asc("stockCode")));
-        Page<Stock> stockPage = stockUseCase.getAllStocks(pageable);
+        Page<Stock> stockPage = stockUseCase.getAllStocks(isActive, pageable);
         return ApiResponseDto.onSuccess(StockConverter.toStockPageResponse(stockPage));
     }
 }

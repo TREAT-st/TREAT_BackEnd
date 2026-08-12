@@ -14,7 +14,8 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 
     List<Stock> findAllByStockCodeIn(Collection<String> stockCodes);
 
-    Page<Stock> findAllByIsActiveTrue(Pageable pageable);
+    /** 편입 여부로 필터링. 전체를 원하면 findAll(pageable)을 쓴다. */
+    Page<Stock> findAllByIsActive(Boolean isActive, Pageable pageable);
 
-    List<Stock> findAllByIsActiveTrue();
+    List<Stock> findAllByIsActive(Boolean isActive);
 }

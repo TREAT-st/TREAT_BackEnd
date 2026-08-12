@@ -75,7 +75,7 @@ public class StockUseCase {
     }
 
     @Transactional(readOnly = true)
-    public Page<Stock> getAllStocks(Pageable pageable) {
-        return stockQueryService.getAllActiveStocks(pageable);
+    public Page<Stock> getAllStocks(Boolean isActive, Pageable pageable) {
+        return stockQueryService.getAllStocks(isActive, pageable);
     }
 }
