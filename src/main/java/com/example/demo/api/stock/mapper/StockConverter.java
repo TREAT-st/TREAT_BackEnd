@@ -2,7 +2,6 @@ package com.example.demo.api.stock.mapper;
 
 import com.example.demo.api.stock.dto.StockResponseDto.StockItemResponse;
 import com.example.demo.api.stock.dto.StockResponseDto.StockPageResponse;
-import com.example.demo.api.stock.dto.StockResponseDto.StockPriceResponse;
 import com.example.demo.domain.stock.entity.Stock;
 import org.springframework.data.domain.Page;
 
@@ -10,16 +9,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class StockConverter {
-
-    public static StockPriceResponse toStockPriceResponse(Stock stock) {
-        return StockPriceResponse.builder()
-                .stockCode(stock.getStockCode())
-                .stockName(stock.getStockName())
-                .openPrice(stock.getOpenPrice())
-                .closePrice(stock.getClosePrice())
-                .inquiryDate(stock.getInquiryDate())
-                .build();
-    }
 
     public static StockItemResponse toStockItemResponse(Stock stock) {
         return StockItemResponse.builder()

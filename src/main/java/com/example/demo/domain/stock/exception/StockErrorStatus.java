@@ -15,7 +15,6 @@ import java.util.Objects;
 public enum StockErrorStatus implements BaseErrorCode {
 
     //  Entity Stock(4250~4299)
-    //  KIS 연동 오류는 KisErrorStatus(4400~4449)로 분리했다.
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "stock을 찾지 못 했습니다."),
     S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다."),
     INVALID_FILE(HttpStatus.BAD_REQUEST, 4252, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),

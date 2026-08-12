@@ -10,7 +10,6 @@ public class StaticVariable {
     public static final String SWAGGER_BEARER = "Bearer";
     public static final String BEARER = "Bearer ";
     public static final String AUTHORIZATION = "Authorization";
-    public static final String GRANT_TYPE = "client_credentials";
     public static final String REISSUE_ENDPOINT = "/api/v1/tokens/reissue";
     public static final String HEALTH_CHECK_ENDPOINT = "/api/v1/test/health-check";
     public static final String CREATED_DATE = "createdDate";
@@ -36,10 +35,6 @@ public class StaticVariable {
     public static final long REFRESH_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 7; // 7일
     public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
-    //KIS
-    public static final String TOKEN_KEY = "kis:access_token";
-    public static final DateTimeFormatter EXPIRED_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 }
 

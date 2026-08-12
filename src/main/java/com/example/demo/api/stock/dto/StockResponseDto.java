@@ -15,18 +15,6 @@ public class StockResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class StockPriceResponse {
-        private String stockCode;
-        private String stockName;
-        private BigDecimal openPrice;
-        private BigDecimal closePrice;
-        private LocalDate inquiryDate;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class UploadExcelResponse {
         private String s3Uri;
     }
@@ -38,7 +26,29 @@ public class StockResponseDto {
     public static class ImportStockResponse {
         private int savedCount;
         private int updatedCount;
-        private int deletedCount;
+        /** 코스피200에서 편출되어 비활성 처리된 종목 수. 데이터는 삭제되지 않는다. */
+        private int deactivatedCount;
+        /** 다시 편입되어 활성으로 되돌린 종목 수. */
+        private int reactivatedCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SyncStocksResponse {
+        /** 시세 기준 거래일. 휴장일에 실행하면 직전 거래일이 담긴다. */
+        private LocalDate tradeDate;
+        private int addedCount;
+        private int updatedCount;
+        /** 코스피200에서 편출되어 비활성 처리된 종목 수. 데이터는 삭제되지 않는다. */
+        private int deactivatedCount;
+        /** 다시 편입되어 활성으로 되돌린 종목 수. */
+        private int reactivatedCount;
+        /** 시가·종가가 갱신된 종목 수. */
+        private int priceUpdatedCount;
+        /** Lambda가 시세를 구하지 못해 제외한 종목 코드. */
+        private List<String> excludedStockCodes;
     }
 
     @Getter

@@ -34,7 +34,7 @@ public enum ErrorStatus implements BaseErrorCode{
     // stock          (4250-4299)  StockErrorStatus
     // volatility     (4300-4349)  VolatilityErrorStatus
     // 인증            (4350-4399)  ErrorStatus (아래 AUTH_*)
-    // kis 연동        (4400-4449)  KisErrorStatus
+    // (4400-4449)     비어 있음 — KIS 연동 제거로 회수됨
     // krx 연동        (4450-4499)  KrxErrorStatus
 
     // 인증 관련 오류 (4350~4399)

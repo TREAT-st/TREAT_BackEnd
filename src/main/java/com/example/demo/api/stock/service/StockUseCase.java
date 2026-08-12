@@ -1,16 +1,14 @@
 package com.example.demo.api.stock.service;
 
-import com.example.demo.api.kis.dto.KisResponseDto;
-import com.example.demo.api.kis.exception.KisHandler;
-import com.example.demo.api.kis.service.KisService;
+import com.example.demo.api.krx.dto.KrxKospi200ResponseDto;
+import com.example.demo.api.krx.service.KrxService;
 import com.example.demo.api.stock.dto.StockResponseDto.*;
 import com.example.demo.api.stock.dto.StockSyncResultDto;
-import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.common.annotation.UseCase;
 import com.example.demo.common.service.S3Service;
-import com.example.demo.common.util.DateUtil;
 import com.example.demo.common.util.ExcelUtil;
 import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.domain.stock.entity.StockPriceSnapshot;
 import com.example.demo.domain.stock.exception.StockHandler;
 import com.example.demo.domain.stock.service.StockCommandService;
 import com.example.demo.domain.stock.service.StockQueryService;
@@ -24,11 +22,13 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkException;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static com.example.demo.common.consts.StaticVariable.*;
+import static com.example.demo.common.consts.StaticVariable.KOSPI200_FILE_KEY;
 
 @Slf4j
 @UseCase
@@ -37,10 +37,9 @@ public class StockUseCase {
 
     private final StockCommandService stockCommandService;
     private final StockQueryService stockQueryService;
-    private final KisService kisService;
+    private final KrxService krxService;
     private final S3Service s3Service;
     private final StockExcelService stockExcelService;
-    private final DateUtil dateUtil;
     private final ExcelUtil excelUtil;
 
     @Value("${cloud.aws.s3.bucket.kospi200}")
@@ -68,48 +67,54 @@ public class StockUseCase {
         return ImportStockResponse.builder()
                 .savedCount(result.addedCount())
                 .updatedCount(result.updatedCount())
-                .deletedCount(result.deletedCount())
+                .deactivatedCount(result.deactivatedCount())
+                .reactivatedCount(result.reactivatedCount())
                 .build();
     }
 
+    /**
+     * KRX Lambda로 코스피200 구성종목과 시가·종가를 한 번에 받아 반영한다.
+     * 목록 동기화를 먼저 끝내야 신규 편입 종목에도 시세를 넣을 수 있으므로 순서를 지킨다.
+     */
     @Transactional
-    public StockPriceResponse getLatestStockPriceByStockCode(String stockCode) {
-        // 존재하지 않는 종목이면 getStockByCode가 StockHandler.notFound()를 던진다.
-        stockQueryService.getStockByCode(stockCode);
+    public SyncStocksResponse syncKospi200FromKrx() {
+        KrxKospi200ResponseDto response = krxService.getKospi200Prices();
+        LocalDate tradeDate = LocalDate.parse(response.getTradeDate(), DateTimeFormatter.BASIC_ISO_DATE);
 
-        for (int i = 1; i <= 10; i++) {
-            LocalDate targetDate = LocalDate.now(SEOUL_ZONE).minusDays(i);
+        Map<String, String> codeToName = response.getStocks().stream()
+                .collect(Collectors.toMap(
+                        KrxKospi200ResponseDto.StockPrice::getStockCode,
+                        KrxKospi200ResponseDto.StockPrice::getStockName));
 
-            if (dateUtil.isWeekend(targetDate)) continue;
+        StockSyncResultDto syncResult = stockCommandService.syncStocks(codeToName);
 
-            String dateStr = targetDate.format(DATE_FORMATTER);
-            KisResponseDto response = kisService.getDailyStockPrice(stockCode, dateStr, dateStr);
-            if(response == null) continue;
+        List<StockPriceSnapshot> snapshots = response.getStocks().stream()
+                .map(s -> new StockPriceSnapshot(s.getStockCode(), s.getOpenPrice(), s.getClosePrice()))
+                .toList();
+        int priceUpdatedCount = stockCommandService.updateStockPrices(snapshots, tradeDate);
 
-            List<KisResponseDto.DailyData> output2 = response.getOutput2();
-            if (output2 == null || output2.isEmpty()) continue;
+        List<String> excluded = response.getErrors() == null ? List.of()
+                : response.getErrors().stream()
+                        .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
+                        .toList();
 
-            String rawOpen  = output2.get(0).getOpenPrice();
-            String rawClose = output2.get(0).getClosePrice();
-            if (rawOpen == null || rawOpen.isBlank() || rawClose == null || rawClose.isBlank()) continue;
+        log.info("코스피200 동기화 완료. tradeDate={} 신규={} 이름변경={} 편출={} 재편입={} 시세반영={}",
+                tradeDate, syncResult.addedCount(), syncResult.updatedCount(),
+                syncResult.deactivatedCount(), syncResult.reactivatedCount(), priceUpdatedCount);
 
-            try {
-                BigDecimal openPrice  = new BigDecimal(rawOpen.trim());
-                BigDecimal closePrice = new BigDecimal(rawClose.trim());
-
-                Stock updatedStockPrice = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
-                return StockConverter.toStockPriceResponse(updatedStockPrice);
-            } catch (NumberFormatException e) {
-                log.warn("KIS 가격 데이터 파싱 실패. stockCode={}, date={}, open={}, close={}",
-                        stockCode, dateStr, rawOpen, rawClose);
-            }
-        }
-
-        throw KisHandler.kisResponseEmpty();
+        return SyncStocksResponse.builder()
+                .tradeDate(tradeDate)
+                .addedCount(syncResult.addedCount())
+                .updatedCount(syncResult.updatedCount())
+                .deactivatedCount(syncResult.deactivatedCount())
+                .reactivatedCount(syncResult.reactivatedCount())
+                .priceUpdatedCount(priceUpdatedCount)
+                .excludedStockCodes(excluded)
+                .build();
     }
 
     @Transactional(readOnly = true)
     public Page<Stock> getAllStocks(Pageable pageable) {
-        return stockQueryService.getAllStocks(pageable);
+        return stockQueryService.getAllActiveStocks(pageable);
     }
 }

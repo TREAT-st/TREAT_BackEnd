@@ -4,11 +4,10 @@ import com.example.demo.domain.stock.entity.Stock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 public interface StockQueryService {
     Stock getStockByCode(String stockCode);
-    Set<String> getAllStockCodes();
-    Page<Stock> getAllStocks(Pageable pageable);
+    Page<Stock> getAllActiveStocks(Pageable pageable);
+    List<Stock> getActiveStocks();
 }
