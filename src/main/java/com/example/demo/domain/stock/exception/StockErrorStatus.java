@@ -15,12 +15,9 @@ import java.util.Objects;
 public enum StockErrorStatus implements BaseErrorCode {
 
     //  Entity Stock(4250~4299)
-    //  KIS 연동 오류는 KisErrorStatus(4400~4449)로 분리했다.
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "stock을 찾지 못 했습니다."),
-    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다."),
-    INVALID_FILE(HttpStatus.BAD_REQUEST, 4252, "유효하지 않은 파일입니다. 비어있거나 .xlsx 파일이 아닙니다."),
-    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, 4253, "파일의 크기가 너무 큽니다."),
-    STOCK_IS_EMPTY(HttpStatus.NOT_FOUND, 4254, "종목 정보가 비어있습니다.");
+    /** S3Service와 짝을 이루는 코드. 현재 던지는 곳은 없으나 S3 인프라를 유지하므로 함께 남긴다. */
+    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

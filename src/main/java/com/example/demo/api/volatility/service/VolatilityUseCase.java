@@ -44,8 +44,6 @@ public class VolatilityUseCase {
     public DetectionResult runDetection() {
         List<VolatilitySignal> signals = volatilityDetectionService.detect(100);
 
-        // 전 종목이 스킵된 경우다. 저장(오늘 기록 삭제 후 재삽입)으로 넘어가면
-        // 기존 데이터만 지우고 끝나므로, 반드시 저장 전에 중단한다.
         if (signals.isEmpty()) {
             log.error("변동성 분석 결과가 비어 있습니다. 전 종목이 스킵됐습니다.");
             throw VolatilityHandler.volatilityDetectionFailed();
@@ -53,7 +51,6 @@ public class VolatilityUseCase {
 
         List<VolatilitySignal> top10 = volatilityDetectionService.selectTop(signals, 100, 10);
         if (top10.isEmpty()) {
-            // 분석은 정상이나 알림 조건을 만족한 종목이 없는 날. 오늘 기록은 비워진다.
             log.warn("변동성 알림이 탐지된 종목이 없습니다. 분석 종목 수={}", signals.size());
         }
 
@@ -70,7 +67,6 @@ public class VolatilityUseCase {
 
         String reportDate = LocalDate.now().format(REPORT_DATE_FORMATTER);
 
-        // 한 종목이 실패해도 나머지 종목의 리포트 생성은 계속 요청한다.
         List<String> failedStockCodes = new ArrayList<>();
         for (Volatility v : todayVolatility) {
             try {

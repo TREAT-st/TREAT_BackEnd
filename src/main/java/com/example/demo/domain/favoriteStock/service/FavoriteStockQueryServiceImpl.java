@@ -37,9 +37,4 @@ public class FavoriteStockQueryServiceImpl implements FavoriteStockQueryService 
     public boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode) {
         return favoriteStockRepository.existsByUserIdAndStockCode(userId, stockCode);
     }
-
-    @Override
-    public List<FavoriteStock> getDistinctStocks() {
-        return favoriteStockRepository.findDistinctStocks();
-    }
 }

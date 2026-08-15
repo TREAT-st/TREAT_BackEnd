@@ -4,16 +4,10 @@ import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.stock.exception.StockHandler;
 import com.example.demo.domain.stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,13 +22,14 @@ public class StockQueryServiceImpl implements StockQueryService {
                 .orElseThrow(StockHandler::notFound);
     }
 
+    /**
+     * isActive가 true일 때만 편입 종목으로 좁히고, 그 외(false·null)는 전체를 조회한다.
+     * isActive는 선택 파라미터라 null이 정상 입력이므로 == 비교로 언박싱하면 안 된다.
+     */
     @Override
-    public Set<String> getAllStockCodes() {
-        return new HashSet<>(stockRepository.findAllStockCodes());
-    }
-
-    @Override
-    public Page<Stock> getAllStocks(Pageable pageable) {
-        return stockRepository.findAll(pageable);
+    public Page<Stock> getAllStocks(Boolean isActive, Pageable pageable) {
+        return Boolean.TRUE.equals(isActive)
+                ? stockRepository.findAllByIsActive(true, pageable)
+                : stockRepository.findAll(pageable);
     }
 }

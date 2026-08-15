@@ -1,17 +1,10 @@
 package com.example.demo.domain.volatility.util;
 
-/**
- * 변동성 지표 순수 계산 유틸.
- * 네트워크/DB 의존 없음 — volatility_detector/indicators.py 포팅.
- * 입력 배열은 날짜 오름차순(index 0이 가장 과거)이어야 한다.
- */
 public class VolatilityIndicatorCalculator {
 
     static final int ROLLING_WINDOW = 20;
     private static final double TRADING_DAYS_PER_YEAR = 252.0;
 
-    /** calculate()가 요구하는 최소 유효 거래일 수. 오케스트레이션 단계의 스킵 기준으로 재사용.
-     * ROLLING_WINDOW + 2: dailyReturns()가 n-1개를 생성하고, percentileRank()는 2개 이상 필요. */
     public static final int MIN_VALID_TRADING_DAYS = ROLLING_WINDOW + 2;
 
     private VolatilityIndicatorCalculator() {
@@ -56,18 +49,15 @@ public class VolatilityIndicatorCalculator {
         );
     }
 
-    /** 마지막 거래일의 일간수익률(%). close.length >= 2 필요. */
     static double dailyReturnPct(double[] close) {
         int n = close.length;
         return (close[n - 1] / close[n - 2] - 1.0) * 100.0;
     }
 
-    /** 당일 고가-저가 변동폭(%). */
     static double intradayRangePct(double high, double low, double close) {
         return (high - low) / close * 100.0;
     }
 
-    /** 최근 20일 종가 기준 볼린저밴드 %B. close.length >= ROLLING_WINDOW 필요. */
     static double bbPercentB(double[] close) {
         int n = close.length;
         double ma20 = mean(close, n - ROLLING_WINDOW, n);
@@ -78,7 +68,6 @@ public class VolatilityIndicatorCalculator {
         return band == 0.0 ? Double.NaN : (close[n - 1] - lower) / band;
     }
 
-    /** 최근 20일 종가 기준 볼린저밴드 폭(%). close.length >= ROLLING_WINDOW 필요. */
     static double bbWidthPct(double[] close) {
         int n = close.length;
         double ma20 = mean(close, n - ROLLING_WINDOW, n);
@@ -87,7 +76,6 @@ public class VolatilityIndicatorCalculator {
         return ma20 == 0.0 ? Double.NaN : band / ma20 * 100.0;
     }
 
-    /** 최근 20일 평균 거래량 대비 당일 거래량 배수. volume.length >= ROLLING_WINDOW 필요. */
     static double volumeSpikeRatio(double[] volume) {
         int n = volume.length;
         double volMa20 = mean(volume, n - ROLLING_WINDOW, n);
@@ -102,7 +90,6 @@ public class VolatilityIndicatorCalculator {
         return returns;
     }
 
-    /** returns 배열에 20일 롤링 표준편차를 연환산(%)해 시계열로 반환. 윈도우를 못 채우면 NaN 1개짜리 배열. */
     static double[] rollingAnnualizedVol(double[] returns) {
         int count = returns.length - ROLLING_WINDOW + 1;
         if (count < 1) {
@@ -125,7 +112,6 @@ public class VolatilityIndicatorCalculator {
         return sum / len;
     }
 
-    /** 표본표준편차 (ddof=1, pandas 기본값과 동일). */
     private static double stddev(double[] arr, int fromInclusive, int toExclusive) {
         int len = toExclusive - fromInclusive;
         if (len < 2) {
@@ -140,10 +126,6 @@ public class VolatilityIndicatorCalculator {
         return Math.sqrt(sumSq / (len - 1));
     }
 
-    /**
-     * pandas {@code Series.rank(pct=True)}의 근사치 — 동률은 평균 순위로 처리.
-     * series 원소가 2개 미만이거나 latest가 NaN이면 순위가 정의되지 않아 NaN 반환.
-     */
     static double percentileRank(double[] series, double latest) {
         if (Double.isNaN(latest)) {
             return Double.NaN;

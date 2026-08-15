@@ -43,9 +43,4 @@ public class FavoriteStockUseCase {
 
         favoriteStockCommandService.deleteFavoriteStock(favoriteStockId);
     }
-
-    @Transactional(readOnly = true)
-    public List<DistinctStockResponse> getDistinctStocks() {
-        return FavoriteStockConverter.toDistinctStockResponseList(favoriteStockQueryService.getDistinctStocks());
-    }
 }

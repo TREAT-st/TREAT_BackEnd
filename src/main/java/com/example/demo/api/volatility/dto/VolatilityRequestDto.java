@@ -16,7 +16,6 @@ public class VolatilityRequestDto {
         private String gptModel;
     }
 
-    /** 외부(Lambda)에서 들어오는 요청이므로 모든 필드를 검증한다. */
     @Getter
     @NoArgsConstructor
     public static class ReportCallback {

@@ -69,7 +69,6 @@ public class VolatilityController {
         return ApiResponseDto.onSuccess(null);
     }
 
-    /** 콜백은 JWT 없이 열려 있으므로 공유 시크릿으로 검증한다. 타이밍 공격을 피해 상수 시간 비교를 쓴다. */
     private void verifyCallbackSecret(String secret) {
         if (secret == null || !MessageDigest.isEqual(
                 secret.getBytes(StandardCharsets.UTF_8),

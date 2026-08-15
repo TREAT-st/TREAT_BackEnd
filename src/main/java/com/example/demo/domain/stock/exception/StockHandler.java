@@ -16,16 +16,4 @@ public class StockHandler extends GeneralException {
     public static StockHandler s3FileIoError() {
         return new StockHandler(StockErrorStatus.S3_FILE_IO_ERROR);
     }
-
-    public static StockHandler invalidFile() {
-        return new StockHandler(StockErrorStatus.INVALID_FILE);
-    }
-
-    public static StockHandler fileSizeIsToLarge() {
-        return new StockHandler(StockErrorStatus.FILE_TOO_LARGE);
-    }
-
-    public static StockHandler emptyStock() {
-        return new StockHandler(StockErrorStatus.STOCK_IS_EMPTY);
-    }
 }

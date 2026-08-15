@@ -1,6 +1,7 @@
 package com.example.demo.api.krx.service;
 
 import com.example.demo.api.krx.client.KrxLambdaClient;
+import com.example.demo.api.krx.dto.KrxKospi200ResponseDto;
 import com.example.demo.api.krx.dto.KrxOhlcvResponseDto;
 import com.example.demo.api.krx.exception.KrxHandler;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,29 @@ public class KrxService {
         if (response.getErrors() != null && !response.getErrors().isEmpty()) {
             log.warn("KRX Lambda가 {}건을 제외했습니다. 수신 {}건 / 요청 {}건. 사유={}",
                     response.getErrors().size(), response.getStocks().size(), topN,
+                    response.getErrors().stream()
+                            .map(e -> e.getStockCode() + ":" + e.getReason())
+                            .toList());
+        }
+
+        return response;
+    }
+
+    /**
+     * 코스피200 구성종목과 해당 거래일의 시가·종가.
+     * 목록이 비어 있으면 그대로 동기화할 경우 전 종목이 비활성 처리되므로 반드시 예외로 막는다.
+     */
+    public KrxKospi200ResponseDto getKospi200Prices() {
+        KrxKospi200ResponseDto response = krxLambdaClient.invokeGetKospi200Prices();
+
+        if (response == null || response.getStocks() == null || response.getStocks().isEmpty()) {
+            log.error("KRX 코스피200 Lambda 응답이 비어있습니다.");
+            throw KrxHandler.krxLambdaResponseEmpty();
+        }
+
+        if (response.getErrors() != null && !response.getErrors().isEmpty()) {
+            log.warn("KRX 코스피200 Lambda가 {}건을 제외했습니다. 수신 {}건 / 구성종목 {}건. 사유={}",
+                    response.getErrors().size(), response.getStocks().size(), response.getRequestedCount(),
                     response.getErrors().stream()
                             .map(e -> e.getStockCode() + ":" + e.getReason())
                             .toList());

@@ -15,30 +15,23 @@ public class StockResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class StockPriceResponse {
-        private String stockCode;
-        private String stockName;
-        private BigDecimal openPrice;
-        private BigDecimal closePrice;
-        private LocalDate inquiryDate;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class UploadExcelResponse {
-        private String s3Uri;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ImportStockResponse {
-        private int savedCount;
+    public static class SyncStocksResponse {
+        private LocalDate tradeDate;
+        private int addedCount;
         private int updatedCount;
-        private int deletedCount;
+        private int deactivatedCount;
+        private int reactivatedCount;
+        private int priceUpdatedCount;
+        /**
+         * 구성종목이지만 종목명을 받지 못해 목록에 반영하지 못한 종목.
+         * 편출인지 일시적 실패인지 알 수 없어 활성 상태를 건드리지 않는다.
+         */
+        private List<String> unresolvedStockCodes;
+        /**
+         * 목록에는 반영됐지만 시세를 받지 못한 종목(거래정지 등).
+         * 종목 자체는 정상 편입 상태이며 시가·종가만 이전 값으로 남는다.
+         */
+        private List<String> priceUnavailableStockCodes;
     }
 
     @Getter
@@ -48,6 +41,20 @@ public class StockResponseDto {
     public static class StockItemResponse {
         private String stockCode;
         private String stockName;
+        private Boolean isActive;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StockOpenAndClosePriceResponse {
+        private String stockCode;
+        private String stockName;
+        private BigDecimal openPrice;
+        private BigDecimal closePrice;
+        private LocalDate tradeDate;
+        private Boolean isActive;
     }
 
     @Getter

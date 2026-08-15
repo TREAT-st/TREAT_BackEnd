@@ -5,11 +5,6 @@ import com.example.demo.domain.volatility.util.VolatilityIndicatorCalculator.Ind
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 변동성 알림 조건 평가. volatility_detector의 evaluate_alert 포팅 + 가중치 스코어링.
- * 알림 트리거(alert)는 원본과 동일하게 "조건 하나라도 충족 시 true".
- * score는 가중치 합(0.0~1.0)으로, 심각도 정렬 용도.
- */
 public class VolatilityAlertEvaluator {
 
     public static final String REASON_DAILY_RETURN = "daily_return_abs_ge_5";

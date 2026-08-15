@@ -4,6 +4,7 @@ import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -35,16 +36,28 @@ public class Stock extends BaseTimeEntity {
     @Column(name = "close_price")
     private BigDecimal closePrice;
 
-    @Column(name = "inquiry_date")
-    private LocalDate inquiryDate;
+    @Column(name = "trade_date")
+    private LocalDate tradeDate;
 
-    public void updatePrice(BigDecimal openPrice, BigDecimal closePrice, LocalDate inquiryDate) {
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    public void updatePrice(BigDecimal openPrice, BigDecimal closePrice, LocalDate tradeDate) {
         this.openPrice = openPrice;
         this.closePrice = closePrice;
-        this.inquiryDate = inquiryDate;
+        this.tradeDate = tradeDate;
     }
 
     public void updateName(String stockName) {
         this.stockName = stockName;
+    }
+
+    public void activate() {
+        this.isActive = true;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
     }
 }

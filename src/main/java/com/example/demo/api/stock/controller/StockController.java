@@ -1,10 +1,7 @@
 package com.example.demo.api.stock.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
-import com.example.demo.api.stock.dto.StockResponseDto.ImportStockResponse;
-import com.example.demo.api.stock.dto.StockResponseDto.StockPageResponse;
-import com.example.demo.api.stock.dto.StockResponseDto.StockPriceResponse;
-import com.example.demo.api.stock.dto.StockResponseDto.UploadExcelResponse;
+import com.example.demo.api.stock.dto.StockResponseDto.*;
 import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.domain.stock.entity.Stock;
@@ -18,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 
 @Tag(name = "[주식] 주식 종목 API.")
@@ -30,35 +26,37 @@ public class StockController {
 
     private final StockUseCase stockUseCase;
 
-    @Operation(summary = "코스피200 엑셀 파일 S3 업로드",
-            description = "로컬에서 다운로드한 KRX 코스피200 엑셀 파일을 S3에 업로드합니다.")
-    @PostMapping(value = "/excel/upload", consumes = "multipart/form-data")
-    public ApiResponseDto<UploadExcelResponse> uploadStockExcel(@RequestPart("file") MultipartFile file) {
-        return ApiResponseDto.onSuccess(stockUseCase.uploadStockExcel(file));
+    @Operation(summary = "코스피200 종목·시세 동기화 (KRX)",
+            description = "KRX Lambda로 코스피200 구성종목과 가장 가까운 거래일의 시가/종가를 한 번에 받아 반영합니다.<br>" +
+                    "편출된 종목은 삭제하지 않고 비활성 처리하며, 재편입되면 다시 활성으로 되돌립니다.<br><br>" +
+                    "priceUnavailableStockCodes : 목록에는 반영됐지만 시세를 못 받은 종목(거래정지 등)<br>" +
+                    "unresolvedStockCodes : 종목명을 못 받아 목록에 반영하지 못한 종목(활성 상태 유지)")
+    @PostMapping("/sync")
+    public ApiResponseDto<SyncStocksResponse> syncKospi200FromKrx() {
+        return ApiResponseDto.onSuccess(stockUseCase.syncKospi200FromKrx());
     }
 
-    @Operation(summary = "S3 엑셀 파일 DB 저장",
-            description = "S3에 업로드된 코스피200 엑셀 파일을 읽어 종목 정보를 DB에 저장합니다.")
-    @PostMapping("/excel/import")
-    public ApiResponseDto<ImportStockResponse> importStockFromS3() {
-        return ApiResponseDto.onSuccess(stockUseCase.importStockFromS3());
-    }
-
-    @Operation(summary = "전일(가장 최근 일자) 시가/종가 조회",
-            description = "종목코드로 전날의(가장 최근 날짜) 시가와 종가를 KIS API에서 조회하고 DB에 저장합니다.")
-    @GetMapping("/{stockCode}/latest-price")
-    public ApiResponseDto<StockPriceResponse> getLatestStockPrice(
+    @Operation(summary = "종목 코드로 해당 종목 조회",
+            description = "종목 코드로 코스피200 종목의 시가/종가를 조회합니다.<br>" +
+                    "tradeDate는 해당 시세의 기준 거래일(당일과 가장 가까운 거래일)이며, 동기화 전이면 시세가 null일 수 있습니다.<br>" +
+                    "편출된 종목도 조회되며 isActive로 현재 편입 여부를 알 수 있습니다.")
+    @GetMapping("/{stockCode}")
+    public ApiResponseDto<StockOpenAndClosePriceResponse> getStockByStockcode(
             @PathVariable @Pattern(regexp = "\\d{6}", message = "종목코드는 6자리 숫자입니다.") String stockCode) {
-        return ApiResponseDto.onSuccess(stockUseCase.getLatestStockPriceByStockCode(stockCode));
+        return ApiResponseDto.onSuccess(stockUseCase.getStockOpenAndClosePrice(stockCode));
     }
 
-    @Operation(summary = "모든 종목 조회", description = "Stock에 저장된 모든 종목의 코드와 이름을 페이지 단위로 조회합니다.")
-    @GetMapping
+    @Operation(summary = "모든 종목 조회",
+            description = "Stock에 저장된 종목을 페이지 단위로 조회합니다.<br>" +
+                    "isActive=true : 코스피200에 현재 편입된 종목만<br>" +
+                    "isActive=false : 편입, 편출 전체 종목")
+    @GetMapping("/all-stock")
     public ApiResponseDto<StockPageResponse> getAllStocks(
+            @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.asc("stockCode")));
-        Page<Stock> stockPage = stockUseCase.getAllStocks(pageable);
+        Page<Stock> stockPage = stockUseCase.getAllStocks(isActive, pageable);
         return ApiResponseDto.onSuccess(StockConverter.toStockPageResponse(stockPage));
     }
 }

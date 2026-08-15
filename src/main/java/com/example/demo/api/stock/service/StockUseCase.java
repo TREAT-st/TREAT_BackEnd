@@ -1,34 +1,27 @@
 package com.example.demo.api.stock.service;
 
-import com.example.demo.api.kis.dto.KisResponseDto;
-import com.example.demo.api.kis.exception.KisHandler;
-import com.example.demo.api.kis.service.KisService;
+import com.example.demo.api.krx.dto.KrxKospi200ResponseDto;
+import com.example.demo.api.krx.service.KrxService;
 import com.example.demo.api.stock.dto.StockResponseDto.*;
 import com.example.demo.api.stock.dto.StockSyncResultDto;
 import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.common.annotation.UseCase;
-import com.example.demo.common.service.S3Service;
-import com.example.demo.common.util.DateUtil;
-import com.example.demo.common.util.ExcelUtil;
 import com.example.demo.domain.stock.entity.Stock;
-import com.example.demo.domain.stock.exception.StockHandler;
+import com.example.demo.domain.stock.entity.StockPriceSnapshot;
 import com.example.demo.domain.stock.service.StockCommandService;
 import com.example.demo.domain.stock.service.StockQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.exception.SdkException;
 
-import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static com.example.demo.common.consts.StaticVariable.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @UseCase
@@ -37,79 +30,72 @@ public class StockUseCase {
 
     private final StockCommandService stockCommandService;
     private final StockQueryService stockQueryService;
-    private final KisService kisService;
-    private final S3Service s3Service;
-    private final StockExcelService stockExcelService;
-    private final DateUtil dateUtil;
-    private final ExcelUtil excelUtil;
+    private final KrxService krxService;
 
-    @Value("${cloud.aws.s3.bucket.kospi200}")
-    private String bucketName;
+    @Transactional
+    public SyncStocksResponse syncKospi200FromKrx() {
+        KrxKospi200ResponseDto response = krxService.getKospi200Prices();
+        LocalDate tradeDate = LocalDate.parse(response.getTradeDate(), DateTimeFormatter.BASIC_ISO_DATE);
 
-    public UploadExcelResponse uploadStockExcel(MultipartFile file) {
-        excelUtil.validateExcelFile(file);
+        // stocks에는 구성종목이 전부 들어온다. 시세를 못 받은 종목도 코드·이름은 있으므로
+        // 목록 동기화는 전체를 대상으로 하고, 시세 갱신만 가격이 있는 종목으로 좁힌다.
+        Map<String, String> codeToName = response.getStocks().stream()
+                .collect(Collectors.toMap(
+                        KrxKospi200ResponseDto.StockPrice::getStockCode,
+                        KrxKospi200ResponseDto.StockPrice::getStockName));
 
-        String s3Uri = "s3://" + bucketName + "/" + KOSPI200_FILE_KEY;
+        // errors에는 성격이 다른 둘이 섞여 온다. stocks에 있는지로 구분한다.
+        List<KrxKospi200ResponseDto.ErrorItem> errors =
+                response.getErrors() == null ? List.of() : response.getErrors();
 
-        try {
-            s3Service.uploadFile(file, s3Uri);
-            return UploadExcelResponse.builder()
-                    .s3Uri(s3Uri)
-                    .build();
-        } catch (IOException | SdkException e) {
-            throw StockHandler.s3FileIoError();
-        }
-    }
+        // 종목명조차 못 받아 stocks에서 빠진 종목. 편출인지 알 수 없으므로 판정을 보류한다.
+        List<String> unresolvedStockCodes = errors.stream()
+                .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
+                .filter(code -> !codeToName.containsKey(code))
+                .distinct()
+                .toList();
 
-    public ImportStockResponse importStockFromS3() {
-        String s3Uri = "s3://" + bucketName + "/" + KOSPI200_FILE_KEY;
-        StockSyncResultDto result = stockExcelService.syncKOSPI200FromExcel(s3Uri);
+        // 목록에는 반영되지만 시세만 못 받은 종목(거래정지 등). 편출이 아니다.
+        List<String> priceUnavailableStockCodes = errors.stream()
+                .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
+                .filter(codeToName::containsKey)
+                .distinct()
+                .toList();
 
-        return ImportStockResponse.builder()
-                .savedCount(result.addedCount())
-                .updatedCount(result.updatedCount())
-                .deletedCount(result.deletedCount())
+        StockSyncResultDto syncResult =
+                stockCommandService.syncStocks(codeToName, Set.copyOf(unresolvedStockCodes));
+
+        List<StockPriceSnapshot> snapshots = response.getStocks().stream()
+                .filter(KrxKospi200ResponseDto.StockPrice::hasPrice)
+                .map(s -> new StockPriceSnapshot(s.getStockCode(), s.getOpenPrice(), s.getClosePrice()))
+                .toList();
+        int priceUpdatedCount = stockCommandService.updateStockPrices(snapshots, tradeDate);
+
+        log.info("코스피200 동기화 완료. tradeDate={} 신규={} 이름변경={} 편출={} 재편입={} 시세반영={} 시세미수신={} 미해결={}",
+                tradeDate, syncResult.addedCount(), syncResult.updatedCount(),
+                syncResult.deactivatedCount(), syncResult.reactivatedCount(), priceUpdatedCount,
+                priceUnavailableStockCodes.size(), unresolvedStockCodes.size());
+
+        return SyncStocksResponse.builder()
+                .tradeDate(tradeDate)
+                .addedCount(syncResult.addedCount())
+                .updatedCount(syncResult.updatedCount())
+                .deactivatedCount(syncResult.deactivatedCount())
+                .reactivatedCount(syncResult.reactivatedCount())
+                .priceUpdatedCount(priceUpdatedCount)
+                .unresolvedStockCodes(unresolvedStockCodes)
+                .priceUnavailableStockCodes(priceUnavailableStockCodes)
                 .build();
     }
 
-    @Transactional
-    public StockPriceResponse getLatestStockPriceByStockCode(String stockCode) {
-        // 존재하지 않는 종목이면 getStockByCode가 StockHandler.notFound()를 던진다.
-        stockQueryService.getStockByCode(stockCode);
-
-        for (int i = 1; i <= 10; i++) {
-            LocalDate targetDate = LocalDate.now(SEOUL_ZONE).minusDays(i);
-
-            if (dateUtil.isWeekend(targetDate)) continue;
-
-            String dateStr = targetDate.format(DATE_FORMATTER);
-            KisResponseDto response = kisService.getDailyStockPrice(stockCode, dateStr, dateStr);
-            if(response == null) continue;
-
-            List<KisResponseDto.DailyData> output2 = response.getOutput2();
-            if (output2 == null || output2.isEmpty()) continue;
-
-            String rawOpen  = output2.get(0).getOpenPrice();
-            String rawClose = output2.get(0).getClosePrice();
-            if (rawOpen == null || rawOpen.isBlank() || rawClose == null || rawClose.isBlank()) continue;
-
-            try {
-                BigDecimal openPrice  = new BigDecimal(rawOpen.trim());
-                BigDecimal closePrice = new BigDecimal(rawClose.trim());
-
-                Stock updatedStockPrice = stockCommandService.updateStockPrice(stockCode, openPrice, closePrice, targetDate);
-                return StockConverter.toStockPriceResponse(updatedStockPrice);
-            } catch (NumberFormatException e) {
-                log.warn("KIS 가격 데이터 파싱 실패. stockCode={}, date={}, open={}, close={}",
-                        stockCode, dateStr, rawOpen, rawClose);
-            }
-        }
-
-        throw KisHandler.kisResponseEmpty();
+    @Transactional(readOnly = true)
+    public StockOpenAndClosePriceResponse getStockOpenAndClosePrice(String stockCode) {
+        Stock stock = stockQueryService.getStockByCode(stockCode);
+        return StockConverter.toStockOpenAndClosePriceResponse(stock);
     }
 
     @Transactional(readOnly = true)
-    public Page<Stock> getAllStocks(Pageable pageable) {
-        return stockQueryService.getAllStocks(pageable);
+    public Page<Stock> getAllStocks(Boolean isActive, Pageable pageable) {
+        return stockQueryService.getAllStocks(isActive, pageable);
     }
 }
