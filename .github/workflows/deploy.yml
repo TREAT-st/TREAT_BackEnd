@@ -1,0 +1,129 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew bootJar -x test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload JAR to S3
+        run: |
+          aws s3 cp build/libs/demo-0.0.1-SNAPSHOT.jar s3://${{ secrets.S3_BUCKET }}/treat-app.jar
+
+      - name: Deploy to EC2 via SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: |
+          set -Eeuo pipefail
+          trap 'rm -f key.pem' EXIT
+
+          echo "$EC2_SSH_KEY" > key.pem
+          chmod 600 key.pem
+
+          echo "Connecting to EC2 host: $EC2_HOST"
+          ssh -vv \
+            -o StrictHostKeyChecking=no \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -i key.pem \
+            $EC2_USER@$EC2_HOST \
+            "S3_BUCKET='$S3_BUCKET' EC2_USER='$EC2_USER' bash -s" << 'EOF'
+            set -Eeuo pipefail
+
+            APP_DIR="/home/$EC2_USER/app"
+            APP_JAR="$APP_DIR/treat-app.jar"
+            APP_LOG="$APP_DIR/app.log"
+
+            echo "[deploy] whoami=$(whoami)"
+            echo "[deploy] host=$(hostname)"
+            echo "[deploy] app dir=$APP_DIR"
+            mkdir -p "$APP_DIR"
+
+            # 기존 프로세스 종료
+            APP_PROCESS_PATTERN="java .*treat-app.jar|java .*demo-0.0.1-SNAPSHOT.jar"
+            PID="$(pgrep -f "$APP_PROCESS_PATTERN" || true)"
+            if [ -n "$PID" ]; then
+              echo "[deploy] stopping existing process: $PID"
+              kill $PID || true
+
+              for i in {1..15}; do
+                if ! pgrep -f "$APP_PROCESS_PATTERN" > /dev/null; then
+                  echo "[deploy] existing process stopped"
+                  break
+                fi
+                echo "[deploy] waiting for existing process to stop... ($i/15)"
+                sleep 1
+              done
+
+              REMAINING_PID="$(pgrep -f "$APP_PROCESS_PATTERN" || true)"
+              if [ -n "$REMAINING_PID" ]; then
+                echo "[deploy] force killing existing process: $REMAINING_PID"
+                kill -9 $REMAINING_PID || true
+              fi
+            else
+              echo "[deploy] no existing process"
+            fi
+
+            # S3에서 최신 JAR 다운로드
+            echo "[deploy] downloading jar from s3://$S3_BUCKET/treat-app.jar"
+            aws s3 cp "s3://$S3_BUCKET/treat-app.jar" "$APP_JAR"
+            ls -lh "$APP_JAR"
+
+            # 실행
+            echo "[deploy] starting application"
+            export $(cat "$APP_DIR/.env" | xargs)
+            nohup java \
+              -Xms128m -Xmx400m \
+              -XX:MetaspaceSize=128m \
+              -XX:MaxMetaspaceSize=128m \
+              -jar "$APP_JAR" \
+              --spring.profiles.active=dev \
+              --spring.data.redis.host=localhost \
+              --spring.data.redis.port=6379 \
+              < /dev/null > "$APP_LOG" 2>&1 &
+            APP_PID=$!
+            disown
+
+            echo "[deploy] started pid=$APP_PID"
+            sleep 10
+
+            echo "[deploy] process check"
+            if ps -p "$APP_PID" > /dev/null; then
+              ps -f -p "$APP_PID"
+              echo "[deploy] app log tail"
+              tail -n 120 "$APP_LOG" || true
+            else
+              echo "[deploy] application process exited during startup"
+              echo "[deploy] app log tail"
+              tail -n 200 "$APP_LOG" || true
+              exit 1
+            fi
+          EOF

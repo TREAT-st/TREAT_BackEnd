@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: ${RDS_DATABASE_URL}
+    username: ${RDS_DATABASE_USERNAME}
+    password: ${RDS_DATABASE_PASSWORD}
