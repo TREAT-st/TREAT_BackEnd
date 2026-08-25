@@ -26,12 +26,16 @@ public enum ErrorStatus implements BaseErrorCode{
     _UNAUTHORIZED(UNAUTHORIZED, 4001, "로그인이 필요합니다."),
     _FORBIDDEN(FORBIDDEN, 4002, "금지된 요청입니다."),
 
-    // user (4050-4099)
-    // userPortfolio (4100-4149)
-    // notification (4150-4199)
-    // favoriteStock (4200-4249)
-    // reportRequest (4250-4299)
-    // report (4300-4349)
+    // 도메인별 코드 대역 (각 도메인의 *ErrorStatus에 정의)
+    // user           (4050-4099)  UserErrorStatus
+    // userPortfolio  (4100-4149)  UserPortfolioErrorStatus
+    // notification   (4150-4199)  NotificationErrorStatus
+    // favoriteStock  (4200-4249)  FavoriteStockErrorStatus
+    // stock          (4250-4299)  StockErrorStatus
+    // volatility     (4300-4349)  VolatilityErrorStatus
+    // 인증            (4350-4399)  ErrorStatus (아래 AUTH_*)
+    // (4400-4449)     비어 있음 — KIS 연동 제거로 회수됨
+    // krx 연동        (4450-4499)  KrxErrorStatus
 
     // 인증 관련 오류 (4350~4399)
     @ExplainError("카카오 로그인 시 이메일 동의를 하지 않아 이메일을 가져오지 못했습니다.")

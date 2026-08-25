@@ -17,7 +17,7 @@ public class FavoriteStockResponseDto {
         private Long favoriteStockId;
         private Long userId;
         private String stockCode;
-        private String ticker;
+        private String stockName;
         private Boolean isAlertEnabled;
     }
 
@@ -30,5 +30,14 @@ public class FavoriteStockResponseDto {
         private int page;
         private int totalPages;
         private boolean hasNext;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DistinctStockResponse {
+        private String stockCode;
+        private String stockName;
     }
 }
