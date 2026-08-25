@@ -72,3 +72,5 @@ cloud:
         kospi200: ${S3_BUCKET_KOSPI200:treat-kospi200}
         #finance-reports: ${S3_BUCKET_FINANCE_REPORTS:treat-finance-reports}
         #static: ${S3_BUCKET_STATIC:treat-static}
+server:
+  forward-headers-strategy: framework #리다이렉트 URL의 프로토콜 관련 설정
