@@ -34,23 +34,27 @@ public class VolatilityAlertEvaluator {
     public record AlertResult(double score, boolean alert, List<String> reasons) {
     }
 
+    /**
+     * 각 조건은 지표가 유한한 값일 때만 판정한다.
+     * isNaN만 검사하면 0 나누기로 생긴 Infinity가 그대로 통과해 임계값을 무조건 만족시킨다.
+     */
     public static AlertResult evaluate(IndicatorSnapshot snapshot) {
         List<String> reasons = new ArrayList<>();
         double score = 0.0;
 
-        if (!Double.isNaN(snapshot.dailyReturnPct())
+        if (Double.isFinite(snapshot.dailyReturnPct())
                 && Math.abs(snapshot.dailyReturnPct()) >= DAILY_RETURN_ABS_THRESHOLD) {
             reasons.add(REASON_DAILY_RETURN);
             score += WEIGHT_DAILY_RETURN;
         }
 
-        if (!Double.isNaN(snapshot.intradayRangePct())
+        if (Double.isFinite(snapshot.intradayRangePct())
                 && snapshot.intradayRangePct() >= INTRADAY_RANGE_THRESHOLD) {
             reasons.add(REASON_INTRADAY_RANGE);
             score += WEIGHT_INTRADAY_RANGE;
         }
 
-        if (!Double.isNaN(snapshot.volumeSpikeRatio())
+        if (Double.isFinite(snapshot.volumeSpikeRatio())
                 && snapshot.volumeSpikeRatio() >= VOLUME_SPIKE_THRESHOLD) {
             reasons.add(REASON_VOLUME_SPIKE);
             score += WEIGHT_VOLUME_SPIKE;
@@ -58,7 +62,7 @@ public class VolatilityAlertEvaluator {
 
         // bb_percent_b 상단/하단은 같은 지표의 양끝단이라 가중치는 한 번만 반영.
         boolean bbExtreme = false;
-        if (!Double.isNaN(snapshot.bbPercentB())) {
+        if (Double.isFinite(snapshot.bbPercentB())) {
             if (snapshot.bbPercentB() >= BB_PERCENT_B_HIGH) {
                 reasons.add(REASON_BB_HIGH);
                 bbExtreme = true;
@@ -72,7 +76,7 @@ public class VolatilityAlertEvaluator {
             score += WEIGHT_BB_EXTREME;
         }
 
-        if (!Double.isNaN(snapshot.vol20Quantile())
+        if (Double.isFinite(snapshot.vol20Quantile())
                 && snapshot.vol20Quantile() >= VOL20_QUANTILE_THRESHOLD) {
             reasons.add(REASON_VOL20_QUANTILE);
             score += WEIGHT_VOL20_QUANTILE;

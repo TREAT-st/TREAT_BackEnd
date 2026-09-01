@@ -8,6 +8,7 @@ import com.example.demo.api.volatility.dto.VolatilityResponseDto.VolatilityListR
 import com.example.demo.domain.volatility.entity.Volatility;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,7 +16,7 @@ import static com.example.demo.common.consts.StaticVariable.*;
 
 public class VolatilityConverter {
 
-    public static DetectionResult toDetectionResult(List<VolatilitySignal> signals) {
+    public static DetectionResult toDetectionResult(List<VolatilitySignal> signals, LocalDate tradeDate) {
         List<DetectedStock> stocks = signals.stream()
                 .map(s -> DetectedStock.builder()
                         .stockCode(s.stockCode())
@@ -23,12 +24,14 @@ public class VolatilityConverter {
                         .build())
                 .collect(Collectors.toList());
         return DetectionResult.builder()
+                .tradeDate(tradeDate)
                 .stocks(stocks)
                 .detectedCount(stocks.size())
                 .build();
     }
 
-    public static ReportGenerationResult toReportGenerationResult(int requestedCount, List<String> failedStockCodes) {
+    public static ReportGenerationResult toReportGenerationResult(int requestedCount, List<String> failedStockCodes,
+                                                                 LocalDate tradeDate) {
         int failedCount = failedStockCodes.size();
         String status;
         if (failedCount == 0) {
@@ -41,6 +44,7 @@ public class VolatilityConverter {
 
         return ReportGenerationResult.builder()
                 .status(status)
+                .tradeDate(tradeDate)
                 .requestedCount(requestedCount)
                 .successCount(requestedCount - failedCount)
                 .failedCount(failedCount)
@@ -52,6 +56,7 @@ public class VolatilityConverter {
         return VolatilityInfo.builder()
                 .stockCode(volatility.getStockCode())
                 .stockName(volatility.getStockName())
+                .tradeDate(volatility.getTradeDate())
                 .reportUrl(volatility.getReportUrl())
                 .createdDate(volatility.getCreatedDate())
                 .build();
