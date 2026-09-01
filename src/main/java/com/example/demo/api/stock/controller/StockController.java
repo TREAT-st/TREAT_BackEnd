@@ -7,6 +7,8 @@ import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.domain.stock.entity.Stock;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +17,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 
 @Tag(name = "[주식] 주식 종목 API.")
 @Validated
@@ -29,8 +30,11 @@ public class StockController {
     @Operation(summary = "코스피200 종목·시세 동기화 (KRX)",
             description = "KRX Lambda로 코스피200 구성종목과 가장 가까운 거래일의 시가/종가를 한 번에 받아 반영합니다.<br>" +
                     "편출된 종목은 삭제하지 않고 비활성 처리하며, 재편입되면 다시 활성으로 되돌립니다.<br><br>" +
+                    "아래는 에러가 발생한 종목들입니다.<br>" +
                     "priceUnavailableStockCodes : 목록에는 반영됐지만 시세를 못 받은 종목(거래정지 등)<br>" +
-                    "unresolvedStockCodes : 종목명을 못 받아 목록에 반영하지 못한 종목(활성 상태 유지)")
+                    "unresolvedStockCodes : 종목명을 못 받아 목록에 반영하지 못한 종목(활성 상태 유지)<br>" +
+                    "priceUpdateSkippedStockCodes : 시세는 받았지만 DB에 반영하지 못한 종목. " +
+                    "이 목록이 비어 있지 않으면 동기화 정합성 이상 신호입니다.")
     @PostMapping("/sync")
     public ApiResponseDto<SyncStocksResponse> syncKospi200FromKrx() {
         return ApiResponseDto.onSuccess(stockUseCase.syncKospi200FromKrx());
@@ -49,12 +53,15 @@ public class StockController {
     @Operation(summary = "모든 종목 조회",
             description = "Stock에 저장된 종목을 페이지 단위로 조회합니다.<br>" +
                     "isActive=true : 코스피200에 현재 편입된 종목만<br>" +
-                    "isActive=false : 편입, 편출 전체 종목")
+                    "isActive=false : 편입, 편출 전체 종목<br>" +
+                    "pageSize는 1~200입니다.")
     @GetMapping("/all-stock")
     public ApiResponseDto<StockPageResponse> getAllStocks(
             @RequestParam(required = false) Boolean isActive,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page는 0 이상이어야 합니다.") int page,
+            @RequestParam(defaultValue = "20")
+            @Min(value = 1, message = "pageSize는 1 이상이어야 합니다.")
+            @Max(value = 200, message = "pageSize는 200 이하여야 합니다.") int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.asc("stockCode")));
         Page<Stock> stockPage = stockUseCase.getAllStocks(isActive, pageable);
         return ApiResponseDto.onSuccess(StockConverter.toStockPageResponse(stockPage));
