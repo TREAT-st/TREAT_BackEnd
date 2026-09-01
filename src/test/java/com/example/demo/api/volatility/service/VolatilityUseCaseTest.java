@@ -18,6 +18,8 @@ import org.mockito.Mockito;
 import java.time.LocalDate;
 import java.util.List;
 
+import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
+import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -132,6 +134,42 @@ class VolatilityUseCaseTest {
         useCase.runReportGeneration(reportRequest("{\"gptModel\":\" gpt-5-mini \"}"));
 
         assertThat(capturedReportJob().getGptModel()).isEqualTo("gpt-5-mini");
+    }
+
+    /**
+     * 콜백은 reportDate를 그대로 되돌려 (stockCode, tradeDate)로 행을 찾는다.
+     * 서버 날짜를 보내면 휴장일이나 과거 탐지 결과 재생성에서 행을 못 찾아
+     * 리포트는 만들어졌는데 reportUrl이 비는 상태가 된다.
+     */
+    @Test
+    void 단일_리포트도_저장된_거래일을_사용한다() throws Exception {
+        LocalDate storedTradeDate = LocalDate.of(2026, 8, 11);
+        Mockito.when(queryService.getLatestByStockCode("005930"))
+                .thenReturn(Volatility.builder()
+                        .stockCode("005930").stockName("삼성전자").tradeDate(storedTradeDate).build());
+
+        useCase.runSingleReportGeneration(new ObjectMapper().readValue(
+                "{\"stockCode\":\"005930\",\"stockName\":\"삼성전자\"}", SingleReportRequest.class));
+
+        ReportLambdaRequestDto job = capturedReportJob();
+        assertThat(job.getReportDate()).isEqualTo("20260811");
+        assertThat(job.getJobId()).isEqualTo("VOLATILITY_20260811_005930");
+    }
+
+    /**
+     * yyyyMMdd의 기본 SMART 해석은 20260231을 2월 말로 보정한다.
+     * 그대로 두면 콜백이 존재하지 않는 날짜로 엉뚱한 행을 갱신할 수 있다.
+     */
+    @Test
+    void 콜백의_존재하지_않는_날짜는_거부한다() throws Exception {
+        assertThatThrownBy(() -> useCase.handleReportCallback(new ObjectMapper().readValue(
+                "{\"stockCode\":\"005930\",\"reportDate\":\"20260231\","
+                        + "\"reportUrl\":\"https://example.com/x_analysis.html\"}", ReportCallback.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting(e -> ((GeneralException) e).getErrorReasonHttpStatus().getCode())
+                .isEqualTo(VolatilityErrorStatus.REPORT_CALLBACK_INVALID_REQUEST.getCode());
+
+        verify(commandService, never()).updateReportUrl(any(), any(), any());
     }
 
     private ReportLambdaRequestDto capturedReportJob() {

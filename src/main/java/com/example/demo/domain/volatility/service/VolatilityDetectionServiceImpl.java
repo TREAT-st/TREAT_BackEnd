@@ -13,13 +13,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 
 @Slf4j
 @Service
@@ -41,6 +40,10 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
      * "전 종목 실패"만 막는 가드로는 이 경우를 잡지 못한다.
      */
     private static final double MIN_ANALYZED_RATIO = 0.8;
+
+    /** STRICT 해석이라 존재하지 않는 날짜를 보정 없이 거부한다. STRICT에서는 yyyy가 아니라 uuuu다. */
+    private static final DateTimeFormatter TRADE_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
 
     private final KrxService krxService;
 
@@ -86,24 +89,12 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
     }
 
     /**
-     * 거래일은 KRX 응답을 기준으로 삼는다. 서버 시각을 쓰면 타임존이나 자정 경계에서
-     * 저장된 날짜와 실제 거래일이 어긋난다.
-     * 응답에 값이 없을 때만 서버 날짜로 대체하되, 조용히 넘어가지 않도록 경고를 남긴다.
+     * 거래일은 KRX 응답을 기준으로 삼는다. 서버 날짜로 대체하면 휴장일이나 응답 오류일 때
+     * 실제 거래일과 다른 Volatility와 리포트가 만들어지므로, 대체하지 않고 실패시킨다.
+     * 값의 존재와 형식은 KrxService가 경계에서 이미 검증했다.
      */
     private LocalDate resolveTradeDate(String effectiveTradeDate) {
-        if (effectiveTradeDate != null && !effectiveTradeDate.isBlank()) {
-            try {
-                return LocalDate.parse(effectiveTradeDate, DateTimeFormatter.BASIC_ISO_DATE);
-            } catch (DateTimeParseException e) {
-                log.warn("effective_trade_date 파싱 실패. value={}", effectiveTradeDate);
-            }
-        } else {
-            log.warn("KRX 응답에 effective_trade_date가 없습니다.");
-        }
-
-        LocalDate fallback = LocalDate.now(SEOUL_ZONE);
-        log.warn("거래일을 서버 날짜로 대체합니다. tradeDate={}", fallback);
-        return fallback;
+        return LocalDate.parse(effectiveTradeDate, TRADE_DATE_FORMATTER);
     }
 
     /**

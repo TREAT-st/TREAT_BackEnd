@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,13 @@ public class VolatilityUseCase {
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
 
-    private static final DateTimeFormatter REPORT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    /**
+     * yyyyMMdd. 기본 SMART 해석은 20260231 같은 날짜를 2월 말로 보정해버려서,
+     * 콜백이 엉뚱한 거래일의 행을 갱신할 수 있다. STRICT로 거부한다.
+     * STRICT에서는 연도 필드로 yyyy(연호 기준) 대신 uuuu(proleptic)를 써야 한다.
+     */
+    private static final DateTimeFormatter REPORT_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
 
     /** KRX Lambda에 요청할 시총 상위 종목 수. */
     private static final int DETECTION_REQUEST_SIZE = 100;
@@ -102,9 +109,17 @@ public class VolatilityUseCase {
         return VolatilityConverter.toReportGenerationResult(targets.size(), failedStockCodes, tradeDate);
     }
 
+    /**
+     * 리포트 날짜는 저장된 거래일을 따라야 한다. 서버 날짜를 보내면 콜백이
+     * (stockCode, 그 날짜)로 행을 찾지 못해 리포트는 만들어졌는데 reportUrl이 비는 상태가 된다.
+     * 연결할 행이 없으면 애초에 생성하지 않는다. GPT 비용만 나가고 쓰이지 못한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void runSingleReportGeneration(SingleReportRequest request) {
-        String reportDate = LocalDate.now(SEOUL_ZONE).format(REPORT_DATE_FORMATTER);
-        invokeReportJob(reportDate, request.getStockCode(), request.getStockName(), request.getGptModel());
+        Volatility target = volatilityQueryService.getLatestByStockCode(request.getStockCode());
+        String reportDate = target.getTradeDate().format(REPORT_DATE_FORMATTER);
+
+        invokeReportJob(reportDate, target.getStockCode(), request.getStockName(), request.getGptModel());
     }
 
     private void invokeReportJob(String reportDate, String stockCode, String stockName, String gptModel) {

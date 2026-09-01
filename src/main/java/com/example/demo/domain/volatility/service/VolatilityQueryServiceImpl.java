@@ -1,6 +1,7 @@
 package com.example.demo.domain.volatility.service;
 
 import com.example.demo.domain.volatility.entity.Volatility;
+import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.example.demo.domain.volatility.repository.VolatilityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,12 @@ public class VolatilityQueryServiceImpl implements VolatilityQueryService {
     @Override
     public List<Volatility> getAllVolatilityByCode(String stockCode) {
         return volatilityRepository.findAllByStockCodeOrderByTradeDateDesc(stockCode);
+    }
+
+    @Override
+    public Volatility getLatestByStockCode(String stockCode) {
+        return volatilityRepository.findFirstByStockCodeOrderByTradeDateDesc(stockCode)
+                .orElseThrow(VolatilityHandler::volatilityNotFound);
     }
 
     /**

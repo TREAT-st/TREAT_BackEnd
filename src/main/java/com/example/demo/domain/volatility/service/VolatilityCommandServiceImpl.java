@@ -39,7 +39,8 @@ public class VolatilityCommandServiceImpl implements VolatilityCommandService {
             return;
         }
 
-        Map<String, Volatility> existingByCode = volatilityRepository.findAllByTradeDateOrderByIdAsc(tradeDate)
+        // 잠금 조회다. 같은 거래일에 두 탐지가 동시에 들어오면 뒤엣것이 앞엣것의 커밋을 기다린다.
+        Map<String, Volatility> existingByCode = volatilityRepository.findAllByTradeDateForUpdate(tradeDate)
                 .stream()
                 .collect(Collectors.toMap(Volatility::getStockCode, Function.identity()));
 
