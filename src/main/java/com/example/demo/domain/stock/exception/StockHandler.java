@@ -12,4 +12,8 @@ public class StockHandler extends GeneralException {
     public static StockHandler notFound() {
         return new StockHandler(StockErrorStatus.STOCK_NOT_FOUND);
     }
+
+    public static StockHandler abnormalDeactivation() {
+        return new StockHandler(StockErrorStatus.STOCK_ABNORMAL_DEACTIVATION);
+    }
 }

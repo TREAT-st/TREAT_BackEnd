@@ -2,6 +2,7 @@ package com.example.demo.domain.stock.service;
 
 import com.example.demo.domain.stock.entity.Kospi200SyncCommand;
 import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.domain.stock.exception.StockHandler;
 import com.example.demo.domain.stock.entity.StockSyncResult;
 import com.example.demo.domain.stock.entity.StockPriceSnapshot;
 import com.example.demo.domain.stock.entity.StockPriceUpdateResult;
@@ -25,6 +26,15 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class StockCommandServiceImpl implements StockCommandService {
+
+    /**
+     * 한 번에 이만큼 넘게 편출 판정이 나오면 데이터 이상으로 보고 막는다.
+     * 코스피200 정기변경은 연 2회, 보통 3~10종목이라 정상 운영에서는 걸리지 않는다.
+     * 지수 구성종목 목록이 일부만 조회되면 빠진 종목이 전부 편출로 판정되는데,
+     * "목록이 비었을 때"만 막는 기존 가드로는 이 경우를 못 잡는다.
+     */
+    private static final int DEACTIVATION_LIMIT_COUNT = 20;
+    private static final double DEACTIVATION_LIMIT_RATIO = 0.1;
 
     private final StockRepository stockRepository;
 
@@ -85,6 +95,24 @@ public class StockCommandServiceImpl implements StockCommandService {
         }
 
         return new StockPriceUpdateResult(appliedCodes.size(), skippedStockCodes);
+    }
+
+    /**
+     * 편출 규모가 정상 범위인지 확인한다.
+     * 지수 구성종목 목록이 일부만 조회되면 빠진 종목이 전부 편출로 판정되므로,
+     * 반영 전에 막아 트랜잭션을 되돌린다.
+     */
+    private void verifyDeactivationScale(Map<String, Stock> stored, List<String> toDeactivate) {
+        long activeCount = stored.values().stream()
+                .filter(stock -> Boolean.TRUE.equals(stock.getIsActive()))
+                .count();
+
+        if (toDeactivate.size() > DEACTIVATION_LIMIT_COUNT
+                && toDeactivate.size() > activeCount * DEACTIVATION_LIMIT_RATIO) {
+            log.error("편출 판정이 비정상적으로 많아 동기화를 중단합니다. 활성={} 편출대상={} codes={}",
+                    activeCount, toDeactivate.size(), toDeactivate);
+            throw StockHandler.abnormalDeactivation();
+        }
     }
 
     /**
@@ -150,22 +178,25 @@ public class StockCommandServiceImpl implements StockCommandService {
         // 6-③. 이탈 종목은 삭제하지 않고 비활성 처리한다.
         //      단, Lambda가 데이터를 못 받았다고 보고한 종목은 이탈인지 일시적 실패인지 알 수 없다.
         //      거래정지 종목을 편출로 오판하면 목록에서 사라지므로, 이번 회차는 상태를 그대로 둔다.
-        int deactivatedCount = 0;
-        List<String> unresolvedStockCodes = new ArrayList<>();
-        for (String stockCode : droppedCodes) {
+        List<String> unresolvedStockCodes = droppedCodes.stream()
+                .filter(errorCodes::contains)
+                .toList();
+        List<String> toDeactivate = droppedCodes.stream()
+                .filter(code -> !errorCodes.contains(code))
+                .toList();
+
+        verifyDeactivationScale(stored, toDeactivate);
+
+        for (String stockCode : unresolvedStockCodes) {
+            log.info("데이터 미수신으로 이탈 판정 보류. stockCode={}, stockName={}",
+                    stockCode, stored.get(stockCode).getStockName());
+        }
+        for (String stockCode : toDeactivate) {
             Stock stock = stored.get(stockCode);
-
-            if (errorCodes.contains(stockCode)) {
-                log.info("데이터 미수신으로 이탈 판정 보류. stockCode={}, stockName={}",
-                        stockCode, stock.getStockName());
-                unresolvedStockCodes.add(stockCode);
-                continue;
-            }
-
             stock.deactivate();
-            deactivatedCount++;
             log.info("종목 이탈. stockCode={}, stockName={}", stockCode, stock.getStockName());
         }
+        int deactivatedCount = toDeactivate.size();
 
         // 7. 결과
         return new StockSyncResult(

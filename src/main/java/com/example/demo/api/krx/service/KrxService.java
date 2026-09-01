@@ -51,6 +51,12 @@ public class KrxService {
             throw KrxHandler.krxLambdaResponseEmpty();
         }
 
+        // tradeDate는 동기화의 날짜 키다. 없으면 파싱 단계에서 NPE로 터지므로 여기서 계약 위반으로 막는다.
+        if (response.getTradeDate() == null || response.getTradeDate().isBlank()) {
+            log.error("KRX 코스피200 Lambda 응답에 tradeDate가 없습니다.");
+            throw KrxHandler.krxLambdaResponseParseError();
+        }
+
         if (response.getErrors() != null && !response.getErrors().isEmpty()) {
             log.warn("KRX 코스피200 Lambda가 {}건을 제외했습니다. 수신 {}건 / 구성종목 {}건. 사유={}",
                     response.getErrors().size(), response.getStocks().size(), response.getRequestedCount(),
