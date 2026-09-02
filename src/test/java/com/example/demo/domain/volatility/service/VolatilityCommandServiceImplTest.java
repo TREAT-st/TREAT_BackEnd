@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class VolatilityCommandServiceImplTest {
 
+    private static final LocalDate TRADE_DATE = LocalDate.of(2026, 8, 14);
+
     @Autowired
     private VolatilityCommandService volatilityCommandService;
 
@@ -40,7 +43,7 @@ class VolatilityCommandServiceImplTest {
         volatilityCommandService.saveTopVolatilityStocks(List.of(
                 signal("005930", "삼성전자"),
                 signal("000660", "SK하이닉스")
-        ));
+        ), TRADE_DATE);
 
         List<Volatility> saved = volatilityRepository.findAll();
 
@@ -50,45 +53,81 @@ class VolatilityCommandServiceImplTest {
         assertThat(saved).extracting(Volatility::getStockName)
                 .containsExactlyInAnyOrder("삼성전자", "SK하이닉스");
         assertThat(saved).allSatisfy(v -> assertThat(v.getReportUrl()).isNull());
+        assertThat(saved).allSatisfy(v -> assertThat(v.getTradeDate()).isEqualTo(TRADE_DATE));
     }
 
     @Test
-    void createdDate가_자동으로_채워져_날짜별_조회가_가능하다() {
-        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")));
+    void createdDate가_자동으로_채워진다() {
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")), TRADE_DATE);
 
-        List<Volatility> saved = volatilityRepository.findAll();
-
-        assertThat(saved).singleElement()
+        assertThat(volatilityRepository.findAll()).singleElement()
                 .satisfies(v -> assertThat(v.getCreatedDate()).isNotNull());
     }
 
     @Test
-    void 같은_날_다시_실행하면_오늘_기록을_교체한다() {
-        // 탐지는 하루 한 번이 기준이므로 재실행은 누적이 아니라 교체다(stock_code 중복 방지).
-        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")));
-        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")));
+    void 같은_거래일에_다시_실행하면_누적되지_않고_교체된다() {
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")), TRADE_DATE);
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")), TRADE_DATE);
 
-        assertThat(volatilityRepository.findAllByStockCodeOrderByCreatedDateDesc("005930")).hasSize(1);
+        assertThat(volatilityRepository.findAllByStockCodeOrderByTradeDateDesc("005930")).hasSize(1);
     }
 
     @Test
-    void 재실행_시_이전_선정_종목은_남지_않는다() {
+    void 재실행으로_상위_목록에서_빠진_종목은_남지_않는다() {
         volatilityCommandService.saveTopVolatilityStocks(List.of(
                 signal("005930", "삼성전자"),
                 signal("000660", "SK하이닉스")
-        ));
-        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("035420", "NAVER")));
+        ), TRADE_DATE);
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("035420", "NAVER")), TRADE_DATE);
 
-        assertThat(volatilityRepository.findAll())
+        assertThat(volatilityRepository.findAllByTradeDateOrderByIdAsc(TRADE_DATE))
                 .extracting(Volatility::getStockCode)
                 .containsExactly("035420");
     }
 
+    /**
+     * 이번 수정의 핵심 회귀 테스트.
+     * 이전 구현은 당일 기록을 전량 삭제 후 재삽입해서, 콜백으로 채워진 reportUrl이 통째로 사라졌다.
+     */
+    @Test
+    void 같은_거래일_재실행에도_이미_생성된_reportUrl은_보존된다() {
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")), TRADE_DATE);
+        volatilityCommandService.updateReportUrl("005930", TRADE_DATE, "https://example.com/report.html");
+
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")), TRADE_DATE);
+
+        assertThat(volatilityRepository.findByStockCodeAndTradeDate("005930", TRADE_DATE))
+                .get()
+                .extracting(Volatility::getReportUrl)
+                .isEqualTo("https://example.com/report.html");
+    }
+
+    @Test
+    void 빈_목록이면_기존_기록을_지우지_않는다() {
+        volatilityCommandService.saveTopVolatilityStocks(List.of(signal("005930", "삼성전자")), TRADE_DATE);
+
+        volatilityCommandService.saveTopVolatilityStocks(List.of(), TRADE_DATE);
+
+        assertThat(volatilityRepository.findAllByTradeDateOrderByIdAsc(TRADE_DATE)).hasSize(1);
+    }
+
     @Test
     void 빈_목록이면_아무것도_저장하지_않는다() {
-        volatilityCommandService.saveTopVolatilityStocks(List.of());
+        volatilityCommandService.saveTopVolatilityStocks(List.of(), TRADE_DATE);
 
         assertThat(volatilityRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void 거래일이_다르면_같은_종목도_별개로_쌓인다() {
+        volatilityCommandService.saveTopVolatilityStocks(
+                List.of(signal("005930", "삼성전자")), LocalDate.of(2026, 8, 13));
+        volatilityCommandService.saveTopVolatilityStocks(
+                List.of(signal("005930", "삼성전자")), LocalDate.of(2026, 8, 14));
+
+        assertThat(volatilityRepository.findAllByStockCodeOrderByTradeDateDesc("005930"))
+                .extracting(Volatility::getTradeDate)
+                .containsExactly(LocalDate.of(2026, 8, 14), LocalDate.of(2026, 8, 13));
     }
 
     private VolatilitySignal signal(String stockCode, String stockName) {

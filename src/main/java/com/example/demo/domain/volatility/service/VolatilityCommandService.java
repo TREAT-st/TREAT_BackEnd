@@ -6,6 +6,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface VolatilityCommandService {
-    void saveTopVolatilityStocks(List<VolatilitySignal> topSignals);
-    void updateReportUrl(String stockCode, LocalDate reportDate, String reportUrl);
+    void saveTopVolatilityStocks(List<VolatilitySignal> topSignals, LocalDate tradeDate);
+    void updateReportUrl(String stockCode, LocalDate tradeDate, String reportUrl);
 }

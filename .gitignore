@@ -38,6 +38,3 @@ out/
 
 ### Application config ###
 #src/main/resources/application.yml
-
-### Test sources ###
-src/test/
