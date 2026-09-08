@@ -1,4 +1,4 @@
-package com.example.demo.api.krx.exception;
+package com.example.demo.domain.batch.exception;
 
 import com.example.demo.common.annotation.ExplainError;
 import com.example.demo.common.exception.BaseErrorCode;
@@ -12,17 +12,11 @@ import java.util.Objects;
 
 @Getter
 @AllArgsConstructor
-public enum KrxErrorStatus implements BaseErrorCode {
+public enum BatchErrorStatus implements BaseErrorCode {
 
-    // KRX 연동(4400~4449)
-    @ExplainError("Lambda 호출 자체가 실패했습니다. 네트워크·IAM 권한·스로틀링 등을 확인하세요.")
-    KRX_LAMBDA_INVOKE_ERROR(HttpStatus.BAD_GATEWAY, 4400, "KRX 종목 조회 Lambda 호출에 실패했습니다."),
-    @ExplainError("Lambda는 호출됐으나 조회된 종목이 없습니다. 휴장일이거나 Lambda 내부 필터링 결과가 비어 있을 수 있습니다.")
-    KRX_LAMBDA_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, 4401, "KRX 종목 조회 Lambda 응답이 비어있습니다."),
-    @ExplainError("Lambda는 호출됐으나 함수 내부에서 예외가 발생했습니다. Lambda 로그를 확인하세요.")
-    KRX_LAMBDA_EXECUTION_ERROR(HttpStatus.BAD_GATEWAY, 4402, "KRX 종목 조회 Lambda 실행 중 오류가 발생했습니다."),
-    @ExplainError("Lambda 응답 형식이 KrxOhlcvResponseDto와 맞지 않습니다. 양쪽 계약을 확인하세요.")
-    KRX_LAMBDA_RESPONSE_PARSE_ERROR(HttpStatus.BAD_GATEWAY, 4403, "KRX 종목 조회 Lambda 응답을 해석하지 못했습니다.");
+    //  배치 실행 이력(4450~4499)
+    @ExplainError("실행 이력을 찾지 못했습니다. 기록 없이 완료 처리를 시도한 경우입니다.")
+    BATCH_EXECUTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, 4450, "배치 실행 이력을 찾지 못했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
