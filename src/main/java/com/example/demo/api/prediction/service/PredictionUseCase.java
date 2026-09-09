@@ -125,9 +125,9 @@ public class PredictionUseCase {
         LocalDate base = LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(duration.getDays());
         DayOfWeek dow = base.getDayOfWeek();
         if (dow == DayOfWeek.SATURDAY) {
-            base = base.minusDays(1);
+            base = base.plusDays(2); // 토 → 월
         } else if (dow == DayOfWeek.SUNDAY) {
-            base = base.minusDays(2);
+            base = base.plusDays(1); // 일 → 월
         }
         return base.atTime(15, 30);
     }
