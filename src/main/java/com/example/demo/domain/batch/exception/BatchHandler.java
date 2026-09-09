@@ -12,4 +12,9 @@ public class BatchHandler extends GeneralException {
     public static BatchHandler executionNotFound() {
         return new BatchHandler(BatchErrorStatus.BATCH_EXECUTION_NOT_FOUND);
     }
+
+    public static BatchHandler triggerUnauthorized() {
+        return new BatchHandler(BatchErrorStatus.BATCH_TRIGGER_UNAUTHORIZED);
+    }
+
 }

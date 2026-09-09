@@ -1,6 +1,6 @@
 package com.example.demo.api.batch.service;
 
-import com.example.demo.api.batch.dto.BatchResponseDto.VolatilityDailyBatchResult;
+import com.example.demo.api.batch.dto.BatchResponseDto.DailyBatchResult;
 import com.example.demo.api.stock.dto.StockResponseDto.SyncStocksResponse;
 import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.api.volatility.dto.VolatilityResponseDto.DetectionResult;
@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -44,7 +45,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * 휴장일 판정이 "KRX가 준 거래일 != 오늘"이라, 목의 거래일만 조작하면 재현된다.
  * 시계를 주입할 필요가 없다.
  */
-class VolatilityDailyBatchUseCaseTest {
+class BatchUseCaseTest {
 
     private static final LocalDate TODAY = LocalDate.now(SEOUL_ZONE);
 
@@ -53,7 +54,7 @@ class VolatilityDailyBatchUseCaseTest {
     private final VolatilityQueryService volatilityQueryService = Mockito.mock(VolatilityQueryService.class);
     private final BatchExecutionLogService batchExecutionLogService = Mockito.mock(BatchExecutionLogService.class);
 
-    private final VolatilityDailyBatchUseCase useCase = new VolatilityDailyBatchUseCase(
+    private final BatchUseCase useCase = new BatchUseCase(
             stockUseCase, volatilityUseCase, volatilityQueryService, batchExecutionLogService);
 
     /** 실행 이력 id는 단계마다 달라야 성공/실패가 엉뚱한 행에 붙지 않는다. */
@@ -74,7 +75,7 @@ class VolatilityDailyBatchUseCaseTest {
 
     @Test
     void 정상_실행이면_세_단계가_순서대로_기록된다() {
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         assertThat(result.getTradeDate()).isEqualTo(TODAY);
@@ -99,7 +100,7 @@ class VolatilityDailyBatchUseCaseTest {
      */
     @Test
     void REPORT_성공_후_VERIFY를_열어두고_끝낸다() {
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(batchExecutionLogService).tryStart(TODAY, BatchStep.VERIFY, false);
@@ -116,44 +117,69 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(batchExecutionLogService.tryStart(TODAY, BatchStep.VERIFY, false))
                 .thenReturn(BatchStartResult.inProgress());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         assertThat(result.getFailedStep()).isNull();
     }
 
     /**
-     * 휴장일에는 KRX가 직전 거래일을 돌려준다. 그 날짜는 이미 처리가 끝났으므로
-     * 기록을 건드리면 지난 성공 이력이 덮인다.
+     * 휴장일에는 KRX가 직전 거래일을 돌려준다. 그 날짜의 기록을 건드리면 지난 성공 이력이 덮인다.
+     * 그렇다고 아무것도 안 남기면 조회했을 때 KRX 장애와 구분되지 않으므로, 실행일 키로 남긴다.
      */
     @Test
-    void 거래일이_아니면_아무것도_기록하지_않는다() {
-        Mockito.when(stockUseCase.fetchKospi200()).thenReturn(command(TODAY.minusDays(3)));
+    void 거래일이_아니면_실행일에_스킵으로_남긴다() {
+        LocalDate krxTradeDate = TODAY.minusDays(3);
+        Mockito.when(stockUseCase.fetchKospi200()).thenReturn(command(krxTradeDate));
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.HOLIDAY);
-        assertThat(result.getTradeDate()).isEqualTo(TODAY.minusDays(3));
-        verifyNoInteractions(batchExecutionLogService);
+        assertThat(result.getTradeDate()).isEqualTo(krxTradeDate);
+        // KRX가 준 거래일이 아니라 실행일에 남긴다.
+        verify(batchExecutionLogService)
+                .skip(eq(TODAY), eq(BatchStep.SYNC), contains(krxTradeDate.toString()));
+        verify(batchExecutionLogService, never()).tryStart(eq(krxTradeDate), any(), anyBoolean());
         verify(stockUseCase, never()).syncKospi200(any());
     }
 
     /**
-     * KRX 조회가 실패하면 거래일을 몰라 실행 이력에 남길 키가 없다.
-     * 그렇다고 예외를 던지면 비동기 실행에서 그대로 사라지므로 결과로 돌려준다.
+     * KRX 조회가 실패하면 거래일을 모른다. 그래도 실행일 키로 남겨야
+     * 조회했을 때 휴장일(SKIPPED)과 구분된다.
      */
     @Test
-    void 거래일을_확보하지_못하면_기록_없이_중단한다() {
+    void 거래일을_확보하지_못하면_실행일에_실패로_남긴다() {
         Mockito.when(stockUseCase.fetchKospi200())
                 .thenThrow(new IllegalStateException("KRX Lambda 호출 실패"));
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.ABORTED);
         assertThat(result.getTradeDate()).isNull();
         assertThat(result.getFailedStep()).isNull();
         assertThat(result.getMessage()).isEqualTo("KRX Lambda 호출 실패");
-        verifyNoInteractions(batchExecutionLogService);
+
+        verify(batchExecutionLogService).tryStart(TODAY, BatchStep.SYNC, false);
+        verify(batchExecutionLogService).fail(any(), eq("KRX Lambda 호출 실패"));
+        verify(stockUseCase, never()).syncKospi200(any());
+    }
+
+    /**
+     * 강제 재실행 중 KRX가 죽었다고 이미 성공한 SYNC를 되돌리면 안 된다.
+     * 시작 실패 기록은 force를 넘기지 않고, STARTED가 아니면 손대지 않는다.
+     */
+    @Test
+    void 이미_끝난_SYNC는_시작_실패로_덮이지_않는다() {
+        Mockito.when(batchExecutionLogService.tryStart(TODAY, BatchStep.SYNC, false))
+                .thenReturn(BatchStartResult.alreadyDone());
+        Mockito.when(stockUseCase.fetchKospi200())
+                .thenThrow(new IllegalStateException("KRX Lambda 호출 실패"));
+
+        DailyBatchResult result = useCase.runDailyBatch(true);
+
+        assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.ABORTED);
+        // execution()이 null이라 그대로 넘기면 터진다. 애초에 호출하지 않아야 한다.
+        verify(batchExecutionLogService, never()).fail(any(), anyString());
     }
 
     /** 메시지 없는 예외가 그대로 넘어가면 실행 이력에 FAILED만 남고 사유가 빈다. */
@@ -161,7 +187,7 @@ class VolatilityDailyBatchUseCaseTest {
     void 예외_메시지가_없어도_사유가_기록된다() {
         Mockito.when(stockUseCase.syncKospi200(any())).thenThrow(new IllegalStateException());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getMessage()).isEqualTo("IllegalStateException");
         verify(batchExecutionLogService).fail(any(), eq("IllegalStateException"));
@@ -176,7 +202,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(volatilityUseCase.runReportGeneration(any(), any(LocalDate.class)))
                 .thenReturn(reportResult(10, 2));
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(batchExecutionLogService, never()).fail(any(), anyString());
@@ -193,7 +219,7 @@ class VolatilityDailyBatchUseCaseTest {
     void SYNC가_실패하면_DETECT는_시작되지_않는다() {
         Mockito.when(stockUseCase.syncKospi200(any())).thenThrow(new IllegalStateException("KRX 반영 실패"));
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.ABORTED);
         assertThat(result.getFailedStep()).isEqualTo(BatchStep.SYNC);
@@ -210,7 +236,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(batchExecutionLogService.tryStart(TODAY, BatchStep.SYNC, false))
                 .thenReturn(BatchStartResult.alreadyDone());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(stockUseCase, never()).syncKospi200(any());
@@ -222,7 +248,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(batchExecutionLogService.tryStart(TODAY, BatchStep.DETECT, false))
                 .thenReturn(BatchStartResult.inProgress());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.ABORTED);
         assertThat(result.getFailedStep()).isEqualTo(BatchStep.DETECT);
@@ -236,7 +262,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(volatilityUseCase.runDetection()).thenReturn(detectionResult(0));
         Mockito.when(volatilityQueryService.getByTradeDate(TODAY)).thenReturn(List.of());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(batchExecutionLogService).skip(TODAY, BatchStep.REPORT, "탐지된 종목 없음");
@@ -255,7 +281,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(volatilityUseCase.runDetection()).thenReturn(detectionResult(0));
         Mockito.when(volatilityQueryService.getByTradeDate(TODAY)).thenReturn(List.of(volatility()));
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(batchExecutionLogService).skip(TODAY, BatchStep.REPORT, "탐지된 종목 없음");
@@ -272,7 +298,7 @@ class VolatilityDailyBatchUseCaseTest {
                 .thenReturn(BatchStartResult.alreadyDone());
         Mockito.when(volatilityQueryService.getByTradeDate(TODAY)).thenReturn(List.of(volatility()));
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(volatilityUseCase, never()).runDetection();
@@ -285,7 +311,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(batchExecutionLogService.tryStart(TODAY, BatchStep.REPORT, false))
                 .thenReturn(BatchStartResult.alreadyDone());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.COMPLETED);
         verify(volatilityUseCase, never()).runReportGeneration(any(), any(LocalDate.class));
@@ -296,7 +322,7 @@ class VolatilityDailyBatchUseCaseTest {
         Mockito.when(batchExecutionLogService.tryStart(TODAY, BatchStep.REPORT, false))
                 .thenReturn(BatchStartResult.inProgress());
 
-        VolatilityDailyBatchResult result = useCase.runDailyBatch(false);
+        DailyBatchResult result = useCase.runDailyBatch(false);
 
         assertThat(result.getOutcome()).isEqualTo(DailyBatchOutcome.ABORTED);
         assertThat(result.getFailedStep()).isEqualTo(BatchStep.REPORT);

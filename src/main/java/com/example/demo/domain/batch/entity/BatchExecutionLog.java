@@ -33,7 +33,12 @@ public class BatchExecutionLog extends BaseTimeEntity {
     @Column(name = "batch_execution_log_id")
     private Long id;
 
-    /** 실행 대상 거래일. 실행한 날짜가 아니라 KRX가 알려준 거래일이다. */
+    /**
+     * 배치 기준일. 정상 실행에서는 KRX가 알려준 거래일이다.
+     *
+     * 거래일을 확보하지 못한 경우(휴장일 판정, KRX 장애)만 예외다. 그때는 남길 거래일이 없어
+     * 서울 기준 실행일을 키로 쓴다. 그 날짜는 거래일이 아니므로 진짜 단계 기록과 부딪히지 않는다.
+     */
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
 

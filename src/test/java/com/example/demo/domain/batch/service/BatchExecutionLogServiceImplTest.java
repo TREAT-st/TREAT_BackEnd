@@ -175,6 +175,32 @@ class BatchExecutionLogServiceImplTest {
                 .isEqualTo(BatchStartDecision.IN_PROGRESS);
     }
 
+    /**
+     * force는 "이미 끝난 단계도 다시 실행한다"는 뜻이지 돌고 있는 걸 가로채라는 뜻이 아니다.
+     * 인스턴스가 둘 이상이면 큐 없는 실행기가 못 막아 여기까지 오고, REPORT를 뺏으면 비용이 두 배다.
+     */
+    @Test
+    void 살아_있는_RUNNING은_force여도_인계하지_않는다() {
+        BatchExecutionRef running = start(BatchStep.REPORT);
+
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, true).decision())
+                .isEqualTo(BatchStartDecision.IN_PROGRESS);
+
+        // 원래 실행이 그대로 자기 결과를 쓸 수 있어야 한다.
+        batchExecutionLogService.succeed(running, "생성 요청 10건");
+        assertThat(log(BatchStep.REPORT).getStatus()).isEqualTo(BatchStatus.SUCCESS);
+    }
+
+    /** 죽은 실행까지 보호하면 그 거래일이 영영 막힌다. force든 아니든 인계 대상이다. */
+    @Test
+    void 오래된_RUNNING은_force에서도_재시작한다() {
+        startMinutesAgo(BatchStep.REPORT, 240);
+
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, true).decision())
+                .isEqualTo(BatchStartDecision.STARTED);
+        assertThat(log(BatchStep.REPORT).getStatus()).isEqualTo(BatchStatus.RUNNING);
+    }
+
     @Test
     void force면_성공한_단계도_재시작한다() {
         BatchExecutionRef ref = start(BatchStep.DETECT);

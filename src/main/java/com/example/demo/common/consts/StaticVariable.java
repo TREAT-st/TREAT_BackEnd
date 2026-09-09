@@ -24,6 +24,10 @@ public class StaticVariable {
     public static final String NO_DETECTED_STOCK = "탐지된 종목 없음";
     public static final String ANOTHER_RUN_IN_PROGRESS = "다른 실행이 진행 중입니다";
     public static final String NOT_A_TRADING_DAY = "거래일이 아니라 실행하지 않았습니다.";
+    public static final String NOT_A_TRADING_DAY_LOG = "거래일이 아닙니다. KRX 거래일=%s";
+    public static final String BATCH_ACCEPTED = "배치를 접수했습니다.";
+    public static final String BATCH_NOT_ACCEPTED_ALREADY_RUNNING = "이미 실행 중인 배치가 있어 접수하지 않았습니다.";
+    public static final String BATCH_SECRET_HEADER = "X-Batch-Secret";
 
     //OAuth2
     public static final String KAKAO_OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization/kakao";

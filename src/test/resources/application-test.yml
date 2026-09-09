@@ -29,3 +29,7 @@ app:
 report:
   callback:
     secret: test-callback-secret
+
+batch:
+  trigger:
+    secret: test-batch-secret

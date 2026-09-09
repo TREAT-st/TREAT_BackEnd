@@ -60,6 +60,10 @@ report:
   callback:
     secret: ${REPORT_CALLBACK_SECRET}
 
+batch:
+  trigger:
+    secret: ${BATCH_TRIGGER_SECRET}
+
 cloud:
   aws:
     region:

@@ -1,6 +1,6 @@
 package com.example.demo.api.batch.service;
 
-import com.example.demo.api.batch.dto.BatchResponseDto.VolatilityDailyBatchResult;
+import com.example.demo.api.batch.dto.BatchResponseDto.DailyBatchResult;
 import com.example.demo.api.batch.mapper.BatchConverter;
 import com.example.demo.api.stock.dto.StockResponseDto.SyncStocksResponse;
 import com.example.demo.api.stock.service.StockUseCase;
@@ -16,12 +16,14 @@ import com.example.demo.domain.stock.entity.Kospi200SyncCommand;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 
 import java.time.LocalDate;
 import java.util.function.Supplier;
 
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.common.consts.StaticVariable.ANOTHER_RUN_IN_PROGRESS;
+import static com.example.demo.common.consts.StaticVariable.NOT_A_TRADING_DAY_LOG;
 import static com.example.demo.common.consts.StaticVariable.NO_DETECTED_STOCK;
 import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 
@@ -36,7 +38,7 @@ import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 @Slf4j
 @UseCase
 @RequiredArgsConstructor
-public class VolatilityDailyBatchUseCase {
+public class BatchUseCase {
 
     private final StockUseCase stockUseCase;
     private final VolatilityUseCase volatilityUseCase;
@@ -44,25 +46,47 @@ public class VolatilityDailyBatchUseCase {
     private final BatchExecutionLogService batchExecutionLogService;
 
     /**
+     * 트리거용 진입점. 체인 전체가 수 분 걸려 요청을 붙들 수 없으므로 접수만 하고 돌려보낸다.
+     *
+     * 반환형이 void인 이유가 있다. 값을 반환하는 @Async 메서드의 예외는 아무도 읽지 않는
+     * Future에 갇혀 사라진다. 체인은 예외를 던지지 않지만 그래도 void가 안전하다.
+     * 결과는 여기서 로그로 남기고, 자세한 상태는 실행 이력에 있다.
+     */
+    @Async("batchTaskExecutor")
+    public void runDailyBatchAsync(boolean force) {
+        DailyBatchResult result = runDailyBatch(force);
+        log.info("일일 배치 종료. outcome={} tradeDate={} failedStep={} message={}",
+                result.getOutcome(), result.getTradeDate(), result.getFailedStep(), result.getMessage());
+    }
+
+    /**
      * @param force 이미 성공한 단계도 다시 실행한다. 리포트 단계는 GPT 비용이 다시 나가므로
      *              운영자가 의도적으로 되돌릴 때만 쓴다.
      */
-    public VolatilityDailyBatchResult runDailyBatch(boolean force) {
+    public DailyBatchResult runDailyBatch(boolean force) {
+        // 한 번만 읽는다. KRX 호출 전후로 자정이 넘어가면 휴장일 판정과 기록 키가 갈린다.
+        LocalDate executionDate = LocalDate.now(SEOUL_ZONE);
+
         // 거래일과 동기화 대상을 한 응답에서 받는다. 나눠 부르면 판정에 쓴 거래일과
         // 실제로 저장하는 데이터의 거래일이 갈릴 수 있다.
         //
-        // 여기서 터지면 거래일을 모르므로 실행 이력에 남길 키가 없다. 그래도 던지지는 않는다.
-        // 체인은 비동기로 돌 예정이라 예외를 밖으로 보내면 받을 곳이 없어 그대로 사라진다.
+        // 여기서 터지면 거래일을 모른다. 그래도 던지지 않고 실행일 키로 남긴다.
+        // 체인은 비동기로 돌아 예외를 밖으로 보내면 받을 곳이 없고, 아무것도 안 남기면
+        // 조회했을 때 휴장일과 구분되지 않는다.
         Kospi200SyncCommand kospi200;
         try {
             kospi200 = stockUseCase.fetchKospi200();
         } catch (Exception e) {
             log.error("거래일을 확보하지 못해 배치를 시작하지 못했습니다.", e);
-            return BatchConverter.toAbortedResult(null, null, summarizeFailure(e));
+            String failure = summarizeFailure(e);
+            recordStartupFailure(executionDate, failure);
+            return BatchConverter.toAbortedResult(null, null, failure);
         }
         LocalDate tradeDate = kospi200.tradeDate();
 
-        if (isNotTradingDay(tradeDate)) {
+        if (isNotTradingDay(tradeDate, executionDate)) {
+            batchExecutionLogService.skip(executionDate, BatchStep.SYNC,
+                    NOT_A_TRADING_DAY_LOG.formatted(tradeDate));
             return BatchConverter.toHolidayResult(tradeDate);
         }
 
@@ -110,20 +134,37 @@ public class VolatilityDailyBatchUseCase {
      * 오늘이 거래일인지 판정한다.
      *
      * 거래일은 서버 시계가 아니라 KRX가 알려준다. 휴장일에는 직전 거래일을 돌려주므로
-     * 그 값이 오늘과 다르면 오늘은 장이 열리지 않은 날이다.
-     *
-     * 이때는 아무것도 기록하지 않는다. KRX가 준 그 거래일은 이미 처리가 끝난 날이라
-     * 건드리면 지난 성공 이력이 덮인다. 휴장은 오늘의 사건이지 특정 거래일의 사건이 아니라
-     * 실행 이력에 남길 키가 없다.
+     * 그 값이 실행일과 다르면 오늘은 장이 열리지 않은 날이다.
      */
-    private boolean isNotTradingDay(LocalDate tradeDate) {
-        LocalDate today = LocalDate.now(SEOUL_ZONE);
-        if (tradeDate.isEqual(today)) {
+    private boolean isNotTradingDay(LocalDate tradeDate, LocalDate executionDate) {
+        if (tradeDate.isEqual(executionDate)) {
             return false;
         }
 
-        log.info("거래일이 아니라 실행하지 않습니다. tradeDate={} today={}", tradeDate, today);
+        log.info("거래일이 아니라 실행하지 않습니다. tradeDate={} executionDate={}",
+                tradeDate, executionDate);
         return true;
+    }
+
+    /**
+     * 거래일을 확보하기도 전에 터진 실패를 실행일 키로 남긴다.
+     *
+     * 아무것도 안 남기면 조회했을 때 휴장일과 구분되지 않는다. 둘 다 빈 목록이 된다.
+     * 실행일이 실제 거래일이었다면 KRX 복구 후 재실행이 같은 키를 이어받아 회차만 오른다.
+     *
+     * force를 넘기지 않는다. 강제 재실행 중 KRX가 죽었다고 이미 성공한 SYNC를 되돌리면 안 된다.
+     * 같은 이유로 STARTED가 아니면 손대지 않는다. 그때는 참조할 시도 자체가 없다.
+     */
+    private void recordStartupFailure(LocalDate executionDate, String failure) {
+        BatchStartResult start = batchExecutionLogService.tryStart(executionDate, BatchStep.SYNC, false);
+
+        if (start.decision() != BatchStartDecision.STARTED) {
+            log.warn("이미 다른 결과가 있어 시작 실패를 기록하지 않습니다. executionDate={} decision={}",
+                    executionDate, start.decision());
+            return;
+        }
+
+        batchExecutionLogService.fail(start.execution(), failure);
     }
 
     /**

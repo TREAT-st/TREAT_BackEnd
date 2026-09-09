@@ -51,6 +51,19 @@ class BatchExecutionLogWriter {
         }
 
         BatchExecutionLog execution = existingLog.get();
+
+        // 살아 있는 실행은 누구도 뺏지 않는다. force도 예외가 아니다.
+        // force의 뜻은 "이미 끝난 단계도 다시 실행한다"이지 "돌고 있는 걸 가로챈다"가 아니다.
+        //
+        // 단일 인스턴스에서는 큐 없는 실행기가 중복 제출을 앞에서 막아주지만,
+        // 인스턴스가 둘 이상이거나 블루/그린 배포로 두 프로세스가 잠시 공존하면 여기까지 온다.
+        // 그때 REPORT를 뺏으면 리포트 요청이 두 벌 나가 GPT 비용이 두 배가 된다.
+        if (execution.getStatus() == BatchStatus.RUNNING && isAlive(execution, now)) {
+            log.warn("다른 실행이 진행 중이라 중단합니다. tradeDate={} step={} startedAt={} force={}",
+                    tradeDate, step, execution.getStartedAt(), force);
+            return BatchStartResult.inProgress();
+        }
+
         if (force) {
             log.warn("강제 재실행입니다. tradeDate={} step={} 이전상태={}", tradeDate, step, execution.getStatus());
             execution.restart(now);
@@ -62,13 +75,8 @@ class BatchExecutionLogWriter {
                 log.info("이미 성공한 단계라 건너뜁니다. tradeDate={} step={}", tradeDate, step);
                 yield BatchStartResult.alreadyDone();
             }
-            // 살아 있는 실행을 뺏으면 같은 단계가 두 번 돈다. 리포트 단계라면 GPT 비용이 두 배다.
+            // 위에서 살아 있는 RUNNING을 걸러냈으므로 여기 오는 건 죽은 실행뿐이다.
             case RUNNING -> {
-                if (isAlive(execution, now)) {
-                    log.warn("다른 실행이 진행 중이라 중단합니다. tradeDate={} step={} startedAt={}",
-                            tradeDate, step, execution.getStartedAt());
-                    yield BatchStartResult.inProgress();
-                }
                 log.warn("죽은 실행으로 보고 인계합니다. tradeDate={} step={} startedAt={} attempt={}",
                         tradeDate, step, execution.getStartedAt(), execution.getAttempt());
                 execution.restart(now);

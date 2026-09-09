@@ -16,7 +16,10 @@ public enum BatchErrorStatus implements BaseErrorCode {
 
     //  배치 실행 이력(4450~4499)
     @ExplainError("실행 이력을 찾지 못했습니다. 기록 없이 완료 처리를 시도한 경우입니다.")
-    BATCH_EXECUTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, 4450, "배치 실행 이력을 찾지 못했습니다.");
+    BATCH_EXECUTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, 4450, "배치 실행 이력을 찾지 못했습니다."),
+
+    @ExplainError("X-Batch-Secret 헤더가 없거나 값이 다릅니다.")
+    BATCH_TRIGGER_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 4451, "배치 트리거 인증에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
