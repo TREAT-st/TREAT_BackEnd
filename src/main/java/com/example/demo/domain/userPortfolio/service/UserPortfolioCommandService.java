@@ -7,4 +7,5 @@ public interface UserPortfolioCommandService {
     Long deletePortfolio(Long portfolioId);
     void recordNewPrediction(Long userId);
     void recordGradingResult(Long userId, boolean isCorrect, long earnedPoints);
+    void ensurePortfolioExists(User user);
 }

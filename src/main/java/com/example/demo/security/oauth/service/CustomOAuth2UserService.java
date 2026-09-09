@@ -44,7 +44,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             throw new GeneralException(ErrorStatus.AUTH_OAUTH2_EMAIL_NOT_FOUND_FROM_PROVIDER);
         }
         Optional<User> byEmail = userRepository.findByKakaoEmail(oAuth2UserInfo.getEmail());
-        User user = byEmail.orElseGet(() -> registerUser(oAuth2UserInfo));
+        User user = byEmail.map(existingUser -> {
+            userPortfolioCommandService.ensurePortfolioExists(existingUser);
+            return existingUser;
+        }).orElseGet(() -> registerUser(oAuth2UserInfo));
 
         return CustomUserDetails.create(user, oAuth2AccessToken);
     }
