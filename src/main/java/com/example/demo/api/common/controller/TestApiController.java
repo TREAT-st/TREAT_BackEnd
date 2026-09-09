@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.logging.Logger;
 
 @Slf4j
-@Tag(name = "테스트 용 API")
+@Tag(name = "[더미데이터/동작확인]")
 @RestController
 @RequestMapping("/api/v1/test")
 @RequiredArgsConstructor

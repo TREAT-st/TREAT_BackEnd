@@ -30,4 +30,22 @@ public class UserPortfolioCommandServiceImpl implements UserPortfolioCommandServ
 
         return portfolio.getId();
     }
+
+    @Override
+    public void recordNewPrediction(Long userId) {
+        UserPortfolio portfolio = userPortfolioRepository.findByUserId(userId)
+                .orElseThrow(() -> UserPortfolioHandler.NOT_FOUND);
+        portfolio.addPrediction();
+    }
+
+    @Override
+    public void recordGradingResult(Long userId, boolean isCorrect, long earnedPoints) {
+        UserPortfolio portfolio = userPortfolioRepository.findByUserId(userId)
+                .orElseThrow(() -> UserPortfolioHandler.NOT_FOUND);
+        if (isCorrect) {
+            portfolio.recordSuccess(earnedPoints);
+        } else {
+            portfolio.recordFailure();
+        }
+    }
 }

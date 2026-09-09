@@ -34,6 +34,8 @@ public class UserResponseDto {
         private String accountNumber;
         private UserStatus status;
         private SocialProvider provider;
+        private Long point;
+        private Long playCount;
     }
 
     @Getter

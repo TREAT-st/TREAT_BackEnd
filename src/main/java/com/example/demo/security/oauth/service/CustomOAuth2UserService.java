@@ -5,6 +5,7 @@ import com.example.demo.domain.user.entity.Role;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.entity.UserStatus;
 import com.example.demo.domain.user.repository.UserRepository;
+import com.example.demo.domain.userPortfolio.service.UserPortfolioCommandService;
 import com.example.demo.security.oauth.dto.CustomUserDetails;
 import com.example.demo.security.oauth.dto.KakaoOAuth2User;
 import com.example.demo.security.oauth.factory.OAuth2UserInfoFactory;
@@ -28,6 +29,7 @@ import java.util.Optional;
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
     private final UserRepository userRepository;
+    private final UserPortfolioCommandService userPortfolioCommandService;
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService = new DefaultOAuth2UserService();
@@ -55,10 +57,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 .status(UserStatus.ACTIVE)
                 .nickname(oAuth2UserInfo.getNickname())
                 .name(oAuth2UserInfo.getNickname())
-                .role(Role.USER)//회원가입시에만 guest로 두고 이후 사용에는 user로 돌린다
+                .role(Role.USER)
                 .build();
 
-        return userRepository.save(register);
+        User savedUser = userRepository.save(register);
+        userPortfolioCommandService.createPortfolio(savedUser);
+        return savedUser;
     }
 
 
