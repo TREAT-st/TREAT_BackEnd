@@ -4,7 +4,7 @@ import com.example.demo.common.config.JpaAuditingConfig;
 import com.example.demo.domain.batch.entity.BatchExecutionLog;
 import com.example.demo.domain.batch.entity.BatchExecutionRef;
 import com.example.demo.domain.batch.entity.BatchStartResult;
-import com.example.demo.domain.batch.entity.BatchStartStatus;
+import com.example.demo.domain.batch.entity.BatchStartDecision;
 import com.example.demo.domain.batch.entity.BatchStatus;
 import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.repository.BatchExecutionLogRepository;
@@ -58,9 +58,9 @@ class BatchExecutionLogServiceImplTest {
     void 기록이_없으면_시작할_수_있다() {
         BatchStartResult result = batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.SYNC, false);
 
-        assertThat(result.status()).isEqualTo(BatchStartStatus.STARTED);
-        assertThat(result.ref().executionId()).isNotNull();
-        assertThat(result.ref().attempt()).isEqualTo(1);
+        assertThat(result.decision()).isEqualTo(BatchStartDecision.STARTED);
+        assertThat(result.execution().executionId()).isNotNull();
+        assertThat(result.execution().attempt()).isEqualTo(1);
         assertThat(log(BatchStep.SYNC).getStatus()).isEqualTo(BatchStatus.RUNNING);
         assertThat(log(BatchStep.SYNC).getStartedAt()).isNotNull();
     }
@@ -76,8 +76,8 @@ class BatchExecutionLogServiceImplTest {
 
         BatchStartResult result = batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.DETECT, false);
 
-        assertThat(result.status()).isEqualTo(BatchStartStatus.ALREADY_DONE);
-        assertThat(result.ref()).isNull();
+        assertThat(result.decision()).isEqualTo(BatchStartDecision.ALREADY_DONE);
+        assertThat(result.execution()).isNull();
         assertThat(log(BatchStep.DETECT).getStatus()).isEqualTo(BatchStatus.SUCCESS);
         assertThat(log(BatchStep.DETECT).getMessage()).isEqualTo("탐지 10건");
     }
@@ -92,8 +92,8 @@ class BatchExecutionLogServiceImplTest {
 
         BatchStartResult result = batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.SYNC, false);
 
-        assertThat(result.status()).isEqualTo(BatchStartStatus.IN_PROGRESS);
-        assertThat(result.ref()).isNull();
+        assertThat(result.decision()).isEqualTo(BatchStartDecision.IN_PROGRESS);
+        assertThat(result.execution()).isNull();
     }
 
     @Test
@@ -101,8 +101,8 @@ class BatchExecutionLogServiceImplTest {
         BatchExecutionRef ref = start(BatchStep.REPORT);
         batchExecutionLogService.fail(ref, "Lambda 호출 실패");
 
-        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false).status())
-                .isEqualTo(BatchStartStatus.STARTED);
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false).decision())
+                .isEqualTo(BatchStartDecision.STARTED);
 
         BatchExecutionLog restarted = log(BatchStep.REPORT);
         assertThat(restarted.getStatus()).isEqualTo(BatchStatus.RUNNING);
@@ -121,11 +121,11 @@ class BatchExecutionLogServiceImplTest {
 
         BatchStartResult taken = batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.SYNC, false);
 
-        assertThat(taken.status()).isEqualTo(BatchStartStatus.STARTED);
+        assertThat(taken.decision()).isEqualTo(BatchStartDecision.STARTED);
         assertThat(log(BatchStep.SYNC).getStatus()).isEqualTo(BatchStatus.RUNNING);
         // 같은 행을 재사용하므로 회차로 구분된다.
-        assertThat(taken.ref().executionId()).isEqualTo(dead.executionId());
-        assertThat(taken.ref().attempt()).isGreaterThan(dead.attempt());
+        assertThat(taken.execution().executionId()).isEqualTo(dead.executionId());
+        assertThat(taken.execution().attempt()).isGreaterThan(dead.attempt());
     }
 
     /**
@@ -156,8 +156,8 @@ class BatchExecutionLogServiceImplTest {
         batchExecutionLogService.fail(dead, "뒤늦게 터진 이전 실행");
 
         assertThat(log(BatchStep.DETECT).getStatus()).isEqualTo(BatchStatus.RUNNING);
-        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.DETECT, false).status())
-                .isEqualTo(BatchStartStatus.IN_PROGRESS);
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.DETECT, false).decision())
+                .isEqualTo(BatchStartDecision.IN_PROGRESS);
     }
 
     /**
@@ -169,10 +169,10 @@ class BatchExecutionLogServiceImplTest {
         startMinutesAgo(BatchStep.SYNC, 45);      // SYNC 기준 30분 -> 죽은 것으로 본다
         startMinutesAgo(BatchStep.REPORT, 45);    // REPORT 기준 90분 -> 아직 살아 있다
 
-        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.SYNC, false).status())
-                .isEqualTo(BatchStartStatus.STARTED);
-        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false).status())
-                .isEqualTo(BatchStartStatus.IN_PROGRESS);
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.SYNC, false).decision())
+                .isEqualTo(BatchStartDecision.STARTED);
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false).decision())
+                .isEqualTo(BatchStartDecision.IN_PROGRESS);
     }
 
     @Test
@@ -180,8 +180,8 @@ class BatchExecutionLogServiceImplTest {
         BatchExecutionRef ref = start(BatchStep.DETECT);
         batchExecutionLogService.succeed(ref, "탐지 10건");
 
-        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.DETECT, true).status())
-                .isEqualTo(BatchStartStatus.STARTED);
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.DETECT, true).decision())
+                .isEqualTo(BatchStartDecision.STARTED);
         assertThat(log(BatchStep.DETECT).getStatus()).isEqualTo(BatchStatus.RUNNING);
     }
 
@@ -194,8 +194,34 @@ class BatchExecutionLogServiceImplTest {
         assertThat(skipped.getStatus()).isEqualTo(BatchStatus.SKIPPED);
         assertThat(skipped.getMessage()).isEqualTo("탐지된 종목 없음");
         // 스킵은 실패가 아니지만 재시도 대상이다. 다음 실행에서 다시 판단해야 한다.
-        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false).status())
-                .isEqualTo(BatchStartStatus.STARTED);
+        assertThat(batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false).decision())
+                .isEqualTo(BatchStartDecision.STARTED);
+    }
+
+    /**
+     * 살아 있는 실행을 스킵으로 덮으면 그 실행은 계속 도는데 행은 SKIPPED가 된다.
+     * 다음 실행이 재시작 대상으로 보고 같은 단계를 하나 더 띄운다.
+     */
+    @Test
+    void 진행_중인_단계는_스킵으로_덮어쓰지_않는다() {
+        BatchExecutionRef running = start(BatchStep.REPORT);
+
+        batchExecutionLogService.skip(TRADE_DATE, BatchStep.REPORT, "탐지된 종목 없음");
+
+        assertThat(log(BatchStep.REPORT).getStatus()).isEqualTo(BatchStatus.RUNNING);
+        // 그 실행은 여전히 자기 결과를 쓸 수 있어야 한다.
+        batchExecutionLogService.succeed(running, "생성 요청 10건");
+        assertThat(log(BatchStep.REPORT).getStatus()).isEqualTo(BatchStatus.SUCCESS);
+    }
+
+    /** 죽은 RUNNING까지 보호하면 그 거래일이 영영 정리되지 않는다. claim의 인계 규칙과 같은 기준이다. */
+    @Test
+    void 죽은_RUNNING은_스킵으로_정리된다() {
+        startMinutesAgo(BatchStep.REPORT, 240);
+
+        batchExecutionLogService.skip(TRADE_DATE, BatchStep.REPORT, "탐지된 종목 없음");
+
+        assertThat(log(BatchStep.REPORT).getStatus()).isEqualTo(BatchStatus.SKIPPED);
     }
 
     /**
@@ -219,8 +245,8 @@ class BatchExecutionLogServiceImplTest {
         BatchExecutionRef ref = start(BatchStep.SYNC);
         batchExecutionLogService.succeed(ref, "완료");
 
-        assertThat(batchExecutionLogService.tryStart(LocalDate.of(2026, 8, 18), BatchStep.SYNC, false).status())
-                .isEqualTo(BatchStartStatus.STARTED);
+        assertThat(batchExecutionLogService.tryStart(LocalDate.of(2026, 8, 18), BatchStep.SYNC, false).decision())
+                .isEqualTo(BatchStartDecision.STARTED);
         assertThat(batchExecutionLogRepository.findAll()).hasSize(2);
     }
 
@@ -239,8 +265,8 @@ class BatchExecutionLogServiceImplTest {
 
     private BatchExecutionRef start(BatchStep step) {
         BatchStartResult result = batchExecutionLogService.tryStart(TRADE_DATE, step, false);
-        assertThat(result.status()).isEqualTo(BatchStartStatus.STARTED);
-        return result.ref();
+        assertThat(result.decision()).isEqualTo(BatchStartDecision.STARTED);
+        return result.execution();
     }
 
     /**

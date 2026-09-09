@@ -104,10 +104,10 @@ public class BatchExecutionLog extends BaseTimeEntity {
     private void finish(BatchStatus status, LocalDateTime finishedAt, String message) {
         this.status = status;
         this.finishedAt = finishedAt;
-        this.message = messageTruncate(message);
+        this.message = truncateMessage(message);
     }
 
-    private static String messageTruncate(String message) {
+    private static String truncateMessage(String message) {
         if (message == null || message.length() <= MESSAGE_MAX_LENGTH) {
             return message;
         }

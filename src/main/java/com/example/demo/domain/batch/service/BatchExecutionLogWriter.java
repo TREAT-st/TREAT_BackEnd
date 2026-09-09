@@ -40,9 +40,9 @@ class BatchExecutionLogWriter {
     public BatchStartResult claim(LocalDate tradeDate, BatchStep step, boolean force) {
         LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
 
-        Optional<BatchExecutionLog> found =
+        Optional<BatchExecutionLog> existingLog =
                 batchExecutionLogRepository.findByTradeDateAndStepForUpdate(tradeDate, step);
-        if (found.isEmpty()) {
+        if (existingLog.isEmpty()) {
             // 같은 순간에 다른 실행도 여기에 도달할 수 있다. 그 경우 유니크 제약이 한쪽을 튕겨내고,
             // 호출자가 재시도하면 상대가 만든 행을 보게 된다.
             BatchExecutionLog created =
@@ -50,56 +50,61 @@ class BatchExecutionLogWriter {
             return BatchStartResult.started(created.ref());
         }
 
-        BatchExecutionLog existing = found.get();
+        BatchExecutionLog execution = existingLog.get();
         if (force) {
-            log.warn("강제 재실행입니다. tradeDate={} step={} 이전상태={}", tradeDate, step, existing.getStatus());
-            existing.restart(now);
-            return BatchStartResult.started(existing.ref());
+            log.warn("강제 재실행입니다. tradeDate={} step={} 이전상태={}", tradeDate, step, execution.getStatus());
+            execution.restart(now);
+            return BatchStartResult.started(execution.ref());
         }
 
-        return switch (existing.getStatus()) {
+        return switch (execution.getStatus()) {
             case SUCCESS -> {
                 log.info("이미 성공한 단계라 건너뜁니다. tradeDate={} step={}", tradeDate, step);
                 yield BatchStartResult.alreadyDone();
             }
             // 살아 있는 실행을 뺏으면 같은 단계가 두 번 돈다. 리포트 단계라면 GPT 비용이 두 배다.
             case RUNNING -> {
-                if (isAlive(existing, now)) {
+                if (isAlive(execution, now)) {
                     log.warn("다른 실행이 진행 중이라 중단합니다. tradeDate={} step={} startedAt={}",
-                            tradeDate, step, existing.getStartedAt());
+                            tradeDate, step, execution.getStartedAt());
                     yield BatchStartResult.inProgress();
                 }
                 log.warn("죽은 실행으로 보고 인계합니다. tradeDate={} step={} startedAt={} attempt={}",
-                        tradeDate, step, existing.getStartedAt(), existing.getAttempt());
-                existing.restart(now);
-                yield BatchStartResult.started(existing.ref());
+                        tradeDate, step, execution.getStartedAt(), execution.getAttempt());
+                execution.restart(now);
+                yield BatchStartResult.started(execution.ref());
             }
             case FAILED, SKIPPED -> {
-                existing.restart(now);
-                yield BatchStartResult.started(existing.ref());
+                execution.restart(now);
+                yield BatchStartResult.started(execution.ref());
             }
         };
     }
 
     public void succeed(BatchExecutionRef ref, String message) {
-        finish(ref, message, (found, now) -> found.succeed(now, message));
+        finish(ref, message, (execution, finishedAt) -> execution.succeed(finishedAt, message));
     }
 
     public void fail(BatchExecutionRef ref, String message) {
-        finish(ref, message, (found, now) -> found.fail(now, message));
+        finish(ref, message, (execution, finishedAt) -> execution.fail(finishedAt, message));
     }
 
     /**
-     * 이미 성공한 단계는 건드리지 않는다.
-     * 성공 기록을 SKIPPED로 덮으면 그날 실제로 무슨 일이 있었는지 복구할 수 없고,
+     * 이미 끝났거나 지금 돌고 있는 단계는 건드리지 않는다.
+     *
+     * SUCCESS를 덮으면 그날 실제로 무슨 일이 있었는지 복구할 수 없고,
      * 이후 실행이 그 단계를 재실행 대상으로 오인한다.
+     *
+     * 살아 있는 RUNNING을 덮는 건 더 나쁘다. 그 실행은 계속 돌고 있는데 행은 SKIPPED가 되므로,
+     * 다음 실행이 재시작 대상으로 보고 같은 단계를 하나 더 띄운다.
+     * claim이 RUNNING을 isAlive로 보호하는 것과 같은 기준을 쓴다.
      */
-    public void markSkipped(LocalDate tradeDate, BatchStep step, String message) {
+    public void skip(LocalDate tradeDate, BatchStep step, String message) {
         LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
 
-        Optional<BatchExecutionLog> found =
+        Optional<BatchExecutionLog> existingLog =
                 batchExecutionLogRepository.findByTradeDateAndStepForUpdate(tradeDate, step);
-        if (found.isEmpty()) {
+        if (existingLog.isEmpty()) {
             // claim과 같은 삽입 경합이 가능하다. 호출자가 재시도한다.
             BatchExecutionLog created =
                     batchExecutionLogRepository.save(BatchExecutionLog.start(tradeDate, step, now));
@@ -107,14 +112,19 @@ class BatchExecutionLogWriter {
             return;
         }
 
-        BatchExecutionLog existing = found.get();
-        if (existing.getStatus() == BatchStatus.SUCCESS) {
+        BatchExecutionLog execution = existingLog.get();
+        if (execution.getStatus() == BatchStatus.SUCCESS) {
             log.warn("이미 성공한 단계라 스킵으로 덮어쓰지 않습니다. tradeDate={} step={} 스킵사유={}",
                     tradeDate, step, message);
             return;
         }
+        if (execution.getStatus() == BatchStatus.RUNNING && isAlive(execution, now)) {
+            log.warn("다른 실행이 진행 중이라 스킵으로 덮어쓰지 않습니다. tradeDate={} step={} startedAt={} 스킵사유={}",
+                    tradeDate, step, execution.getStartedAt(), message);
+            return;
+        }
 
-        existing.skip(now, message);
+        execution.skip(now, message);
     }
 
     /**
@@ -126,17 +136,17 @@ class BatchExecutionLogWriter {
      * 검사는 통과했는데 정작 갱신은 새 실행의 행에 적용될 수 있다.
      */
     private void finish(BatchExecutionRef ref, String message, FinishAction action) {
-        BatchExecutionLog found = batchExecutionLogRepository.findByIdForUpdate(ref.executionId())
+        BatchExecutionLog execution = batchExecutionLogRepository.findByIdForUpdate(ref.executionId())
                 .orElseThrow(BatchHandler::executionNotFound);
 
-        if (!found.isCurrentAttempt(ref)) {
+        if (!execution.isCurrentAttempt(ref)) {
             log.warn("이미 다른 실행에 인계된 단계라 결과를 반영하지 않습니다. "
                             + "executionId={} 도착한attempt={} 현재attempt={} 결과={}",
-                    ref.executionId(), ref.attempt(), found.getAttempt(), message);
+                    ref.executionId(), ref.attempt(), execution.getAttempt(), message);
             return;
         }
 
-        action.apply(found, LocalDateTime.now(SEOUL_ZONE));
+        action.apply(execution, LocalDateTime.now(SEOUL_ZONE));
     }
 
     /**
@@ -150,8 +160,9 @@ class BatchExecutionLogWriter {
         return !running.getStartedAt().plus(running.getStep().getRunningTimeout()).isBefore(now);
     }
 
+    /** 종료 상태로의 전이. 파라미터를 log로 두면 Slf4j 필드를 가린다. */
     @FunctionalInterface
     private interface FinishAction {
-        void apply(BatchExecutionLog log, LocalDateTime now);
+        void apply(BatchExecutionLog execution, LocalDateTime finishedAt);
     }
 }

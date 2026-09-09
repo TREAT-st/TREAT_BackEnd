@@ -29,10 +29,21 @@ public class StockUseCase {
      * DB 커넥션을 붙잡게 되므로, 조회·변환은 트랜잭션 밖에서 끝내고 DB 쓰기만 커맨드에 맡긴다.
      */
     public SyncStocksResponse syncKospi200FromKrx() {
-        KrxKospi200ResponseDto response = krxService.getKospi200Prices();
-        Kospi200SyncCommand command = StockConverter.toKospi200SyncCommand(response);
-        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(command);
+        return syncKospi200(fetchKospi200());
+    }
 
+    /**
+     * 조회만 한다. 배치는 거래일을 먼저 확인하고 실행 이력을 연 뒤에 DB를 써야 해서
+     * 조회와 반영 사이에 끼어들 지점이 필요하다.
+     */
+    public Kospi200SyncCommand fetchKospi200() {
+        KrxKospi200ResponseDto response = krxService.getKospi200Prices();
+        return StockConverter.toKospi200SyncCommand(response);
+    }
+
+    /** 이미 받아둔 KRX 응답을 DB에 반영한다. */
+    public SyncStocksResponse syncKospi200(Kospi200SyncCommand command) {
+        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(command);
         return StockConverter.toSyncStocksResponse(command, outcome);
     }
 

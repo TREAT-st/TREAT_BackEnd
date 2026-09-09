@@ -14,6 +14,10 @@ import java.util.Optional;
 
 public interface BatchExecutionLogRepository extends JpaRepository<BatchExecutionLog, Long> {
 
+    /**
+     * 읽기 전용 조회. 상태를 바꿀 목적으로 쓰면 안 된다.
+     * 잠금이 없어 읽은 값이 곧바로 낡을 수 있다. 변경에는 아래 ForUpdate 조회를 쓴다.
+     */
     Optional<BatchExecutionLog> findByTradeDateAndStep(LocalDate tradeDate, BatchStep step);
 
     /**

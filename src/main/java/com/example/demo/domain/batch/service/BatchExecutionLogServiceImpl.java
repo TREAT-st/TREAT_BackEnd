@@ -54,7 +54,7 @@ public class BatchExecutionLogServiceImpl implements BatchExecutionLogService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void skip(LocalDate tradeDate, BatchStep step, String message) {
         retryOnConcurrentInsert(tradeDate, step, () -> {
-            batchExecutionLogWriter.markSkipped(tradeDate, step, message);
+            batchExecutionLogWriter.skip(tradeDate, step, message);
             return null;
         });
     }
@@ -79,12 +79,12 @@ public class BatchExecutionLogServiceImpl implements BatchExecutionLogService {
      * 트랜잭션 밖이어야 한다. 제약 위반이 난 트랜잭션은 rollback-only로 마킹돼
      * 그 안에서는 재조회조차 못 한다.
      */
-    private <T> T retryOnConcurrentInsert(LocalDate tradeDate, BatchStep step, Supplier<T> write) {
+    private <T> T retryOnConcurrentInsert(LocalDate tradeDate, BatchStep step, Supplier<T> writeOperation) {
         try {
-            return write.get();
+            return writeOperation.get();
         } catch (DataIntegrityViolationException e) {
             log.info("동시 삽입이 감지돼 다시 판단합니다. tradeDate={} step={}", tradeDate, step);
-            return write.get();
+            return writeOperation.get();
         }
     }
 }

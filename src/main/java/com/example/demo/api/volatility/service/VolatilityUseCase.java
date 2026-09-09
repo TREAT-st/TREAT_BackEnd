@@ -78,6 +78,10 @@ public class VolatilityUseCase {
         return VolatilityConverter.toDetectionResult(topSignals, detection.tradeDate());
     }
 
+    /**
+     * 수동 실행 경로. 탐지 기록이 있는 가장 최근 거래일을 대상으로 삼는다.
+     * getLatestVolatility()는 최신 N건이 아니라 최신 거래일의 전체 목록을 돌려준다.
+     */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ReportGenerationResult runReportGeneration(ReportGenerationRequest request) {
         List<Volatility> targets = volatilityQueryService.getLatestVolatility();
@@ -85,8 +89,6 @@ public class VolatilityUseCase {
             throw VolatilityHandler.volatilityNotDetectedToday();
         }
 
-        // 리포트 날짜는 탐지에 쓰인 거래일을 그대로 따른다. 서버 날짜를 쓰면 휴장일이나
-        // 자정 경계에서 콜백이 조회할 행과 어긋난다.
         LocalDate tradeDate = targets.get(0).getTradeDate();
         LocalDate today = LocalDate.now(SEOUL_ZONE);
         if (!tradeDate.isEqual(today)) {
@@ -94,6 +96,31 @@ public class VolatilityUseCase {
                     tradeDate, today);
         }
 
+        return generateReports(request, targets, tradeDate);
+    }
+
+    /**
+     * 배치 경로. 체인이 확보한 거래일을 그대로 쓴다.
+     * 여기서 "최신"으로 다시 해석하면 재실행이나 자정 경계에서 체인이 판정한 날짜와 어긋난다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ReportGenerationResult runReportGeneration(ReportGenerationRequest request, LocalDate tradeDate) {
+        List<Volatility> targets = volatilityQueryService.getByTradeDate(tradeDate);
+        if (targets.isEmpty()) {
+            throw VolatilityHandler.volatilityNotDetectedToday();
+        }
+
+        return generateReports(request, targets, tradeDate);
+    }
+
+    /**
+     * 리포트 날짜는 저장된 거래일을 그대로 따른다. 서버 날짜를 쓰면 휴장일이나
+     * 자정 경계에서 콜백이 조회할 행과 어긋난다.
+     *
+     * 종목 하나가 실패해도 나머지는 진행한다. 실패 목록은 결과에 담아 돌려준다.
+     */
+    private ReportGenerationResult generateReports(ReportGenerationRequest request,
+                                                   List<Volatility> targets, LocalDate tradeDate) {
         String reportDate = tradeDate.format(REPORT_DATE_FORMATTER);
 
         List<String> failedStockCodes = new ArrayList<>();

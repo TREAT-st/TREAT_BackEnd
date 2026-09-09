@@ -12,7 +12,7 @@ public interface BatchExecutionLogService {
 
     /**
      * 단계 실행 권한을 얻는다.
-     * 결과에 따라 실행/건너뛰기/중단이 갈리므로 status를 반드시 분기해야 한다.
+     * 결과에 따라 실행/건너뛰기/중단이 갈리므로 decision을 반드시 분기해야 한다.
      *
      * @param force 이미 성공한 단계도 다시 실행한다. 운영자가 강제로 되돌릴 때만 쓴다.
      */

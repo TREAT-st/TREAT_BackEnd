@@ -21,6 +21,9 @@ public class StaticVariable {
     public static final String REPORT_GENERATION_SUCCESS = "success";
     public static final String REPORT_GENERATION_FAILURE = "failure";
     public static final String REPORT_GENERATION_PARTIAL_SUCCESS = "PARTIAL_SUCCESS";
+    public static final String NO_DETECTED_STOCK = "탐지된 종목 없음";
+    public static final String ANOTHER_RUN_IN_PROGRESS = "다른 실행이 진행 중입니다";
+    public static final String NOT_A_TRADING_DAY = "거래일이 아니라 실행하지 않았습니다.";
 
     //OAuth2
     public static final String KAKAO_OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization/kakao";
