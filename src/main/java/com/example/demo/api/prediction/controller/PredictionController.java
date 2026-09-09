@@ -40,7 +40,7 @@ public class PredictionController {
     public ApiResponseDto<PredictionResultResponse> getPredictionResult(
             @AuthUser User user,
             @PathVariable Long predictionId) {
-        return ApiResponseDto.onSuccess(predictionUseCase.getPredictionResult(predictionId));
+        return ApiResponseDto.onSuccess(predictionUseCase.getPredictionResult(user.getId(), predictionId));
     }
 
 }

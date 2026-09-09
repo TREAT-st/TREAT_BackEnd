@@ -8,6 +8,7 @@ public class PredictionHandler extends GeneralException {
     public static final GeneralException ALREADY_GRADED = new PredictionHandler(PredictionErrorStatus.PREDICTION_ALREADY_GRADED);
     public static final GeneralException NOT_MATURED = new PredictionHandler(PredictionErrorStatus.PREDICTION_NOT_MATURED);
     public static final GeneralException STOCK_PRICE_UNAVAILABLE = new PredictionHandler(PredictionErrorStatus.STOCK_PRICE_UNAVAILABLE);
+    public static final GeneralException FORBIDDEN = new PredictionHandler(PredictionErrorStatus.PREDICTION_FORBIDDEN);
 
     public PredictionHandler(BaseErrorCode baseErrorCode) {
         super(baseErrorCode);

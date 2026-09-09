@@ -65,8 +65,11 @@ public class PredictionUseCase {
     }
 
     @Transactional(readOnly = true)
-    public PredictionResultResponse getPredictionResult(Long predictionId) {
+    public PredictionResultResponse getPredictionResult(Long userId, Long predictionId) {
         Prediction prediction = predictionQueryService.getPredictionById(predictionId);
+        if (!prediction.getUser().getId().equals(userId)) {
+            throw PredictionHandler.FORBIDDEN;
+        }
         return PredictionConverter.toResultResponse(prediction);
     }
 
