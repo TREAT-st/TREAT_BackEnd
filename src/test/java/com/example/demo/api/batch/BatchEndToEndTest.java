@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -224,6 +226,31 @@ class BatchEndToEndTest {
         mockMvc.perform(get("/api/v1/batch/daily-executions")
                         .param("tradeDate", TODAY.toString()))
                 .andExpect(status().isUnauthorized());
+    }
+
+    /**
+     * 리포트가 모두 도착하면 그 콜백이 도착 확인을 닫는다.
+     * 이게 없으면 VERIFY가 영원히 RUNNING으로 남아 완료 여부를 알 수 없다.
+     */
+    @Test
+    void 마지막_콜백이_도착하면_VERIFY가_성공으로_닫힌다() throws Exception {
+        mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(status().isAccepted());
+        assertThat(statusOf(BatchStep.VERIFY)).isEqualTo(BatchStatus.RUNNING);
+
+        mockMvc.perform(patch("/api/v1/volatility/report/callback")
+                        .header("X-Callback-Secret", "test-callback-secret")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(("{\"stockCode\":\"005930\",\"reportDate\":\"%s\","
+                                + "\"reportUrl\":\"https://example.com/005930_analysis.html\"}")
+                                .formatted(TODAY.format(TRADE_DATE_FORMAT))))
+                .andExpect(status().isOk());
+
+        assertThat(statusOf(BatchStep.VERIFY)).isEqualTo(BatchStatus.SUCCESS);
+
+        mockMvc.perform(get("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(jsonPath("$.result.steps[3].step").value("VERIFY"))
+                .andExpect(jsonPath("$.result.steps[3].status").value("SUCCESS"));
     }
 
     /**

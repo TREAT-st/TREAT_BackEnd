@@ -1,6 +1,7 @@
 package com.example.demo.domain.batch.repository;
 
 import com.example.demo.domain.batch.entity.BatchExecutionLog;
+import com.example.demo.domain.batch.entity.BatchStatus;
 import com.example.demo.domain.batch.entity.BatchStep;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +40,8 @@ public interface BatchExecutionLogRepository extends JpaRepository<BatchExecutio
     Optional<BatchExecutionLog> findByIdForUpdate(@Param("id") Long id);
 
     List<BatchExecutionLog> findAllByTradeDate(LocalDate tradeDate);
+
+    /** 도착 확인 스위퍼가 그레이스를 넘긴 단계를 찾을 때 쓴다. */
+    List<BatchExecutionLog> findAllByStepAndStatusAndStartedAtBefore(
+            BatchStep step, BatchStatus status, LocalDateTime startedAt);
 }

@@ -12,6 +12,8 @@ import com.example.demo.domain.volatility.entity.VolatilityDetectionResult;
 import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
 import com.example.demo.domain.volatility.service.VolatilityDetectionService;
+import com.example.demo.domain.batch.entity.BatchStep;
+import com.example.demo.domain.batch.service.BatchExecutionLogService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCal
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
 import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
+import static com.example.demo.common.consts.StaticVariable.VERIFY_ALL_REPORTS_ARRIVED;
 
 @Slf4j
 @UseCase
@@ -40,6 +43,7 @@ public class VolatilityUseCase {
     private final VolatilityDetectionService volatilityDetectionService;
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
+    private final BatchExecutionLogService batchExecutionLogService;
 
     /**
      * yyyyMMdd. 기본 SMART 해석은 20260231 같은 날짜를 2월 말로 보정해버려서,
@@ -173,6 +177,16 @@ public class VolatilityUseCase {
         return gptModel.trim();
     }
 
+    /**
+     * 트랜잭션을 열지 않는다. 순서가 뒤집히면 안 되기 때문이다.
+     *
+     * 한 트랜잭션으로 묶으면 reportUrl이 아직 커밋되지 않은 상태에서 미도착 수를 세게 되고,
+     * 도착 확인은 REQUIRES_NEW라 먼저 커밋된다. 바깥이 롤백되면 URL은 없는데 확인만 성공으로 남는다.
+     *
+     * 저장을 커맨드 서비스의 트랜잭션으로 먼저 끝내고, 커밋된 결과를 조회해 판단한다.
+     * 도착 확인 갱신이 실패해도 스위퍼가 뒤에서 복구한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void handleReportCallback(ReportCallback request) {
         LocalDate tradeDate;
         try {
@@ -181,6 +195,14 @@ public class VolatilityUseCase {
             throw VolatilityHandler.reportCallbackInvalidRequest();
         }
         volatilityCommandService.updateReportUrl(request.getStockCode(), tradeDate, request.getReportUrl());
+
+        // 이번 콜백으로 마지막 하나가 채워졌으면 도착 확인을 끝낸다.
+        long missing = volatilityQueryService.countMissingReport(tradeDate);
+        if (missing > 0) {
+            log.info("리포트 도착 대기 중입니다. tradeDate={} 미도착={}건", tradeDate, missing);
+            return;
+        }
+        batchExecutionLogService.completeVerification(tradeDate, VERIFY_ALL_REPORTS_ARRIVED);
     }
 
     @Transactional(readOnly = true)

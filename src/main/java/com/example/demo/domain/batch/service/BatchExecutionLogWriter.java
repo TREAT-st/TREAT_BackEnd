@@ -136,6 +136,36 @@ class BatchExecutionLogWriter {
     }
 
     /**
+     * 도착 확인을 성공으로 닫는다. 콜백은 실행 참조를 모르므로 거래일로 찾는다.
+     *
+     * FAILED에서도 SUCCESS로 간다. 스위퍼가 미도착으로 판정한 직후 마지막 콜백이 도착하는 경합이
+     * 실제로 가능하고, 그때 최종 상태는 "리포트가 다 있다"여야 한다.
+     * 4b의 재요청이 붙기 전까지는 수동 재생성 후의 복구 경로이기도 하다.
+     */
+    public void completeVerification(LocalDate tradeDate, String message) {
+        Optional<BatchExecutionLog> existingLog =
+                batchExecutionLogRepository.findByTradeDateAndStepForUpdate(tradeDate, BatchStep.VERIFY);
+        if (existingLog.isEmpty()) {
+            // 그날 배치가 리포트를 요청한 적이 없다. 단발 리포트 콜백이 여기로 온다.
+            return;
+        }
+
+        // 계약에 적힌 두 전이만 허용한다. RUNNING -> SUCCESS, FAILED -> SUCCESS.
+        // "SUCCESS가 아니면 전부"로 두면 나중에 VERIFY가 다른 상태를 갖게 됐을 때 조용히 딸려온다.
+        BatchExecutionLog verification = existingLog.get();
+        if (verification.getStatus() != BatchStatus.RUNNING
+                && verification.getStatus() != BatchStatus.FAILED) {
+            log.info("도착 확인이 닫을 수 있는 상태가 아닙니다. tradeDate={} 상태={}",
+                    tradeDate, verification.getStatus());
+            return;
+        }
+
+        log.info("도착 확인을 성공으로 닫습니다. tradeDate={} 이전상태={}",
+                tradeDate, verification.getStatus());
+        verification.succeed(LocalDateTime.now(SEOUL_ZONE), message);
+    }
+
+    /**
      * 인계된 뒤 뒤늦게 끝난 이전 실행의 결과는 버린다.
      * 그대로 반영하면 지금 돌고 있는 실행이 SUCCESS/FAILED로 바뀌고,
      * FAILED가 되면 다음 실행이 재시작 대상으로 보고 같은 단계를 하나 더 띄운다.
@@ -151,6 +181,14 @@ class BatchExecutionLogWriter {
             log.warn("이미 다른 실행에 인계된 단계라 결과를 반영하지 않습니다. "
                             + "executionId={} 도착한attempt={} 현재attempt={} 결과={}",
                     ref.executionId(), ref.attempt(), execution.getAttempt(), message);
+            return;
+        }
+
+        // 종료 전이는 RUNNING에서만 일어난다.
+        // 스위퍼와 콜백이 겹치면 이미 끝난 단계에 다른 결과를 덮어쓸 수 있다.
+        if (execution.getStatus() != BatchStatus.RUNNING) {
+            log.warn("이미 끝난 단계라 결과를 반영하지 않습니다. executionId={} 현재상태={} 결과={}",
+                    ref.executionId(), execution.getStatus(), message);
             return;
         }
 

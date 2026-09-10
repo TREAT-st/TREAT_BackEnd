@@ -27,6 +27,10 @@ public class StaticVariable {
     public static final String NOT_A_TRADING_DAY_LOG = "거래일이 아닙니다. KRX 거래일=%s";
     public static final String BATCH_ACCEPTED = "배치를 접수했습니다.";
     public static final String BATCH_NOT_ACCEPTED_ALREADY_RUNNING = "이미 실행 중인 배치가 있어 접수하지 않았습니다.";
+    public static final String VERIFY_ALL_REPORTS_ARRIVED = "리포트가 모두 도착했습니다.";
+    public static final String VERIFY_MISSING_REPORT = "리포트 %d건이 도착하지 않았습니다.";
+    public static final String VERIFY_RECOVERED_FROM_S3 = "S3에서 %d건을 보정해 리포트가 모두 채워졌습니다.";
+    public static final String VERIFY_S3_LOOKUP_FAILED = " S3 조회 실패 %d건.";
     public static final String BATCH_SECRET_HEADER = "X-Batch-Secret";
 
     //OAuth2

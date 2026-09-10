@@ -289,6 +289,53 @@ class BatchExecutionLogServiceImplTest {
                 .containsExactly(BatchStep.SYNC, BatchStep.DETECT, BatchStep.REPORT, BatchStep.VERIFY);
     }
 
+    /**
+     * 스위퍼와 콜백이 겹치면 이미 끝난 단계에 다른 결과가 덮일 수 있다.
+     * 종료 전이는 RUNNING에서만 일어나야 한다.
+     */
+    @Test
+    void 이미_끝난_단계는_결과가_덮이지_않는다() {
+        BatchExecutionRef ref = start(BatchStep.VERIFY);
+        batchExecutionLogService.fail(ref, "리포트 2건이 도착하지 않았습니다.");
+
+        batchExecutionLogService.succeed(ref, "뒤늦은 성공");
+
+        assertThat(log(BatchStep.VERIFY).getStatus()).isEqualTo(BatchStatus.FAILED);
+        assertThat(log(BatchStep.VERIFY).getMessage()).isEqualTo("리포트 2건이 도착하지 않았습니다.");
+    }
+
+    /**
+     * 스위퍼가 미도착으로 판정한 직후 마지막 콜백이 도착할 수 있다.
+     * "리포트가 다 있다"가 "그레이스 안에 못 왔다"보다 강한 사실이라 성공으로 되돌린다.
+     */
+    @Test
+    void 늦게_도착한_콜백은_실패한_도착_확인도_성공으로_되돌린다() {
+        BatchExecutionRef ref = start(BatchStep.VERIFY);
+        batchExecutionLogService.fail(ref, "리포트 2건이 도착하지 않았습니다.");
+
+        batchExecutionLogService.completeVerification(TRADE_DATE, "리포트가 모두 도착했습니다.");
+
+        assertThat(log(BatchStep.VERIFY).getStatus()).isEqualTo(BatchStatus.SUCCESS);
+        assertThat(log(BatchStep.VERIFY).getMessage()).isEqualTo("리포트가 모두 도착했습니다.");
+    }
+
+    @Test
+    void 진행_중인_도착_확인도_콜백이_닫는다() {
+        start(BatchStep.VERIFY);
+
+        batchExecutionLogService.completeVerification(TRADE_DATE, "리포트가 모두 도착했습니다.");
+
+        assertThat(log(BatchStep.VERIFY).getStatus()).isEqualTo(BatchStatus.SUCCESS);
+    }
+
+    /** 배치가 리포트를 요청한 적 없는 날의 콜백이다. 단발 리포트 콜백이 여기로 온다. */
+    @Test
+    void 도착_확인이_열려_있지_않으면_콜백이_아무것도_하지_않는다() {
+        batchExecutionLogService.completeVerification(TRADE_DATE, "리포트가 모두 도착했습니다.");
+
+        assertThat(batchExecutionLogRepository.findAll()).isEmpty();
+    }
+
     private BatchExecutionRef start(BatchStep step) {
         BatchStartResult result = batchExecutionLogService.tryStart(TRADE_DATE, step, false);
         assertThat(result.decision()).isEqualTo(BatchStartDecision.STARTED);

@@ -52,6 +52,12 @@ public class BatchExecutionLogServiceImpl implements BatchExecutionLogService {
 
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void completeVerification(LocalDate tradeDate, String message) {
+        batchExecutionLogWriter.completeVerification(tradeDate, message);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void skip(LocalDate tradeDate, BatchStep step, String message) {
         retryOnConcurrentInsert(tradeDate, step, () -> {
             batchExecutionLogWriter.skip(tradeDate, step, message);

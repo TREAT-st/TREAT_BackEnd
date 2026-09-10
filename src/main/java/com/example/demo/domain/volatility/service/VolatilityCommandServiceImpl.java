@@ -80,6 +80,15 @@ public class VolatilityCommandServiceImpl implements VolatilityCommandService {
                 topSignals.size() - toInsert.size(), dropped.size());
     }
 
+    /**
+     * S3 보정 전용. 콜백은 아래 updateReportUrl을 그대로 쓴다.
+     * 콜백이 주는 값이 언제나 더 최신이므로 콜백 쪽에는 조건을 걸지 않는다.
+     */
+    @Override
+    public int fillReportUrlIfAbsent(String stockCode, LocalDate tradeDate, String reportUrl) {
+        return volatilityRepository.fillReportUrlIfAbsent(stockCode, tradeDate, reportUrl);
+    }
+
     @Override
     public void updateReportUrl(String stockCode, LocalDate tradeDate, String reportUrl) {
         Volatility volatility = volatilityRepository.findByStockCodeAndTradeDate(stockCode, tradeDate)
