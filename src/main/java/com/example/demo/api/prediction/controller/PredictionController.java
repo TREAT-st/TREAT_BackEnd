@@ -35,7 +35,7 @@ public class PredictionController {
 
     @Operation(summary = "예측 결과 조회",
             description = "예측 ID로 예측 결과를 조회합니다.<br>" +
-                    "status: PENDING(채점 전) / CORRECT(적중) / WRONG(미적중)")
+                    "status: PENDING(채점 전) / CORRECT(적중) / WRONG(미적중) / FAILED(채점 실패)")
     @GetMapping("/{predictionId}/result")
     public ApiResponseDto<PredictionResultResponse> getPredictionResult(
             @AuthUser User user,

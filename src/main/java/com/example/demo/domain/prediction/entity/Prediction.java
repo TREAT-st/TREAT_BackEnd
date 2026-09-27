@@ -56,6 +56,10 @@ public class Prediction extends BaseTimeEntity {
     @Column(name = "graded_at")
     private LocalDateTime gradedAt;
 
+    public void markGradingFailed() {
+        this.status = PredictionStatus.FAILED;
+    }
+
     public void grade(PredictionStatus result) {
         this.status = result;
         this.gradedAt = LocalDateTime.now();

@@ -25,6 +25,8 @@ public class PredictionConverter {
                 ? "예측이 적중했습니다."
                 : prediction.getStatus() == PredictionStatus.WRONG
                 ? "예측이 빗나갔습니다."
+                : prediction.getStatus() == PredictionStatus.FAILED
+                ? "채점 처리에 실패했습니다."
                 : "아직 채점 전입니다.";
 
         return PredictionResultResponse.builder()
