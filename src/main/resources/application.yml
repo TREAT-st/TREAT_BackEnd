@@ -45,7 +45,7 @@ app:
 
 firebase:
   enabled: ${FIREBASE_ENABLED:true}
-  project-id: ${FIREBASE_PROJECT_ID:treat}
+  project-id: ${FIREBASE_PROJECT_ID:treat-95b87}
 
 oauth2:
   redirect-uri: ${OAUTH2_REDIRECT_URI:treat://oauth/kakao}
