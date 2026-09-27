@@ -5,7 +5,7 @@
 
 ## 토큰 등록·갱신
 
-`PUT /api/v1/users/me/devices/{installationId}`
+`PATCH /api/v1/users/me/devices/{installationId}`
 
 ```json
 {

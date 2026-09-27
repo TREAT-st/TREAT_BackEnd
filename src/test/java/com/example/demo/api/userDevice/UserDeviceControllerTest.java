@@ -35,7 +35,7 @@ class UserDeviceControllerTest {
 
     @Test
     void registerUsesAuthenticatedUser() throws Exception {
-        mvc.perform(put("/api/v1/users/me/devices/install-1").contentType(APPLICATION_JSON)
+        mvc.perform(patch("/api/v1/users/me/devices/install-1").contentType(APPLICATION_JSON)
                 .content("{\"fcmToken\":\"token-1\",\"platform\":\"ANDROID\"}"))
                 .andExpect(status().isOk());
         verify(useCase).register(eq(user), eq("install-1"), argThat(r -> r.fcmToken().equals("token-1")));
@@ -45,7 +45,7 @@ class UserDeviceControllerTest {
     void rejectsBlankTokenMissingPlatformAndInvalidPlatform() throws Exception {
         for (String body : new String[]{"{\"fcmToken\":\" \",\"platform\":\"IOS\"}",
                 "{\"fcmToken\":\"token\"}", "{\"fcmToken\":\"token\",\"platform\":\"WEB\"}"}) {
-            mvc.perform(put("/api/v1/users/me/devices/install-1").contentType(APPLICATION_JSON).content(body))
+            mvc.perform(patch("/api/v1/users/me/devices/install-1").contentType(APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest());
         }
         verifyNoInteractions(useCase);
@@ -53,7 +53,7 @@ class UserDeviceControllerTest {
 
     @Test
     void rejectsInvalidInstallationId() throws Exception {
-        mvc.perform(put("/api/v1/users/me/devices/bad.id").contentType(APPLICATION_JSON)
+        mvc.perform(patch("/api/v1/users/me/devices/bad.id").contentType(APPLICATION_JSON)
                 .content("{\"fcmToken\":\"token\",\"platform\":\"IOS\"}"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(useCase);
