@@ -38,3 +38,7 @@ out/
 
 ### Application config ###
 #src/main/resources/application.yml
+
+### Firebase credentials ###
+/secrets/
+*-firebase-adminsdk-*.json

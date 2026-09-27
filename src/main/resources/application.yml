@@ -43,6 +43,10 @@ app:
   jwt:
     secret: ${JWT_SECRET}
 
+firebase:
+  enabled: ${FIREBASE_ENABLED:true}
+  project-id: ${FIREBASE_PROJECT_ID:treat}
+
 oauth2:
   redirect-uri: ${OAUTH2_REDIRECT_URI:treat://oauth/kakao}
 
