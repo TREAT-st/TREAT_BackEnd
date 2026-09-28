@@ -45,6 +45,7 @@ public class StockResponseDto {
         private String stockCode;
         private String stockName;
         private Boolean isActive;
+        private Boolean isFavorite;
     }
 
     @Getter

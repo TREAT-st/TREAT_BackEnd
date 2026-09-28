@@ -5,6 +5,8 @@ import com.example.demo.api.stock.dto.StockResponseDto.*;
 import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.common.annotation.AuthUser;
+import com.example.demo.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
@@ -57,13 +59,13 @@ public class StockController {
                     "pageSize는 1~200입니다.")
     @GetMapping("/all-stock")
     public ApiResponseDto<StockPageResponse> getAllStocks(
+            @AuthUser User user,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "page는 0 이상이어야 합니다.") int page,
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "pageSize는 1 이상이어야 합니다.")
             @Max(value = 200, message = "pageSize는 200 이하여야 합니다.") int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.asc("stockCode")));
-        Page<Stock> stockPage = stockUseCase.getAllStocks(isActive, pageable);
-        return ApiResponseDto.onSuccess(StockConverter.toStockPageResponse(stockPage));
+        return ApiResponseDto.onSuccess(stockUseCase.getAllStocks(user.getId(), isActive, pageable));
     }
 }

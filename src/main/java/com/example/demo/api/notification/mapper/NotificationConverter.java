@@ -22,6 +22,11 @@ public class NotificationConverter {
     }
 
     public static NotificationResponse toNotificationResponse(Notification notification) {
+        return toNotificationResponse(notification, null, null);
+    }
+
+    public static NotificationResponse toNotificationResponse(
+            Notification notification, String stockCode, String stockName) {
         return NotificationResponse.builder()
                 .notificationId(notification.getId())
                 .userId(notification.getUser().getId())
@@ -29,6 +34,9 @@ public class NotificationConverter {
                 .notificationType(notification.getNotificationType())
                 .message(notification.getMessage())
                 .isRead(notification.getIsRead())
+                .stockCode(stockCode)
+                .stockName(stockName)
+                .createDate(notification.getCreatedDate())
                 .build();
     }
 

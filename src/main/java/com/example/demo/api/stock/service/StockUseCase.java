@@ -11,6 +11,7 @@ import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.stock.entity.StockSyncOutcome;
 import com.example.demo.domain.stock.service.StockCommandService;
 import com.example.demo.domain.stock.service.StockQueryService;
+import com.example.demo.domain.favoriteStock.service.FavoriteStockQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ public class StockUseCase {
     private final StockCommandService stockCommandService;
     private final StockQueryService stockQueryService;
     private final KrxService krxService;
+    private final FavoriteStockQueryService favoriteStockQueryService;
 
     /**
      * KRX 조회는 200종목 크롤링이라 수 분이 걸릴 수 있다. 트랜잭션 안에서 호출하면 그동안
@@ -45,5 +47,15 @@ public class StockUseCase {
     @Transactional(readOnly = true)
     public Page<Stock> getAllStocks(Boolean isActive, Pageable pageable) {
         return stockQueryService.getAllStocks(isActive, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public com.example.demo.api.stock.dto.StockResponseDto.StockPageResponse getAllStocks(
+            Long userId, Boolean isActive, Pageable pageable) {
+        Page<Stock> stocks = stockQueryService.getAllStocks(isActive, pageable);
+        return StockConverter.toStockPageResponse(
+                stocks,
+                favoriteStockQueryService.getUserFavoriteStockCodes(userId)
+        );
     }
 }
