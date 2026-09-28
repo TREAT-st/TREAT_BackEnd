@@ -36,8 +36,33 @@ Firebase의 `UNREGISTERED` 응답에만 기기 연결을 삭제합니다.
 채점/리포트 결과와 알림 내역을 DB에 커밋한 뒤 이 서비스를 호출해야 합니다.
 `NOT_SUPPORTED`는 트랜잭션을 잠시 중단할 뿐 커밋 이후로 발송을 예약하는 기능이 아닙니다.
 커밋 후 이벤트나 발송 대기 내역을 처리하는 작업에서 호출하도록 연결합니다.
-현재 구현에는 테스트 발송 HTTP API, 업무 이벤트 연결, 알림 DB 저장, 자동 재시도가 포함되지 않습니다.
+현재 구현에는 업무 이벤트 연결, 알림 DB 저장, 자동 재시도가 포함되지 않습니다.
 실제 기기 수신 검증은 React Native 앱의 실제 토큰을 등록한 뒤 진행합니다.
+
+## 개발용 테스트 발송 API
+
+서버 실행 환경에 아래 값을 추가해야 테스트 API가 생성됩니다.
+
+```sh
+FCM_TEST_API_ENABLED=true
+```
+
+`POST /api/v1/test/fcm/send`는 JWT로 로그인한 사용자에게 등록된 모든 기기로만 발송합니다.
+사용자 ID는 요청에서 받지 않습니다. 운영 환경에서는 이 값을 설정하지 않아 엔드포인트를 비활성화합니다.
+
+```json
+{
+  "title": "FCM 테스트",
+  "body": "TREAT 테스트 알림입니다.",
+  "data": {
+    "notificationType": "RESULT",
+    "sourceId": "123"
+  }
+}
+```
+
+응답의 `successCount`는 Firebase가 접수한 기기 수이고, `failureCount`는 발송 요청에 실패한 기기 수입니다.
+둘 다 0이면 현재 로그인 사용자에게 등록된 기기가 없습니다.
 
 참고: https://firebase.google.com/docs/cloud-messaging/send/admin-sdk
 토큰 정리 기준: https://firebase.google.com/docs/cloud-messaging/manage-tokens
