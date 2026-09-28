@@ -20,15 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/test/fcm")
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "firebase.test-api-enabled", havingValue = "true")
+@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true")
 public class FcmTestController {
 
     private final FcmService fcmService;
 
     @Operation(
             summary = "로그인 사용자의 기기로 테스트 알림 발송",
-            description = "JWT로 인증된 사용자에게 등록된 모든 기기로 FCM 알림을 발송합니다. "
-                    + "FCM_TEST_API_ENABLED=true인 환경에서만 사용할 수 있습니다."
+            description = "JWT로 인증된 사용자에게 등록된 모든 기기로 FCM 알림을 발송합니다."
     )
     @PostMapping("/send")
     public ApiResponseDto<FcmSendResult> sendToMyDevices(

@@ -46,7 +46,6 @@ app:
 firebase:
   enabled: ${FIREBASE_ENABLED:true}
   project-id: ${FIREBASE_PROJECT_ID:treat-95b87}
-  test-api-enabled: ${FCM_TEST_API_ENABLED:false}
 
 oauth2:
   redirect-uri: ${OAUTH2_REDIRECT_URI:treat://oauth/kakao}
