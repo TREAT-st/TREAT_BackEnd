@@ -66,6 +66,27 @@ public class StockCommandServiceImpl implements StockCommandService {
     }
 
     /**
+     * 관심등록수 증감.
+     *
+     * stock에 없는 종목 코드로 관심종목이 등록될 수 있어(FavoriteStock.stockCode는 FK가 아니다)
+     * 갱신 건수가 0일 수 있다. 관심종목 등록 자체를 막을 일은 아니므로 경고만 남긴다.
+     */
+    @Override
+    public void increaseLikeCount(String stockCode) {
+        if (stockRepository.increaseLikeCount(stockCode) == 0) {
+            log.warn("관심등록수를 올릴 종목이 stock에 없습니다. stockCode={}", stockCode);
+        }
+    }
+
+    @Override
+    public void decreaseLikeCount(String stockCode) {
+        if (stockRepository.decreaseLikeCount(stockCode) == 0) {
+            // 종목이 없거나 이미 0인 경우다. 둘 다 더 내릴 것이 없다.
+            log.warn("관심등록수를 내리지 못했습니다. 종목이 없거나 이미 0입니다. stockCode={}", stockCode);
+        }
+    }
+
+    /**
      * 반영해도 되는 거래일인지 본다.
      *
      * 실행일과 거래일이 다른 것은 정상이다. Lambda는 항상 오늘을 제외한 직전 거래일을 주므로

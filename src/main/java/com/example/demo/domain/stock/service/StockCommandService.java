@@ -35,4 +35,13 @@ public interface StockCommandService {
      *              과거 거래일과 오늘 이후 날짜는 force와 무관하게 막힌다.
      */
     StockSyncOutcome syncStocksAndPrices(Kospi200SyncCommand command, boolean force);
+
+    /**
+     * 관심등록수를 1 올린다. 관심종목 등록과 같은 트랜잭션에서 호출해야 집계가 어긋나지 않는다.
+     * 해당 종목이 stock에 없으면 아무것도 하지 않는다.
+     */
+    void increaseLikeCount(String stockCode);
+
+    /** 관심등록수를 1 내린다. 0 아래로는 내려가지 않는다. */
+    void decreaseLikeCount(String stockCode);
 }

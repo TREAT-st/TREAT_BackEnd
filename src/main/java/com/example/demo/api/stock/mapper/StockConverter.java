@@ -74,6 +74,7 @@ public class StockConverter {
                 .openPrice(stock.getOpenPrice())
                 .closePrice(stock.getClosePrice())
                 .marketCapitalization(stock.getMarketCapitalization())
+                .likeCount(stock.getLikeCount())
                 .tradeDate(stock.getTradeDate())
                 .isActive(stock.getIsActive())
                 .build();
