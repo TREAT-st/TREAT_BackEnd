@@ -17,6 +17,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -254,7 +255,7 @@ class StockCommandServiceImplTest {
                 source("005930", "삼성전자"),
                 Set.of(),
                 List.of(new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null)),
-                List.of()));
+                List.of()), false);
 
         assertThat(outcome.syncResult().addedCount()).isEqualTo(1);
         assertThat(outcome.priceUpdatedCount()).isEqualTo(1);
@@ -274,7 +275,7 @@ class StockCommandServiceImplTest {
                 Set.of(),
                 List.of(new StockPriceSnapshot("005930",
                         new BigDecimal("71000"), new BigDecimal("72500"), marketCap)),
-                List.of()));
+                List.of()), false);
 
         assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
             assertThat(s.getMarketCapitalization()).isEqualTo(marketCap);
@@ -292,11 +293,138 @@ class StockCommandServiceImplTest {
                 Set.of(),
                 List.of(new StockPriceSnapshot("005930",
                         new BigDecimal("71000"), new BigDecimal("72500"), null)),
-                List.of()));
+                List.of()), false);
 
         assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
             assertThat(s.getClosePrice()).isEqualByComparingTo("72500");
             assertThat(s.getMarketCapitalization()).isNull();
+        });
+    }
+
+    // ---------- 거래일 검증 ----------
+
+    private static final LocalDate YESTERDAY = LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1);
+
+    private Kospi200SyncCommand syncCommand(LocalDate tradeDate, String stockCode, long closePrice) {
+        return new Kospi200SyncCommand(
+                tradeDate,
+                source(stockCode, "삼성전자"),
+                Set.of(),
+                List.of(new StockPriceSnapshot(stockCode,
+                        new BigDecimal("71000"), BigDecimal.valueOf(closePrice), 432_000_000_000_000L)),
+                List.of());
+    }
+
+    private void assertErrorCode(Throwable e, StockErrorStatus expected) {
+        assertThat(e).isInstanceOf(GeneralException.class);
+        assertThat(((GeneralException) e).getErrorReasonHttpStatus().getCode())
+                .isEqualTo(expected.getCode());
+    }
+
+    @Test
+    void DB에_거래일이_없으면_동기화한다() {
+        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(
+                syncCommand(YESTERDAY, "005930", 72500), false);
+
+        assertThat(outcome.priceUpdatedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 최신_거래일보다_이후면_동기화한다() {
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY.minusDays(1), "005930", 72500), false);
+
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 74000), false);
+
+        assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
+            assertThat(s.getClosePrice()).isEqualByComparingTo("74000");
+            assertThat(s.getTradeDate()).isEqualTo(YESTERDAY);
+        });
+    }
+
+    /** 주말·휴장일에는 Lambda가 같은 거래일을 다시 내려준다. 그대로 반영하면 안 된다. */
+    @Test
+    void 같은_거래일이면_force없이는_중단한다() {
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 72500), false);
+
+        assertThatThrownBy(() -> stockCommandService.syncStocksAndPrices(
+                syncCommand(YESTERDAY, "005930", 99999), false))
+                .satisfies(e -> assertErrorCode(e, StockErrorStatus.STOCK_TRADE_DATE_ALREADY_SYNCED));
+    }
+
+    /** 시세를 못 받은 종목을 같은 거래일로 재시도하는 복구 경로다. */
+    @Test
+    void 같은_거래일이어도_force면_재실행한다() {
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 72500), false);
+
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 74000), true);
+
+        assertThat(stockRepository.findByStockCode("005930")).get()
+                .satisfies(s -> assertThat(s.getClosePrice()).isEqualByComparingTo("74000"));
+    }
+
+    @Test
+    void 과거_거래일이면_중단한다() {
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 72500), false);
+
+        assertThatThrownBy(() -> stockCommandService.syncStocksAndPrices(
+                syncCommand(YESTERDAY.minusDays(1), "005930", 99999), false))
+                .satisfies(e -> assertErrorCode(e, StockErrorStatus.STOCK_STALE_TRADE_DATE));
+    }
+
+    /** force는 같은 거래일 복구용이다. 과거 시세가 최신을 덮어쓰는 것까지 열어주면 안 된다. */
+    @Test
+    void 과거_거래일은_force여도_중단한다() {
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 72500), false);
+
+        assertThatThrownBy(() -> stockCommandService.syncStocksAndPrices(
+                syncCommand(YESTERDAY.minusDays(1), "005930", 99999), true))
+                .satisfies(e -> assertErrorCode(e, StockErrorStatus.STOCK_STALE_TRADE_DATE));
+    }
+
+    @Test
+    void 오늘_거래일은_Lambda_계약_위반이다() {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        assertThatThrownBy(() -> stockCommandService.syncStocksAndPrices(
+                syncCommand(today, "005930", 72500), false))
+                .satisfies(e -> assertErrorCode(e, StockErrorStatus.STOCK_INVALID_TRADE_DATE));
+    }
+
+    @Test
+    void 미래_거래일은_Lambda_계약_위반이다() {
+        LocalDate tomorrow = LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(1);
+
+        assertThatThrownBy(() -> stockCommandService.syncStocksAndPrices(
+                syncCommand(tomorrow, "005930", 72500), false))
+                .satisfies(e -> assertErrorCode(e, StockErrorStatus.STOCK_INVALID_TRADE_DATE));
+    }
+
+    /**
+     * 에러 코드만 보면 안 된다. 검증이 syncStocks보다 먼저 돌지 않으면
+     * 예외가 나기 전에 이름 변경·편출·재편입이 이미 반영된다.
+     */
+    @Test
+    void 중단되면_기존_데이터가_그대로_남는다() {
+        stockCommandService.syncStocksAndPrices(syncCommand(YESTERDAY, "005930", 72500), false);
+
+        // 종목명이 바뀌고 005930이 빠진 목록 — 그대로 실행되면 이름 변경과 편출이 일어난다
+        assertThatThrownBy(() -> stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
+                YESTERDAY.minusDays(1),
+                source("000660", "SK하이닉스"),
+                Set.of(),
+                List.of(new StockPriceSnapshot("000660",
+                        new BigDecimal("1"), new BigDecimal("2"), 1L)),
+                List.of()), false))
+                .isInstanceOf(GeneralException.class);
+
+        assertThat(stockRepository.findByStockCode("000660")).isEmpty();
+        assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
+            assertThat(s.getStockName()).isEqualTo("삼성전자");
+            assertThat(s.getOpenPrice()).isEqualByComparingTo("71000");
+            assertThat(s.getClosePrice()).isEqualByComparingTo("72500");
+            assertThat(s.getMarketCapitalization()).isEqualTo(432_000_000_000_000L);
+            assertThat(s.getTradeDate()).isEqualTo(YESTERDAY);
+            assertThat(s.getIsActive()).isTrue();
         });
     }
 

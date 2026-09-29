@@ -8,6 +8,9 @@ import com.example.demo.domain.stock.entity.StockPriceSnapshot;
 import com.example.demo.domain.stock.entity.StockPriceUpdateResult;
 import com.example.demo.domain.stock.entity.StockSyncOutcome;
 import com.example.demo.domain.stock.repository.StockRepository;
+
+import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,7 +47,10 @@ public class StockCommandServiceImpl implements StockCommandService {
      * 어차피 이 메서드의 트랜잭션에 합류했을 동작과 동일하다.
      */
     @Override
-    public StockSyncOutcome syncStocksAndPrices(Kospi200SyncCommand command) {
+    public StockSyncOutcome syncStocksAndPrices(Kospi200SyncCommand command, boolean force) {
+        // syncStocks보다 먼저 검사해야 이름 변경·편출·재편입도 일어나지 않는다.
+        validateTradeDate(command.tradeDate(), force);
+
         StockSyncResult syncResult = syncStocks(command.incomingStocks(), command.errorCodes());
         StockPriceUpdateResult priceResult = updateStockPrices(command.priceSnapshots(), command.tradeDate());
 
@@ -57,6 +63,40 @@ public class StockCommandServiceImpl implements StockCommandService {
                 priceResult.skippedStockCodes().size(), syncResult.unresolvedStockCodes().size());
 
         return new StockSyncOutcome(syncResult, priceResult.updatedCount(), priceResult.skippedStockCodes());
+    }
+
+    /**
+     * 반영해도 되는 거래일인지 본다.
+     *
+     * 실행일과 거래일이 다른 것은 정상이다. Lambda는 항상 오늘을 제외한 직전 거래일을 주므로
+     * 평일에도 두 날짜는 늘 다르다. 따라서 휴장일 여부를 실행일로 판단하면 안 되고,
+     * "새 거래 데이터가 있는가"는 거래일과 DB 최신 거래일의 비교로만 알 수 있다.
+     *
+     * incoming >= 오늘   → Lambda 계약 위반. 응답이 깨졌다
+     * incoming <  latest → 과거 시세가 최신을 덮어쓴다. force로도 막는다
+     * incoming == latest → 이미 반영됨. force일 때만 재실행(시세 미수신 종목 복구용)
+     * latest == null     → 최초 동기화
+     *
+     * 쓰기와 같은 트랜잭션에서 읽는다. UseCase의 별도 읽기 트랜잭션에서 검사하면
+     * 조회와 반영 사이가 벌어져 동시 요청이 둘 다 통과한다.
+     */
+    private void validateTradeDate(LocalDate incomingTradeDate, boolean force) {
+        if (incomingTradeDate == null || !incomingTradeDate.isBefore(LocalDate.now(SEOUL_ZONE))) {
+            log.error("Lambda가 유효하지 않은 거래일을 반환했습니다. tradeDate={}", incomingTradeDate);
+            throw StockHandler.invalidTradeDate();
+        }
+
+        stockRepository.findLatestTradeDate().ifPresent(latestTradeDate -> {
+            if (incomingTradeDate.isBefore(latestTradeDate)) {
+                log.error("과거 거래일이 최신 데이터를 덮어쓰려 해 중단합니다. incoming={} latest={}",
+                        incomingTradeDate, latestTradeDate);
+                throw StockHandler.staleTradeDate();
+            }
+            if (incomingTradeDate.isEqual(latestTradeDate) && !force) {
+                log.info("이미 반영된 거래일이라 동기화를 건너뜁니다. tradeDate={}", incomingTradeDate);
+                throw StockHandler.tradeDateAlreadySynced();
+            }
+        });
     }
 
     /**

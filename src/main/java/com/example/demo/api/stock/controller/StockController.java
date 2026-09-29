@@ -34,10 +34,21 @@ public class StockController {
                     "priceUnavailableStockCodes : 목록에는 반영됐지만 시세를 못 받은 종목(거래정지 등)<br>" +
                     "unresolvedStockCodes : 종목명을 못 받아 목록에 반영하지 못한 종목(활성 상태 유지)<br>" +
                     "priceUpdateSkippedStockCodes : 시세는 받았지만 DB에 반영하지 못한 종목. " +
-                    "이 목록이 비어 있지 않으면 동기화 정합성 이상 신호입니다.")
+                    "이 목록이 비어 있지 않으면 동기화 정합성 이상 신호입니다.<br><br>" +
+                    "<b>거래일 검사</b><br>" +
+                    "Lambda는 항상 오늘을 제외한 직전 거래일을 반환하므로 실행일과 거래일은 평일에도 다릅니다. " +
+                    "새 데이터 여부는 거래일과 DB 최신 거래일의 비교로 판단합니다.<br>" +
+                    "· 거래일 &gt; DB 최신 : 실행<br>" +
+                    "· 거래일 = DB 최신 : 409(4252). 주말·휴장일에는 직전 거래일이 반복해서 내려오므로 정상입니다<br>" +
+                    "· 거래일 &lt; DB 최신 : 409(4253). force로도 허용하지 않습니다<br>" +
+                    "· 거래일 ≥ 오늘 : 502(4254). Lambda 응답이 깨진 경우입니다<br><br>" +
+                    "force=true : 이미 반영된 <b>같은 거래일</b>만 재실행합니다. " +
+                    "priceUnavailableStockCodes에 남은 종목의 시세를 다시 받으려 할 때 사용하세요. " +
+                    "과거 거래일과 오늘 이후 날짜는 force와 무관하게 막힙니다.")
     @PostMapping("/sync")
-    public ApiResponseDto<SyncStocksResponse> syncKospi200FromKrx() {
-        return ApiResponseDto.onSuccess(stockUseCase.syncKospi200FromKrx());
+    public ApiResponseDto<SyncStocksResponse> syncKospi200FromKrx(
+            @RequestParam(defaultValue = "false") boolean force) {
+        return ApiResponseDto.onSuccess(stockUseCase.syncKospi200FromKrx(force));
     }
 
     @Operation(summary = "종목 코드로 해당 종목 조회",
