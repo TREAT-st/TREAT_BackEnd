@@ -5,6 +5,7 @@ import com.example.demo.api.stock.dto.StockResponseDto.*;
 import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.api.stock.service.StockUseCase;
 import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.domain.stock.entity.StockSortType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
@@ -14,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,17 +52,24 @@ public class StockController {
 
     @Operation(summary = "모든 종목 조회",
             description = "Stock에 저장된 종목을 페이지 단위로 조회합니다.<br>" +
+                    "Stock은 종목별 최신 스냅샷만 보관하므로 항상 마지막으로 동기화된 시세가 나옵니다. " +
+                    "각 종목의 기준 거래일은 응답의 tradeDate로 확인하세요. " +
+                    "시세를 못 받은 종목은 이전 거래일 값이 남아 있어 종목마다 tradeDate가 다를 수 있습니다.<br><br>" +
                     "isActive=true : 코스피200에 현재 편입된 종목만<br>" +
-                    "isActive=false : 편입, 편출 전체 종목<br>" +
+                    "isActive=false 또는 생략 : 편입, 편출 전체 종목<br><br>" +
+                    "sortBy=STOCK_CODE : 종목코드 오름차순(기본값)<br>" +
+                    "sortBy=MARKET_CAP : 시가총액 내림차순<br>" +
+                    "sortBy=LIKE_COUNT : 관심등록수 내림차순<br>" +
                     "pageSize는 1~200입니다.")
     @GetMapping("/all-stock")
     public ApiResponseDto<StockPageResponse> getAllStocks(
             @RequestParam(required = false) Boolean isActive,
+            @RequestParam(defaultValue = "STOCK_CODE") StockSortType sortBy,
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "page는 0 이상이어야 합니다.") int page,
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "pageSize는 1 이상이어야 합니다.")
             @Max(value = 200, message = "pageSize는 200 이하여야 합니다.") int pageSize) {
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.asc("stockCode")));
+        Pageable pageable = PageRequest.of(page, pageSize, sortBy.getSort());
         Page<Stock> stockPage = stockUseCase.getAllStocks(isActive, pageable);
         return ApiResponseDto.onSuccess(StockConverter.toStockPageResponse(stockPage));
     }

@@ -78,7 +78,8 @@ public class StockCommandServiceImpl implements StockCommandService {
         Set<String> appliedCodes = new HashSet<>();
         for (Stock stock : stocks) {
             StockPriceSnapshot snapshot = byCode.get(stock.getStockCode());
-            stock.updatePrice(snapshot.openPrice(), snapshot.closePrice(), tradeDate);
+            stock.updatePrice(snapshot.openPrice(), snapshot.closePrice(),
+                    snapshot.marketCapitalization(), tradeDate);
             appliedCodes.add(stock.getStockCode());
         }
 

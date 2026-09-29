@@ -181,8 +181,8 @@ class StockCommandServiceImplTest {
         LocalDate tradeDate = LocalDate.of(2026, 8, 2);
 
         var priceResult = stockCommandService.updateStockPrices(List.of(
-                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500")),
-                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"))
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null),
+                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"), null)
         ), tradeDate);
 
         assertThat(priceResult.updatedCount()).isEqualTo(2);
@@ -253,7 +253,7 @@ class StockCommandServiceImplTest {
                 tradeDate,
                 source("005930", "삼성전자"),
                 Set.of(),
-                List.of(new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"))),
+                List.of(new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null)),
                 List.of()));
 
         assertThat(outcome.syncResult().addedCount()).isEqualTo(1);
@@ -264,12 +264,49 @@ class StockCommandServiceImplTest {
     }
 
     @Test
+    void 시가총액도_시세와_같은_거래일로_반영된다() {
+        // 삼성전자 규모(432조)는 int 상한(21억)을 넘는다. long으로 그대로 보존돼야 한다.
+        long marketCap = 432_000_000_000_000L;
+
+        stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
+                LocalDate.of(2026, 8, 2),
+                source("005930", "삼성전자"),
+                Set.of(),
+                List.of(new StockPriceSnapshot("005930",
+                        new BigDecimal("71000"), new BigDecimal("72500"), marketCap)),
+                List.of()));
+
+        assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
+            assertThat(s.getMarketCapitalization()).isEqualTo(marketCap);
+            assertThat(s.getTradeDate()).isEqualTo(LocalDate.of(2026, 8, 2));
+            // likeCount 갱신은 favoriteStock 쪽 책임이다. 동기화는 기본값을 건드리지 않는다.
+            assertThat(s.getLikeCount()).isZero();
+        });
+    }
+
+    @Test
+    void 시가총액을_못_받아도_시세는_반영한다() {
+        stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
+                LocalDate.of(2026, 8, 2),
+                source("005930", "삼성전자"),
+                Set.of(),
+                List.of(new StockPriceSnapshot("005930",
+                        new BigDecimal("71000"), new BigDecimal("72500"), null)),
+                List.of()));
+
+        assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
+            assertThat(s.getClosePrice()).isEqualByComparingTo("72500");
+            assertThat(s.getMarketCapitalization()).isNull();
+        });
+    }
+
+    @Test
     void DB에_없는_종목의_시세는_건너뛴다() {
         stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());
 
         var priceResult = stockCommandService.updateStockPrices(List.of(
-                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500")),
-                new StockPriceSnapshot("999999", new BigDecimal("1000"), new BigDecimal("1100"))
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null),
+                new StockPriceSnapshot("999999", new BigDecimal("1000"), new BigDecimal("1100"), null)
         ), LocalDate.of(2026, 8, 2));
 
         assertThat(priceResult.updatedCount()).isEqualTo(1);
@@ -284,8 +321,8 @@ class StockCommandServiceImplTest {
         stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());   // 000660 편출
 
         var priceResult = stockCommandService.updateStockPrices(List.of(
-                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500")),
-                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"))
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null),
+                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"), null)
         ), LocalDate.of(2026, 8, 2));
 
         assertThat(priceResult.updatedCount()).isEqualTo(1);
