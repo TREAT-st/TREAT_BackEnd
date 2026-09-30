@@ -43,17 +43,13 @@ public class Stock extends BaseTimeEntity {
     private LocalDate tradeDate;
 
     @Builder.Default
-    @Column(name = "like_count")
+    @Column(name = "like_count", nullable = false, updatable = false)
     private Long likeCount = 0L;
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    /**
-     * 시가총액은 종가 × 상장주식수라 시세와 같은 거래일에 묶여야 의미가 있다.
-     * 따로 갱신하면 어느 날짜 기준인지 알 수 없어진다.
-     */
     public void updatePrice(BigDecimal openPrice, BigDecimal closePrice,
                             Long marketCapitalization, LocalDate tradeDate) {
         this.openPrice = openPrice;
