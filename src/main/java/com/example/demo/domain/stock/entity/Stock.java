@@ -30,6 +30,9 @@ public class Stock extends BaseTimeEntity {
     @Column(name = "stock_name", nullable = false, length = 100)
     private String stockName;
 
+    @Column(name = "market_capitalization")
+    private Long marketCapitalization;
+
     @Column(name = "open_price")
     private BigDecimal openPrice;
 
@@ -40,12 +43,18 @@ public class Stock extends BaseTimeEntity {
     private LocalDate tradeDate;
 
     @Builder.Default
+    @Column(name = "like_count", nullable = false, updatable = false)
+    private Long likeCount = 0L;
+
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    public void updatePrice(BigDecimal openPrice, BigDecimal closePrice, LocalDate tradeDate) {
+    public void updatePrice(BigDecimal openPrice, BigDecimal closePrice,
+                            Long marketCapitalization, LocalDate tradeDate) {
         this.openPrice = openPrice;
         this.closePrice = closePrice;
+        this.marketCapitalization = marketCapitalization;
         this.tradeDate = tradeDate;
     }
 
