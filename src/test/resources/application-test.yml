@@ -1,0 +1,31 @@
+# 로컬 테스트 전용 프로파일.
+# application.yml 위에 덮어써서, 환경변수 없이도 스프링 컨텍스트가 뜨게 한다.
+# 여기 값은 전부 더미다. 실제 자격증명을 절대 넣지 말 것.
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: test-kakao-client-id
+            client-secret: test-kakao-client-secret
+
+app:
+  jwt:
+    # Base64로 디코딩했을 때 32바이트 이상이어야 한다(HS256 최소 키 길이).
+    secret: bG9jYWwtdGVzdC1vbmx5LWR1bW15LWp3dC1zZWNyZXQtbm90LWEtcmVhbC1rZXk=
+
+report:
+  callback:
+    secret: test-callback-secret

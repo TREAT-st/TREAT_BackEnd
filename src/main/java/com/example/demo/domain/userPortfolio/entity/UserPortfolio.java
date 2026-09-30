@@ -56,4 +56,17 @@ public class UserPortfolio extends BaseTimeEntity {
         this.virtualProfitKrw = virtualProfitKrw;
         this.virtualProfitPercent = virtualProfitPercent;
     }
+
+    public void addPrediction() {
+        this.totalPrediction++;
+    }
+
+    public void recordSuccess(long earnedPoints) {
+        this.successCount++;
+        this.totalPoint += earnedPoints;
+    }
+
+    public void recordFailure() {
+        this.failCount++;
+    }
 }

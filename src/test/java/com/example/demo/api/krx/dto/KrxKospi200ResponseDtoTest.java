@@ -81,43 +81,30 @@ class KrxKospi200ResponseDtoTest {
     }
 
     /**
-     * StockUseCase가 errors를 두 갈래로 나누는 규칙.
-     * stocks에 있으면 시세만 실패한 것(편출 아님), 없으면 목록에 못 넣은 것(판정 보류).
+     * 종목 분류(신규/기존/편출 보류)는 DB와 비교해야 알 수 있으므로 syncStocks가 판정한다.
+     * 이 DTO가 보장해야 하는 건 두 가지뿐이다 - 가격 유무가 hasPrice로 갈리는 것, errors가 온전히 파싱되는 것.
      */
     @Test
-    void errors가_시세미수신과_미해결로_구분된다() throws Exception {
+    void 시세_갱신_대상은_hasPrice로_갈린다() throws Exception {
         KrxKospi200ResponseDto response = objectMapper.readValue(LAMBDA_RESPONSE, KrxKospi200ResponseDto.class);
 
-        Map<String, String> codeToName = response.getStocks().stream()
-                .collect(Collectors.toMap(
-                        KrxKospi200ResponseDto.StockPrice::getStockCode,
-                        KrxKospi200ResponseDto.StockPrice::getStockName));
-
-        Set<String> unresolvedStockCodes = response.getErrors().stream()
-                .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
-                .filter(code -> !codeToName.containsKey(code))
-                .collect(Collectors.toSet());
-
-        Set<String> priceUnavailableStockCodes = response.getErrors().stream()
-                .map(KrxKospi200ResponseDto.ErrorItem::getStockCode)
-                .filter(codeToName::containsKey)
-                .collect(Collectors.toSet());
-
-        // 거래정지·시세없음 종목은 구성종목으로 동기화된다(편출 아님)
-        assertThat(codeToName).containsKeys("005930", "000660", "035420");
-        assertThat(priceUnavailableStockCodes).containsExactlyInAnyOrder("000660", "035420");
-
-        // 종목명조차 못 받은 종목만 판정 보류
-        assertThat(unresolvedStockCodes).containsExactly("123456");
-
-        // 두 분류는 겹치지 않고, 합치면 errors 전체가 된다
-        assertThat(unresolvedStockCodes).doesNotContainAnyElementsOf(priceUnavailableStockCodes);
-        assertThat(unresolvedStockCodes.size() + priceUnavailableStockCodes.size())
-                .isEqualTo(response.getErrors().size());
-
-        // 시세 갱신은 가격이 있는 종목만
         assertThat(response.getStocks().stream().filter(KrxKospi200ResponseDto.StockPrice::hasPrice))
                 .extracting(KrxKospi200ResponseDto.StockPrice::getStockCode)
                 .containsExactly("005930");
+
+        assertThat(response.getStocks().stream().filter(s -> !s.hasPrice()))
+                .extracting(KrxKospi200ResponseDto.StockPrice::getStockCode)
+                .containsExactlyInAnyOrder("000660", "035420");
+    }
+
+    @Test
+    void errors는_가공_없이_그대로_파싱된다() throws Exception {
+        KrxKospi200ResponseDto response = objectMapper.readValue(LAMBDA_RESPONSE, KrxKospi200ResponseDto.class);
+
+        assertThat(response.getErrors())
+                .extracting(KrxKospi200ResponseDto.ErrorItem::getStockCode)
+                .containsExactlyInAnyOrder("000660", "035420", "123456");
+        assertThat(response.getErrors())
+                .allSatisfy(e -> assertThat(e.getReason()).isNotBlank());
     }
 }

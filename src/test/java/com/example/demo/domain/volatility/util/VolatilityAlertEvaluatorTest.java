@@ -82,4 +82,36 @@ class VolatilityAlertEvaluatorTest {
         assertThat(result.reasons()).containsExactly(VolatilityAlertEvaluator.REASON_BB_HIGH);
         assertThat(result.score()).isCloseTo(0.10, within(1e-9));
     }
+
+    /**
+     * 0으로 나누면 NaN이 아니라 Infinity가 나온다.
+     * isNaN만 검사하면 Infinity가 통과해 모든 임계값을 무조건 만족시키므로,
+     * 값이 없는 종목이 만점에 가까운 점수로 상위에 올라온다.
+     */
+    @Test
+    void Infinity_지표는_아무_조건도_충족하지_않음() {
+        IndicatorSnapshot snapshot = new IndicatorSnapshot(
+                Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY,
+                Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY,
+                Double.POSITIVE_INFINITY
+        );
+
+        AlertResult result = VolatilityAlertEvaluator.evaluate(snapshot);
+
+        assertThat(result.reasons()).isEmpty();
+        assertThat(result.alert()).isFalse();
+        assertThat(result.score()).isZero();
+    }
+
+    @Test
+    void 음의_Infinity도_조건에서_제외된다() {
+        IndicatorSnapshot snapshot = new IndicatorSnapshot(
+                Double.NEGATIVE_INFINITY, 1.0, 10.0, 0.5, 10.0, 1.0, 0.1
+        );
+
+        AlertResult result = VolatilityAlertEvaluator.evaluate(snapshot);
+
+        assertThat(result.reasons()).isEmpty();
+        assertThat(result.score()).isZero();
+    }
 }

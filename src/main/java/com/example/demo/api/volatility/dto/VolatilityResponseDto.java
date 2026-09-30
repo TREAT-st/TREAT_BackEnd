@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class VolatilityResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DetectionResult {
+        private LocalDate tradeDate;
         private List<DetectedStock> stocks;
         private int detectedCount;
     }
@@ -34,6 +36,7 @@ public class VolatilityResponseDto {
     @AllArgsConstructor
     public static class ReportGenerationResult {
         private String status;
+        private LocalDate tradeDate;
         private int requestedCount;
         private int successCount;
         private int failedCount;
@@ -47,6 +50,7 @@ public class VolatilityResponseDto {
     public static class VolatilityInfo {
         private String stockCode;
         private String stockName;
+        private LocalDate tradeDate;
         private String reportUrl;
         private LocalDateTime createdDate;
     }

@@ -32,6 +32,9 @@ public class StockResponseDto {
          * 종목 자체는 정상 편입 상태이며 시가·종가만 이전 값으로 남는다.
          */
         private List<String> priceUnavailableStockCodes;
+
+        // 시세는 받았지만 DB에 반영하지 못한 종목. 비어 있지 않으면 동기화 정합성 이상 신호다.
+        private List<String> priceUpdateSkippedStockCodes;
     }
 
     @Getter
@@ -41,7 +44,11 @@ public class StockResponseDto {
     public static class StockItemResponse {
         private String stockCode;
         private String stockName;
+        private Long marketCapitalization;
+        private Long likeCount;
+        private LocalDate tradeDate;
         private Boolean isActive;
+        private Boolean isFavorite;
     }
 
     @Getter
@@ -53,6 +60,9 @@ public class StockResponseDto {
         private String stockName;
         private BigDecimal openPrice;
         private BigDecimal closePrice;
+        /** 종가 기준 시가총액(원 단위). 시세를 못 받았거나 동기화 전이면 null이다. */
+        private Long marketCapitalization;
+        private Long likeCount;
         private LocalDate tradeDate;
         private Boolean isActive;
     }

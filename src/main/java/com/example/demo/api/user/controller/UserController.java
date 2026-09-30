@@ -30,10 +30,10 @@ public class UserController {
         return ApiResponseDto.onSuccess(UserConverter.toRegisterResponse(registeredUser));
     }
 
-    @Operation(summary = "사용자 정보 조회", description = "user의 정보를 조회합니다.")
+    @Operation(summary = "사용자 정보 조회", description = "user의 정보를 조회합니다. 보유 포인트(point)와 예측 플레이 횟수(playCount)를 포함합니다.")
     @GetMapping
     public ApiResponseDto<UserResponse> getUserAccountInfo(@AuthUser User user) {
-        return ApiResponseDto.onSuccess(UserConverter.toUserResponse(user));
+        return ApiResponseDto.onSuccess(userUseCase.getUserInfo(user));
     }
 
     @Operation(summary = "사용자 정보 수정", description = "user의 정보를 수정합니다.")

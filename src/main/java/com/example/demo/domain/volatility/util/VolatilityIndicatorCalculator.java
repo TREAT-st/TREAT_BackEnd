@@ -51,11 +51,13 @@ public class VolatilityIndicatorCalculator {
 
     static double dailyReturnPct(double[] close) {
         int n = close.length;
-        return (close[n - 1] / close[n - 2] - 1.0) * 100.0;
+        double previousClose = close[n - 2];
+        // 0으로 나누면 Infinity가 나오는데, Infinity는 NaN 가드를 통과해 임계값 판정을 그대로 넘어간다.
+        return previousClose == 0.0 ? Double.NaN : (close[n - 1] / previousClose - 1.0) * 100.0;
     }
 
     static double intradayRangePct(double high, double low, double close) {
-        return (high - low) / close * 100.0;
+        return close == 0.0 ? Double.NaN : (high - low) / close * 100.0;
     }
 
     static double bbPercentB(double[] close) {
@@ -127,14 +129,14 @@ public class VolatilityIndicatorCalculator {
     }
 
     static double percentileRank(double[] series, double latest) {
-        if (Double.isNaN(latest)) {
+        if (!Double.isFinite(latest)) {
             return Double.NaN;
         }
         int less = 0;
         int equal = 0;
         int validCount = 0;
         for (double v : series) {
-            if (Double.isNaN(v)) {
+            if (!Double.isFinite(v)) {
                 continue;
             }
             validCount++;

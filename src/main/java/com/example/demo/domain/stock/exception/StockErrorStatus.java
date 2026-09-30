@@ -16,8 +16,23 @@ public enum StockErrorStatus implements BaseErrorCode {
 
     //  Entity Stock(4250~4299)
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, 4250, "stock을 찾지 못 했습니다."),
-    /** S3Service와 짝을 이루는 코드. 현재 던지는 곳은 없으나 S3 인프라를 유지하므로 함께 남긴다. */
-    S3_FILE_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 4251, "S3 파일 처리 중 오류가 발생했습니다.");
+    @ExplainError("지수 구성종목 목록이 일부만 조회되면 나머지가 통째로 편출됩니다. "
+            + "KRX Lambda 응답의 구성종목 수를 먼저 확인하세요.")
+    STOCK_ABNORMAL_DEACTIVATION(HttpStatus.BAD_GATEWAY, 4251,
+            "편출 판정 종목이 비정상적으로 많아 동기화를 중단했습니다."),
+    @ExplainError("KRX가 반환한 거래일의 데이터가 이미 반영되어 있습니다. "
+            + "주말·휴장일에는 직전 거래일이 다시 내려오므로 정상적인 상황입니다. "
+            + "시세를 못 받은 종목을 복구하려면 force=true로 재실행하세요.")
+    STOCK_TRADE_DATE_ALREADY_SYNCED(HttpStatus.CONFLICT, 4252,
+            "해당 거래일의 데이터가 이미 존재합니다."),
+    @ExplainError("이미 더 최신 거래일이 반영돼 있어 과거 시세가 덮어쓰는 것을 막았습니다. "
+            + "force로도 허용하지 않습니다.")
+    STOCK_STALE_TRADE_DATE(HttpStatus.CONFLICT, 4253,
+            "더 최신 거래일의 데이터가 존재하여 과거 데이터 동기화를 중단했습니다."),
+    @ExplainError("Lambda는 항상 오늘을 제외한 직전 거래일을 반환해야 합니다. "
+            + "오늘 이후 날짜나 빈 값이 오면 Lambda 응답이 깨진 것입니다.")
+    STOCK_INVALID_TRADE_DATE(HttpStatus.BAD_GATEWAY, 4254,
+            "KRX가 유효하지 않은 거래일을 반환했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
