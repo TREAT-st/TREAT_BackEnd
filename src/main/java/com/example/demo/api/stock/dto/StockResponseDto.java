@@ -48,6 +48,7 @@ public class StockResponseDto {
         private Long likeCount;
         private LocalDate tradeDate;
         private Boolean isActive;
+        private Boolean isFavorite;
     }
 
     @Getter

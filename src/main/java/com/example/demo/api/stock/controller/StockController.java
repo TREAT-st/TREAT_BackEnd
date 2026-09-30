@@ -2,17 +2,16 @@ package com.example.demo.api.stock.controller;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
 import com.example.demo.api.stock.dto.StockResponseDto.*;
-import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.api.stock.service.StockUseCase;
-import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.common.annotation.AuthUser;
 import com.example.demo.domain.stock.entity.StockSortType;
+import com.example.demo.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
@@ -74,6 +73,7 @@ public class StockController {
                     "pageSize는 1~200입니다.")
     @GetMapping("/all-stock")
     public ApiResponseDto<StockPageResponse> getAllStocks(
+            @AuthUser User user,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "STOCK_CODE") StockSortType sortBy,
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "page는 0 이상이어야 합니다.") int page,
@@ -81,7 +81,6 @@ public class StockController {
             @Min(value = 1, message = "pageSize는 1 이상이어야 합니다.")
             @Max(value = 200, message = "pageSize는 200 이하여야 합니다.") int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize, sortBy.getSort());
-        Page<Stock> stockPage = stockUseCase.getAllStocks(isActive, pageable);
-        return ApiResponseDto.onSuccess(StockConverter.toStockPageResponse(stockPage));
+        return ApiResponseDto.onSuccess(stockUseCase.getAllStocks(user.getId(), isActive, pageable));
     }
 }
