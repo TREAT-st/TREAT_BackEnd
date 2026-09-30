@@ -38,7 +38,8 @@ public class StockConverter {
 
         List<StockPriceSnapshot> priceSnapshots = response.getStocks().stream()
                 .filter(KrxKospi200ResponseDto.StockPrice::hasPrice)
-                .map(s -> new StockPriceSnapshot(s.getStockCode(), s.getOpenPrice(), s.getClosePrice()))
+                .map(s -> new StockPriceSnapshot(
+                        s.getStockCode(), s.getOpenPrice(), s.getClosePrice(), s.getMarketCap()))
                 .toList();
 
         List<String> priceUnavailableStockCodes = response.getStocks().stream()
@@ -72,6 +73,8 @@ public class StockConverter {
                 .stockName(stock.getStockName())
                 .openPrice(stock.getOpenPrice())
                 .closePrice(stock.getClosePrice())
+                .marketCapitalization(stock.getMarketCapitalization())
+                .likeCount(stock.getLikeCount())
                 .tradeDate(stock.getTradeDate())
                 .isActive(stock.getIsActive())
                 .build();
@@ -81,6 +84,9 @@ public class StockConverter {
         return StockItemResponse.builder()
                 .stockCode(stock.getStockCode())
                 .stockName(stock.getStockName())
+                .marketCapitalization(stock.getMarketCapitalization())
+                .likeCount(stock.getLikeCount())
+                .tradeDate(stock.getTradeDate())
                 .isActive(stock.getIsActive())
                 .build();
     }

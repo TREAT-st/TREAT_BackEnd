@@ -44,6 +44,10 @@ public class KrxKospi200ResponseDto {
         @JsonProperty("closePrice")
         private BigDecimal closePrice;
 
+        /** 종가 기준 시가총액(원). 시세를 받았어도 이것만 누락될 수 있어 null을 허용한다. */
+        @JsonProperty("marketCap")
+        private Long marketCap;
+
         public boolean hasPrice() {
             return openPrice != null && closePrice != null;
         }

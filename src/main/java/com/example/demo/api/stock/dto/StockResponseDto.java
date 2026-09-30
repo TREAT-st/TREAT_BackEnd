@@ -44,6 +44,9 @@ public class StockResponseDto {
     public static class StockItemResponse {
         private String stockCode;
         private String stockName;
+        private Long marketCapitalization;
+        private Long likeCount;
+        private LocalDate tradeDate;
         private Boolean isActive;
     }
 
@@ -56,6 +59,9 @@ public class StockResponseDto {
         private String stockName;
         private BigDecimal openPrice;
         private BigDecimal closePrice;
+        /** 종가 기준 시가총액(원 단위). 시세를 못 받았거나 동기화 전이면 null이다. */
+        private Long marketCapitalization;
+        private Long likeCount;
         private LocalDate tradeDate;
         private Boolean isActive;
     }
