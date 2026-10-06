@@ -140,7 +140,7 @@ class BatchExecutionLogWriter {
      *
      * FAILED에서도 SUCCESS로 간다. 스위퍼가 미도착으로 판정한 직후 마지막 콜백이 도착하는 경합이
      * 실제로 가능하고, 그때 최종 상태는 "리포트가 다 있다"여야 한다.
-     * 4b의 재요청이 붙기 전까지는 수동 재생성 후의 복구 경로이기도 하다.
+     * 운영자가 미도착 리포트를 수동으로 다시 만들었을 때 FAILED를 되돌리는 경로이기도 하다.
      */
     public void completeVerification(LocalDate tradeDate, String message) {
         Optional<BatchExecutionLog> existingLog =
