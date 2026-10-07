@@ -30,22 +30,13 @@ public class StockUseCase {
      * KRX 조회는 200종목 크롤링이라 수 분이 걸릴 수 있다. 트랜잭션 안에서 호출하면 그동안
      * DB 커넥션을 붙잡게 되므로, 조회·변환은 트랜잭션 밖에서 끝내고 DB 쓰기만 커맨드에 맡긴다.
      */
-    public SyncStocksResponse syncKospi200FromKrx() {
-        return syncKospi200(fetchKospi200());
-    }
-
-    /**
-     * 조회만 한다. 배치는 거래일을 먼저 확인하고 실행 이력을 연 뒤에 DB를 써야 해서
-     * 조회와 반영 사이에 끼어들 지점이 필요하다.
-     */
-    public Kospi200SyncCommand fetchKospi200() {
+    public SyncStocksResponse syncKospi200FromKrx(boolean force) {
         KrxKospi200ResponseDto response = krxService.getKospi200Prices();
-        return StockConverter.toKospi200SyncCommand(response);
-    }
+        Kospi200SyncCommand command = StockConverter.toKospi200SyncCommand(response);
+        // 거래일 검증은 커맨드 쪽 트랜잭션 진입부에서 한다. 여기서 먼저 읽으면
+        // 조회와 반영이 다른 트랜잭션으로 갈라져 동시 요청 창이 넓어진다.
+        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(command, force);
 
-    /** 이미 받아둔 KRX 응답을 DB에 반영한다. */
-    public SyncStocksResponse syncKospi200(Kospi200SyncCommand command) {
-        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(command);
         return StockConverter.toSyncStocksResponse(command, outcome);
     }
 
