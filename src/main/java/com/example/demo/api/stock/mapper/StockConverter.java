@@ -38,7 +38,8 @@ public class StockConverter {
 
         List<StockPriceSnapshot> priceSnapshots = response.getStocks().stream()
                 .filter(KrxKospi200ResponseDto.StockPrice::hasPrice)
-                .map(s -> new StockPriceSnapshot(s.getStockCode(), s.getOpenPrice(), s.getClosePrice()))
+                .map(s -> new StockPriceSnapshot(
+                        s.getStockCode(), s.getOpenPrice(), s.getClosePrice(), s.getMarketCap()))
                 .toList();
 
         List<String> priceUnavailableStockCodes = response.getStocks().stream()
@@ -72,16 +73,26 @@ public class StockConverter {
                 .stockName(stock.getStockName())
                 .openPrice(stock.getOpenPrice())
                 .closePrice(stock.getClosePrice())
+                .marketCapitalization(stock.getMarketCapitalization())
+                .likeCount(stock.getLikeCount())
                 .tradeDate(stock.getTradeDate())
                 .isActive(stock.getIsActive())
                 .build();
     }
 
     public static StockItemResponse toStockItemResponse(Stock stock) {
+        return toStockItemResponse(stock, false);
+    }
+
+    public static StockItemResponse toStockItemResponse(Stock stock, boolean isFavorite) {
         return StockItemResponse.builder()
                 .stockCode(stock.getStockCode())
                 .stockName(stock.getStockName())
+                .marketCapitalization(stock.getMarketCapitalization())
+                .likeCount(stock.getLikeCount())
+                .tradeDate(stock.getTradeDate())
                 .isActive(stock.getIsActive())
+                .isFavorite(isFavorite)
                 .build();
     }
 
@@ -92,7 +103,13 @@ public class StockConverter {
     }
 
     public static StockPageResponse toStockPageResponse(Page<Stock> page) {
-        List<StockItemResponse> content = toStockItemResponseList(page.getContent());
+        return toStockPageResponse(page, Set.of());
+    }
+
+    public static StockPageResponse toStockPageResponse(Page<Stock> page, Set<String> favoriteStockCodes) {
+        List<StockItemResponse> content = page.getContent().stream()
+                .map(stock -> toStockItemResponse(stock, favoriteStockCodes.contains(stock.getStockCode())))
+                .toList();
         return StockPageResponse.builder()
                 .content(content)
                 .page(page.getNumber())

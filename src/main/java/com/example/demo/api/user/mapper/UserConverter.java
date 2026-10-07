@@ -5,6 +5,7 @@ import com.example.demo.api.user.dto.UserResponseDto.*;
 import com.example.demo.domain.user.entity.Role;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.entity.UserStatus;
+import com.example.demo.domain.userPortfolio.entity.UserPortfolio;
 
 public class UserConverter {
 
@@ -34,7 +35,7 @@ public class UserConverter {
                 .build();
     }
 
-    public static UserResponse toUserResponse(User user) {
+    public static UserResponse toUserResponse(User user, UserPortfolio portfolio) {
         return UserResponse.builder()
                 .userId(user.getId())
                 .kakaoEmail(user.getKakaoEmail())
@@ -47,6 +48,8 @@ public class UserConverter {
                 .accountNumber(user.getAccountNumber())
                 .status(user.getStatus())
                 .provider(user.getProvider())
+                .point(portfolio.getTotalPoint())
+                .playCount(portfolio.getTotalPrediction())
                 .build();
     }
 

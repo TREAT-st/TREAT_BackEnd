@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,5 +37,10 @@ public class FavoriteStockQueryServiceImpl implements FavoriteStockQueryService 
     @Override
     public boolean existsFavoriteStockByUserIdAndStockCode(Long userId, String stockCode) {
         return favoriteStockRepository.existsByUserIdAndStockCode(userId, stockCode);
+    }
+
+    @Override
+    public Set<String> getUserFavoriteStockCodes(Long userId) {
+        return favoriteStockRepository.findStockCodesByUserId(userId);
     }
 }
