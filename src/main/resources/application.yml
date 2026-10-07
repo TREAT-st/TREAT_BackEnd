@@ -44,7 +44,7 @@ app:
     secret: ${JWT_SECRET}
 
 firebase:
-  enabled: ${FIREBASE_ENABLED:true}
+  enabled: ${FIREBASE_ENABLED:false}
   project-id: ${FIREBASE_PROJECT_ID:treat-95b87}
 
 oauth2:

@@ -79,32 +79,49 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
         run: |
           set -Eeuo pipefail
-          trap 'rm -f key.pem' EXIT
+          umask 077
 
-          echo "$EC2_SSH_KEY" > key.pem
-          chmod 600 key.pem
+          DEPLOY_SSH_DIR="$RUNNER_TEMP/treat-ssh"
+          SSH_KEY_FILE="$DEPLOY_SSH_DIR/key.pem"
+          KNOWN_HOSTS_FILE="$DEPLOY_SSH_DIR/known_hosts"
+          mkdir -p "$DEPLOY_SSH_DIR"
+          trap 'rm -rf "$DEPLOY_SSH_DIR"' EXIT
+
+          printf '%s\n' "$EC2_SSH_KEY" > "$SSH_KEY_FILE"
+          printf '%s\n' "$EC2_KNOWN_HOSTS" > "$KNOWN_HOSTS_FILE"
+          chmod 600 "$SSH_KEY_FILE" "$KNOWN_HOSTS_FILE"
+
+          if ! ssh-keygen -F "$EC2_HOST" -f "$KNOWN_HOSTS_FILE" > /dev/null; then
+            echo "EC2_KNOWN_HOSTS does not contain a host key for EC2_HOST" >&2
+            exit 1
+          fi
+
+          SSH_OPTIONS=(
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$KNOWN_HOSTS_FILE"
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+          )
 
           # 인증 파일은 JAR/S3에 포함하지 않고 SSH로 별도 전달합니다.
-          ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=20 \
-            -i key.pem "$EC2_USER@$EC2_HOST" \
+          ssh "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" "$EC2_USER@$EC2_HOST" \
             'umask 077; mkdir -p "$HOME/app/secrets"; chmod 700 "$HOME/app/secrets"'
-          scp -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=20 \
-            -i key.pem "$GOOGLE_APPLICATION_CREDENTIALS" \
+          scp "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" "$GOOGLE_APPLICATION_CREDENTIALS" \
             "$EC2_USER@$EC2_HOST:app/secrets/firebase-service-account.json.next"
-          scp -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=20 \
-            -i key.pem "$RUNNER_TEMP/treat-firebase/project-id" \
+          scp "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" "$RUNNER_TEMP/treat-firebase/project-id" \
             "$EC2_USER@$EC2_HOST:app/secrets/firebase-project-id.next"
 
           echo "Connecting to EC2 host: $EC2_HOST"
-          ssh -vv \
-            -o StrictHostKeyChecking=no \
-            -o BatchMode=yes \
-            -o ConnectTimeout=20 \
-            -i key.pem \
-            $EC2_USER@$EC2_HOST \
+          ssh -vv "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" \
+            "$EC2_USER@$EC2_HOST" \
             "S3_BUCKET='$S3_BUCKET' EC2_USER='$EC2_USER' bash -s" << 'EOF'
             set -Eeuo pipefail
 
@@ -187,6 +204,6 @@ jobs:
             fi
           EOF
 
-      - name: Clean up Firebase credentials
+      - name: Clean up deployment credentials
         if: always()
-        run: rm -rf "$RUNNER_TEMP/treat-firebase"
+        run: rm -rf "$RUNNER_TEMP/treat-firebase" "$RUNNER_TEMP/treat-ssh"
