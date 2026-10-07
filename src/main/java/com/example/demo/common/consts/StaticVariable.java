@@ -18,9 +18,19 @@ public class StaticVariable {
     public static final String NOTIFICATION_READ = "isRead";
     public static final String PAGINATION_SORTING_BY_ID  = "id";
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-    public static final String REPORT_GENERATION_SUCCESS = "success";
-    public static final String REPORT_GENERATION_FAILURE = "failure";
+    public static final String REPORT_GENERATION_SUCCESS = "SUCCESS";
+    public static final String REPORT_GENERATION_FAILURE = "FAILURE";
     public static final String REPORT_GENERATION_PARTIAL_SUCCESS = "PARTIAL_SUCCESS";
+    public static final String NO_DETECTED_STOCK = "탐지된 종목 없음";
+    public static final String ANOTHER_RUN_IN_PROGRESS = "다른 실행이 진행 중입니다";
+    public static final String SYNC_ALREADY_APPLIED = "이미 반영된 거래일이라 DB 동기화를 생략했습니다.";
+    public static final String BATCH_ACCEPTED = "배치를 접수했습니다.";
+    public static final String BATCH_NOT_ACCEPTED_ALREADY_RUNNING = "이미 실행 중인 배치가 있어 접수하지 않았습니다.";
+    public static final String VERIFY_ALL_REPORTS_ARRIVED = "리포트가 모두 도착했습니다.";
+    public static final String VERIFY_MISSING_REPORT = "리포트 %d건이 도착하지 않았습니다.";
+    public static final String VERIFY_RECOVERED_FROM_S3 = "S3에서 %d건을 보정해 리포트가 모두 채워졌습니다.";
+    public static final String VERIFY_S3_LOOKUP_FAILED = " S3 조회 실패 %d건.";
+    public static final String BATCH_SECRET_HEADER = "X-Batch-Secret";
 
     //OAuth2
     public static final String KAKAO_OAUTH2_AUTHORIZATION_URI = "/oauth2/authorization/kakao";

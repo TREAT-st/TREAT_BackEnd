@@ -15,10 +15,12 @@ import java.util.Objects;
 public enum VolatilityErrorStatus implements BaseErrorCode {
 
     // Entity Volatility(4300~4349)
-    // KRX 연동 오류는 KrxErrorStatus(4450~4499)로 분리했다.
+    // KRX 연동 오류는 KrxErrorStatus(4400~4449)로 분리했다.
     VOLATILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 4300, "volatility를 찾지 못했습니다."),
-    @ExplainError("오늘 /detect를 실행하지 않아 리포트를 생성할 대상 종목이 없습니다.")
-    VOLATILITY_NOT_DETECTED_TODAY(HttpStatus.BAD_REQUEST, 4301, "오늘 탐지된 변동성 종목이 없습니다. 먼저 변동성 탐지를 실행해주세요."),
+    @ExplainError("리포트를 생성할 탐지 결과가 없습니다. 수동 요청은 탐지 기록이 있는 가장 최근 거래일을, "
+            + "배치는 지정한 거래일을 대상으로 삼습니다. 탐지는 실행일이 아니라 직전 거래일 기준이므로 "
+            + "'오늘' 탐지 기록은 생기지 않습니다. /detect를 먼저 실행하세요.")
+    VOLATILITY_NOT_DETECTED(HttpStatus.BAD_REQUEST, 4301, "리포트를 생성할 탐지된 변동성 종목이 없습니다. 먼저 변동성 탐지를 실행해주세요."),
     @ExplainError("Lambda 호출 자체가 실패했습니다. 네트워크·IAM 권한·스로틀링 등을 확인하세요.")
     REPORT_LAMBDA_INVOKE_ERROR(HttpStatus.BAD_GATEWAY, 4302, "리포트 생성 Lambda 호출에 실패했습니다."),
     @ExplainError("콜백 시크릿 헤더(X-Callback-Secret)가 없거나 일치하지 않습니다.")
@@ -27,7 +29,10 @@ public enum VolatilityErrorStatus implements BaseErrorCode {
     @ExplainError("Lambda는 호출됐으나 함수 내부에서 예외가 발생했습니다. Lambda 로그를 확인하세요.")
     REPORT_LAMBDA_EXECUTION_ERROR(HttpStatus.BAD_GATEWAY, 4305, "리포트 생성 Lambda 실행 중 오류가 발생했습니다."),
     @ExplainError("조회된 종목이 모두 지표 계산에 실패했습니다. 거래일 데이터가 부족하거나 응답 형식이 바뀌었을 수 있습니다.")
-    VOLATILITY_DETECTION_FAILED(HttpStatus.BAD_GATEWAY, 4306, "변동성 분석에 실패했습니다. 분석 가능한 종목이 없습니다.");
+    VOLATILITY_DETECTION_FAILED(HttpStatus.BAD_GATEWAY, 4306, "변동성 분석에 실패했습니다. 분석 가능한 종목이 없습니다."),
+    @ExplainError("시세 동기화 Lambda와 변동성 탐지 Lambda가 서로 다른 거래일을 반환했습니다. "
+            + "두 Lambda의 거래일 판정 규칙(오늘 제외 여부)이 같은지 확인하세요. 탐지 결과는 저장하지 않았습니다.")
+    VOLATILITY_TRADE_DATE_MISMATCH(HttpStatus.BAD_GATEWAY, 4307, "탐지 거래일이 동기화 거래일과 다릅니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

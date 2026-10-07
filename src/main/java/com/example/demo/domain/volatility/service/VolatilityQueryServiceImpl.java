@@ -22,6 +22,16 @@ public class VolatilityQueryServiceImpl implements VolatilityQueryService {
     }
 
     @Override
+    public long countMissingReport(LocalDate tradeDate) {
+        return volatilityRepository.countByTradeDateAndReportUrlIsNull(tradeDate);
+    }
+
+    @Override
+    public List<Volatility> getMissingReport(LocalDate tradeDate) {
+        return volatilityRepository.findAllByTradeDateAndReportUrlIsNull(tradeDate);
+    }
+
+    @Override
     public List<Volatility> getAllVolatilityByCode(String stockCode) {
         return volatilityRepository.findAllByStockCodeOrderByTradeDateDesc(stockCode);
     }

@@ -7,6 +7,12 @@ import java.util.List;
 
 public interface VolatilityQueryService {
     List<Volatility> getByTradeDate(LocalDate tradeDate);
+
+    /** 해당 거래일에서 리포트가 아직 도착하지 않은 종목 수. */
+    long countMissingReport(LocalDate tradeDate);
+
+    /** 해당 거래일에서 리포트가 아직 도착하지 않은 종목. S3 보정 대상이다. */
+    List<Volatility> getMissingReport(LocalDate tradeDate);
     List<Volatility> getAllVolatilityByCode(String stockCode);
     List<Volatility> getLatestVolatility();
 
