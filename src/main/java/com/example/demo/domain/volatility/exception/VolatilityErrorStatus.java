@@ -15,7 +15,7 @@ import java.util.Objects;
 public enum VolatilityErrorStatus implements BaseErrorCode {
 
     // Entity Volatility(4300~4349)
-    // KRX 연동 오류는 KrxErrorStatus(4450~4499)로 분리했다.
+    // KRX 연동 오류는 KrxErrorStatus(4400~4449)로 분리했다.
     VOLATILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 4300, "volatility를 찾지 못했습니다."),
     @ExplainError("오늘 /detect를 실행하지 않아 리포트를 생성할 대상 종목이 없습니다.")
     VOLATILITY_NOT_DETECTED_TODAY(HttpStatus.BAD_REQUEST, 4301, "오늘 탐지된 변동성 종목이 없습니다. 먼저 변동성 탐지를 실행해주세요."),

@@ -9,6 +9,7 @@ import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import com.example.demo.domain.volatility.exception.VolatilityErrorStatus;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
 import com.example.demo.domain.volatility.service.VolatilityDetectionService;
+import com.example.demo.domain.batch.service.BatchExecutionLogService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -41,9 +43,11 @@ class VolatilityUseCaseTest {
     private final VolatilityDetectionService detectionService = Mockito.mock(VolatilityDetectionService.class);
     private final VolatilityCommandService commandService = Mockito.mock(VolatilityCommandService.class);
     private final ReportLambdaClient reportLambdaClient = Mockito.mock(ReportLambdaClient.class);
+    private final BatchExecutionLogService batchExecutionLogService =
+            Mockito.mock(BatchExecutionLogService.class);
 
-    private final VolatilityUseCase useCase =
-            new VolatilityUseCase(queryService, detectionService, commandService, reportLambdaClient);
+    private final VolatilityUseCase useCase = new VolatilityUseCase(
+            queryService, detectionService, commandService, reportLambdaClient, batchExecutionLogService);
 
     @Test
     void 전_종목_분석에_실패하면_저장하지_않고_예외를_던진다() {
@@ -137,6 +141,41 @@ class VolatilityUseCaseTest {
     }
 
     /**
+     * 수동 API는 인자로 날짜를 받지 않으므로 "탐지 기록이 있는 최신 거래일"로 해석한다.
+     * getLatestVolatility()가 최신 N건이 아니라 최신 거래일의 전체 목록을 준다는 계약에 기댄다.
+     */
+    @Test
+    void 수동_리포트_API는_최신_거래일을_기준으로_생성한다() throws Exception {
+        LocalDate latest = LocalDate.of(2026, 8, 11);
+        Mockito.when(queryService.getLatestVolatility()).thenReturn(List.of(
+                Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(latest).build()));
+
+        var result = useCase.runReportGeneration(reportRequest("{}"));
+
+        assertThat(result.getTradeDate()).isEqualTo(latest);
+        assertThat(capturedReportJob().getReportDate()).isEqualTo("20260811");
+        // 날짜를 받는 오버로드로 새어 나가면 안 된다. 수동 경로는 최신 거래일만 본다.
+        verify(queryService, never()).getByTradeDate(any());
+    }
+
+    /**
+     * 배치 체인은 자기가 확보한 거래일로 부른다.
+     * 여기서 "최신"으로 다시 해석하면 재실행이나 자정 경계에서 체인의 판정과 어긋난다.
+     */
+    @Test
+    void 거래일을_지정하면_그_거래일의_종목만_대상으로_한다() throws Exception {
+        LocalDate tradeDate = LocalDate.of(2026, 8, 11);
+        Mockito.when(queryService.getByTradeDate(tradeDate)).thenReturn(List.of(
+                Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(tradeDate).build()));
+
+        var result = useCase.runReportGeneration(reportRequest("{}"), tradeDate);
+
+        assertThat(result.getTradeDate()).isEqualTo(tradeDate);
+        assertThat(capturedReportJob().getReportDate()).isEqualTo("20260811");
+        verify(queryService, never()).getLatestVolatility();
+    }
+
+    /**
      * 콜백은 reportDate를 그대로 되돌려 (stockCode, tradeDate)로 행을 찾는다.
      * 서버 날짜를 보내면 휴장일이나 과거 탐지 결과 재생성에서 행을 못 찾아
      * 리포트는 만들어졌는데 reportUrl이 비는 상태가 된다.
@@ -170,6 +209,37 @@ class VolatilityUseCaseTest {
                 .isEqualTo(VolatilityErrorStatus.REPORT_CALLBACK_INVALID_REQUEST.getCode());
 
         verify(commandService, never()).updateReportUrl(any(), any(), any());
+    }
+
+    /**
+     * 마지막 리포트가 채워지면 그 자리에서 도착 확인을 닫는다.
+     * 스위퍼를 기다리면 최대 10분 늦게 알게 된다.
+     */
+    @Test
+    void 마지막_콜백이_도착하면_도착_확인을_닫는다() throws Exception {
+        Mockito.when(queryService.countMissingReport(TRADE_DATE)).thenReturn(0L);
+
+        useCase.handleReportCallback(callback("20260814"));
+
+        verify(commandService).updateReportUrl(eq("005930"), eq(TRADE_DATE), any());
+        verify(batchExecutionLogService).completeVerification(eq(TRADE_DATE), any());
+    }
+
+    @Test
+    void 아직_남아_있으면_도착_확인을_닫지_않는다() throws Exception {
+        Mockito.when(queryService.countMissingReport(TRADE_DATE)).thenReturn(3L);
+
+        useCase.handleReportCallback(callback("20260814"));
+
+        verify(commandService).updateReportUrl(eq("005930"), eq(TRADE_DATE), any());
+        verify(batchExecutionLogService, never()).completeVerification(any(), any());
+    }
+
+    private ReportCallback callback(String reportDate) throws Exception {
+        return new ObjectMapper().readValue(
+                ("{\"stockCode\":\"005930\",\"reportDate\":\"%s\","
+                        + "\"reportUrl\":\"https://example.com/x_analysis.html\"}").formatted(reportDate),
+                ReportCallback.class);
     }
 
     private ReportLambdaRequestDto capturedReportJob() {

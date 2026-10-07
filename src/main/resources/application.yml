@@ -60,6 +60,10 @@ report:
   callback:
     secret: ${REPORT_CALLBACK_SECRET}
 
+batch:
+  trigger:
+    secret: ${BATCH_TRIGGER_SECRET}
+
 cloud:
   aws:
     region:
@@ -70,7 +74,10 @@ cloud:
     s3:
       bucket:
         kospi200: ${S3_BUCKET_KOSPI200:treat-kospi200}
-        #finance-reports: ${S3_BUCKET_FINANCE_REPORTS:treat-finance-reports}
+        finance-reports: ${S3_BUCKET_FINANCE_REPORTS:treat-finance-reports}
+      # 리포트 키가 버킷 루트에 있으면 비워둔다. 디렉터리가 생기면 여기만 바꾼다.
+      key-prefix:
+        finance-reports: ${S3_KEY_PREFIX_FINANCE_REPORTS:}
         #static: ${S3_BUCKET_STATIC:treat-static}
 server:
   forward-headers-strategy: framework #리다이렉트 URL의 프로토콜 관련 설정

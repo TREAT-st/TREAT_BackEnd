@@ -29,3 +29,13 @@ app:
 report:
   callback:
     secret: test-callback-secret
+
+batch:
+  trigger:
+    secret: test-batch-secret
+
+cloud:
+  aws:
+    s3:
+      bucket:
+        finance-reports: test-finance-reports
