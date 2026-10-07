@@ -21,6 +21,45 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Prepare Firebase credentials
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          project_id = os.environ["FIREBASE_PROJECT_ID"]
+          raw = os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"]
+          if not re.fullmatch(r"[a-z][a-z0-9-]{4,28}[a-z0-9]", project_id):
+              raise SystemExit("Set FIREBASE_PROJECT_ID to a valid Firebase project ID")
+          try:
+              credentials = json.loads(raw)
+          except ValueError:
+              raise SystemExit("GOOGLE_APPLICATION_CREDENTIALS secret must contain the service account JSON")
+          if not isinstance(credentials, dict) or credentials.get("type") != "service_account":
+              raise SystemExit("Firebase credentials must be a service account JSON")
+          if credentials.get("project_id") != project_id:
+              raise SystemExit("Firebase project ID does not match the service account")
+          if not all(credentials.get(key) for key in ("client_email", "private_key", "token_uri")):
+              raise SystemExit("Firebase service account JSON is missing required fields")
+
+          directory = Path(os.environ["RUNNER_TEMP"]) / "treat-firebase"
+          directory.mkdir(mode=0o700, exist_ok=True)
+          credential_file = directory / "service-account.json"
+          credential_file.write_text(raw)
+          (directory / "project-id").write_text(project_id)
+          with open(os.environ["GITHUB_ENV"], "a") as env_file:
+              env_file.write(f"GOOGLE_APPLICATION_CREDENTIALS={credential_file}\n")
+              env_file.write(f"FIREBASE_PROJECT_ID={project_id}\n")
+              env_file.write("FIREBASE_ENABLED=true\n")
+          PY
+
       - name: Build with Gradle
         run: ./gradlew bootJar -x test
 
@@ -40,21 +79,49 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
         run: |
           set -Eeuo pipefail
-          trap 'rm -f key.pem' EXIT
+          umask 077
 
-          echo "$EC2_SSH_KEY" > key.pem
-          chmod 600 key.pem
+          DEPLOY_SSH_DIR="$RUNNER_TEMP/treat-ssh"
+          SSH_KEY_FILE="$DEPLOY_SSH_DIR/key.pem"
+          KNOWN_HOSTS_FILE="$DEPLOY_SSH_DIR/known_hosts"
+          mkdir -p "$DEPLOY_SSH_DIR"
+          trap 'rm -rf "$DEPLOY_SSH_DIR"' EXIT
+
+          printf '%s\n' "$EC2_SSH_KEY" > "$SSH_KEY_FILE"
+          printf '%s\n' "$EC2_KNOWN_HOSTS" > "$KNOWN_HOSTS_FILE"
+          chmod 600 "$SSH_KEY_FILE" "$KNOWN_HOSTS_FILE"
+
+          if ! ssh-keygen -F "$EC2_HOST" -f "$KNOWN_HOSTS_FILE" > /dev/null; then
+            echo "EC2_KNOWN_HOSTS does not contain a host key for EC2_HOST" >&2
+            exit 1
+          fi
+
+          SSH_OPTIONS=(
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$KNOWN_HOSTS_FILE"
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+          )
+
+          # 인증 파일은 JAR/S3에 포함하지 않고 SSH로 별도 전달합니다.
+          ssh "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" "$EC2_USER@$EC2_HOST" \
+            'umask 077; mkdir -p "$HOME/app/secrets"; chmod 700 "$HOME/app/secrets"'
+          scp "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" "$GOOGLE_APPLICATION_CREDENTIALS" \
+            "$EC2_USER@$EC2_HOST:app/secrets/firebase-service-account.json.next"
+          scp "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" "$RUNNER_TEMP/treat-firebase/project-id" \
+            "$EC2_USER@$EC2_HOST:app/secrets/firebase-project-id.next"
 
           echo "Connecting to EC2 host: $EC2_HOST"
-          ssh -vv \
-            -o StrictHostKeyChecking=no \
-            -o BatchMode=yes \
-            -o ConnectTimeout=20 \
-            -i key.pem \
-            $EC2_USER@$EC2_HOST \
+          ssh -vv "${SSH_OPTIONS[@]}" \
+            -i "$SSH_KEY_FILE" \
+            "$EC2_USER@$EC2_HOST" \
             "S3_BUCKET='$S3_BUCKET' EC2_USER='$EC2_USER' bash -s" << 'EOF'
             set -Eeuo pipefail
 
@@ -66,6 +133,11 @@ jobs:
             echo "[deploy] host=$(hostname)"
             echo "[deploy] app dir=$APP_DIR"
             mkdir -p "$APP_DIR"
+
+            chmod 600 "$APP_DIR/secrets/firebase-service-account.json.next" \
+              "$APP_DIR/secrets/firebase-project-id.next"
+            mv "$APP_DIR/secrets/firebase-service-account.json.next" "$APP_DIR/secrets/firebase-service-account.json"
+            mv "$APP_DIR/secrets/firebase-project-id.next" "$APP_DIR/secrets/firebase-project-id"
 
             # 기존 프로세스 종료
             APP_PROCESS_PATTERN="java .*treat-app.jar|java .*demo-0.0.1-SNAPSHOT.jar"
@@ -100,6 +172,10 @@ jobs:
             # 실행
             echo "[deploy] starting application"
             export $(cat "$APP_DIR/.env" | xargs)
+            export FIREBASE_ENABLED=true
+            export FIREBASE_PROJECT_ID="$(cat "$APP_DIR/secrets/firebase-project-id")"
+            export GOOGLE_APPLICATION_CREDENTIALS="$APP_DIR/secrets/firebase-service-account.json"
+            test -r "$GOOGLE_APPLICATION_CREDENTIALS"
             nohup java \
               -Xms128m -Xmx400m \
               -XX:+HeapDumpOnOutOfMemoryError \
@@ -127,3 +203,7 @@ jobs:
               exit 1
             fi
           EOF
+
+      - name: Clean up deployment credentials
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/treat-firebase" "$RUNNER_TEMP/treat-ssh"

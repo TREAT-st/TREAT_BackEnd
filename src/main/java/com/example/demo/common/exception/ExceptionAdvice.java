@@ -4,6 +4,7 @@ import com.example.demo.api.common.dto.ApiResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,6 +17,13 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class ExceptionAdvice {
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponseDto<?>> handleUnreadableRequest(HttpMessageNotReadableException e) {
+        Reason reason = ErrorStatus._BAD_REQUEST.getReasonHttpStatus();
+        return ResponseEntity.status(reason.getHttpStatus())
+                .body(ApiResponseDto.onFailure(reason.getCode(), reason.getMessage(), null));
+    }
 
     @ExceptionHandler(GeneralException.class)
     public ResponseEntity<ApiResponseDto<?>> handleGeneralException(
