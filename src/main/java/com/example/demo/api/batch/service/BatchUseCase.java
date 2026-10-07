@@ -8,11 +8,13 @@ import com.example.demo.api.volatility.dto.VolatilityResponseDto.DetectionResult
 import com.example.demo.api.volatility.dto.VolatilityResponseDto.ReportGenerationResult;
 import com.example.demo.api.volatility.service.VolatilityUseCase;
 import com.example.demo.common.annotation.UseCase;
+import com.example.demo.common.exception.GeneralException;
 import com.example.demo.domain.batch.entity.BatchStartResult;
 import com.example.demo.domain.batch.entity.BatchStartDecision;
 import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.service.BatchExecutionLogService;
 import com.example.demo.domain.stock.entity.Kospi200SyncCommand;
+import com.example.demo.domain.stock.exception.StockErrorStatus;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +25,17 @@ import java.util.function.Supplier;
 
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.common.consts.StaticVariable.ANOTHER_RUN_IN_PROGRESS;
-import static com.example.demo.common.consts.StaticVariable.NOT_A_TRADING_DAY_LOG;
 import static com.example.demo.common.consts.StaticVariable.NO_DETECTED_STOCK;
 import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
+import static com.example.demo.common.consts.StaticVariable.SYNC_ALREADY_APPLIED;
 
 /**
  * 일일 배치 체인. SYNC -> DETECT -> REPORT를 순서대로 실행하고 각 단계를 실행 이력에 남긴다.
  * 마지막으로 리포트 도착을 확인할 VERIFY를 열어두고 끝낸다.
+ *
+ * 처리 대상은 실행일이 아니라 "가장 최근에 완전히 끝난 거래일"이다. KRX Lambda가 오늘을
+ * 제외하므로 장 마감 다음 날 새벽에 돌려야 전 거래일을 처리한다. 이미 처리한 거래일이면
+ * 모든 단계가 ALREADY_DONE으로 지나가며, 휴장일도 이 경로로 아무 일 없이 끝난다.
  *
  * 클래스 레벨 @Transactional을 붙이지 않는다.
  * 각 단계가 수 분짜리 Lambda 호출을 포함하므로 그동안 DB 커넥션을 붙잡으면 안 된다.
@@ -64,15 +70,15 @@ public class BatchUseCase {
      *              운영자가 의도적으로 되돌릴 때만 쓴다.
      */
     public DailyBatchResult runDailyBatch(boolean force) {
-        // 한 번만 읽는다. KRX 호출 전후로 자정이 넘어가면 휴장일 판정과 기록 키가 갈린다.
+        // 한 번만 읽는다. KRX 호출 전후로 자정이 넘어가면 시작 실패의 기록 키가 흔들린다.
         LocalDate executionDate = LocalDate.now(SEOUL_ZONE);
 
-        // 거래일과 동기화 대상을 한 응답에서 받는다. 나눠 부르면 판정에 쓴 거래일과
+        // 거래일과 동기화 대상을 한 응답에서 받는다. 나눠 부르면 단계 키로 쓴 거래일과
         // 실제로 저장하는 데이터의 거래일이 갈릴 수 있다.
         //
         // 여기서 터지면 거래일을 모른다. 그래도 던지지 않고 실행일 키로 남긴다.
         // 체인은 비동기로 돌아 예외를 밖으로 보내면 받을 곳이 없고, 아무것도 안 남기면
-        // 조회했을 때 휴장일과 구분되지 않는다.
+        // 조회했을 때 실행 자체가 없었던 것과 구분되지 않는다.
         Kospi200SyncCommand kospi200;
         try {
             kospi200 = stockUseCase.fetchKospi200();
@@ -82,24 +88,21 @@ public class BatchUseCase {
             recordStartupFailure(executionDate, failure);
             return BatchConverter.toAbortedResult(null, null, failure);
         }
+        // 처리 대상은 "가장 최근에 완전히 끝난 거래일"이다. KRX Lambda는 오늘을 제외하므로
+        // 거래일이 실행일과 다른 게 정상이고, 그 차이로 휴장일을 판단하면 안 된다.
+        // 휴장일에는 직전 거래일이 다시 내려오는데, 그 거래일의 단계들은 이미 성공으로
+        // 기록돼 있어 전부 ALREADY_DONE으로 지나간다. 휴장일 판정은 실행 이력이 맡는다.
         LocalDate tradeDate = kospi200.tradeDate();
 
-        if (isNotTradingDay(tradeDate, executionDate)) {
-            batchExecutionLogService.skip(executionDate, BatchStep.SYNC,
-                    NOT_A_TRADING_DAY_LOG.formatted(tradeDate));
-            return BatchConverter.toHolidayResult(tradeDate);
-        }
-
-        StepResult<Void> syncStep = runStep(tradeDate, BatchStep.SYNC, force, () -> {
-            SyncStocksResponse response = stockUseCase.syncKospi200(kospi200);
-            return new StepOutput<>(null, summarize(response));
-        });
+        StepResult<Void> syncStep = runStep(tradeDate, BatchStep.SYNC, force,
+                () -> syncStocks(kospi200, force));
         if (!syncStep.canContinue()) {
             return BatchConverter.toAbortedResult(tradeDate, BatchStep.SYNC, syncStep.haltReason());
         }
 
         StepResult<Integer> detectStep = runStep(tradeDate, BatchStep.DETECT, force, () -> {
-            DetectionResult result = volatilityUseCase.runDetection();
+            // 탐지는 다른 Lambda가 거래일을 정한다. SYNC 거래일과 다르면 저장 전에 멈춘다.
+            DetectionResult result = volatilityUseCase.runDetection(tradeDate);
             return new StepOutput<>(result.getDetectedCount(), summarize(result));
         });
         if (!detectStep.canContinue()) {
@@ -131,26 +134,35 @@ public class BatchUseCase {
     }
 
     /**
-     * 오늘이 거래일인지 판정한다.
+     * SYNC 단계 본문. 배치의 force를 stock 커맨드까지 그대로 넘긴다.
      *
-     * 거래일은 서버 시계가 아니라 KRX가 알려준다. 휴장일에는 직전 거래일을 돌려주므로
-     * 그 값이 실행일과 다르면 오늘은 장이 열리지 않은 날이다.
+     * 이미 반영된 거래일(4252)만 성공으로 받는다. 수동 /sync가 먼저 돌았거나 실행 이력이
+     * 없는 상태에서 같은 거래일이 다시 들어온 경우다. DB는 이미 그 거래일 상태이므로
+     * 실패로 남기면 체인이 멈춰 DETECT·REPORT가 영영 돌지 않는다.
+     *
+     * 409 전체를 흡수하면 안 된다. 4253(과거 거래일이 최신을 덮어쓰려 함)도 409라서
+     * 같이 성공으로 처리되면 Lambda가 오래된 응답을 줬다는 신호가 묻힌다.
+     * 4253·4254와 그 밖의 예외는 그대로 던져 SYNC FAILED로 남긴다.
      */
-    private boolean isNotTradingDay(LocalDate tradeDate, LocalDate executionDate) {
-        if (tradeDate.isEqual(executionDate)) {
-            return false;
+    private StepOutput<Void> syncStocks(Kospi200SyncCommand kospi200, boolean force) {
+        try {
+            SyncStocksResponse response = stockUseCase.syncKospi200(kospi200, force);
+            return new StepOutput<>(null, summarize(response));
+        } catch (GeneralException e) {
+            if (e.getCode() != StockErrorStatus.STOCK_TRADE_DATE_ALREADY_SYNCED) {
+                throw e;
+            }
+            log.info("이미 반영된 거래일이라 DB 동기화를 생략합니다. tradeDate={}", kospi200.tradeDate());
+            return new StepOutput<>(null, SYNC_ALREADY_APPLIED);
         }
-
-        log.info("거래일이 아니라 실행하지 않습니다. tradeDate={} executionDate={}",
-                tradeDate, executionDate);
-        return true;
     }
 
     /**
      * 거래일을 확보하기도 전에 터진 실패를 실행일 키로 남긴다.
      *
-     * 아무것도 안 남기면 조회했을 때 휴장일과 구분되지 않는다. 둘 다 빈 목록이 된다.
-     * 실행일이 실제 거래일이었다면 KRX 복구 후 재실행이 같은 키를 이어받아 회차만 오른다.
+     * 아무것도 안 남기면 조회했을 때 실행 자체가 없었던 것과 구분되지 않는다.
+     * 실행일이 거래일이라면 다음 날 배치가 그 거래일을 처리하면서 이 FAILED 행을
+     * 재시작으로 이어받는다. 실패 기록이 정상 실행을 막지 않는다.
      *
      * force를 넘기지 않는다. 강제 재실행 중 KRX가 죽었다고 이미 성공한 SYNC를 되돌리면 안 된다.
      * 같은 이유로 STARTED가 아니면 손대지 않는다. 그때는 참조할 시도 자체가 없다.

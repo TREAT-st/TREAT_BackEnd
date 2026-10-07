@@ -19,8 +19,12 @@ public class VolatilityHandler extends GeneralException {
         return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_DETECTION_FAILED);
     }
 
-    public static VolatilityHandler volatilityNotDetectedToday() {
-        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_DETECTED_TODAY);
+    public static VolatilityHandler tradeDateMismatch() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_TRADE_DATE_MISMATCH);
+    }
+
+    public static VolatilityHandler volatilityNotDetected() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_DETECTED);
     }
 
     public static VolatilityHandler reportLambdaInvokeError() {

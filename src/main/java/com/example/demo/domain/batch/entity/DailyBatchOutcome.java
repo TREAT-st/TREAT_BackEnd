@@ -2,9 +2,10 @@ package com.example.demo.domain.batch.entity;
 
 /** 일일 배치 한 회차의 결말. */
 public enum DailyBatchOutcome {
-    /** 거래일이 아니라 실행하지 않았다. 실패가 아니다. */
-    HOLIDAY,
-    /** 체인이 끝까지 갔다. 각 단계가 실행됐는지 건너뛰어졌는지는 실행 이력을 봐야 안다. */
+    /**
+     * 체인이 끝까지 갔다. 각 단계가 실행됐는지 건너뛰어졌는지는 실행 이력을 봐야 안다.
+     * 휴장일도 여기로 온다. 직전 거래일의 단계가 전부 ALREADY_DONE으로 지나가기 때문이다.
+     */
     COMPLETED,
     /**
      * 중간에 멈췄다. message에 이유가 있다.

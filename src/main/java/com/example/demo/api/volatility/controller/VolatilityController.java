@@ -41,7 +41,12 @@ public class VolatilityController {
         return ApiResponseDto.onSuccess(volatilityUseCase.runDetection());
     }
 
-    @Operation(summary = "변동성 리포트 생성 요청", description = "오늘 탐지된 변동성 종목에 대한 리포트 생성을 Lambda에 요청합니다. 기본값으로 하고 싶으면 gptModel을 지우시면 됩니다.<br>" +
+    @Operation(summary = "변동성 리포트 생성 요청", description = "탐지 기록이 있는 가장 최근 거래일의 변동성 종목에 대한 리포트 생성을 Lambda에 요청합니다.<br>" +
+            "탐지는 실행일이 아니라 직전 거래일 기준이므로, 대상 거래일은 보통 오늘보다 앞선 날짜입니다. " +
+            "대상 거래일은 응답의 tradeDate로 확인하세요.<br>" +
+            "응답의 status는 SUCCESS(전부 요청됨), PARTIAL_SUCCESS(일부 실패), FAILURE(전부 실패) 중 하나입니다. " +
+            "요청 성공은 생성 완료가 아니며, reportUrl은 리포트가 만들어진 뒤 콜백으로 채워집니다.<br>" +
+            "기본 모델을 쓰려면 gptModel을 지우시면 됩니다.<br>" +
             "모델 목록: gpt-5.6-sol, gpt-5.6-terra(기본값), gpt-5.6-luna, gpt-5.5, gpt-5.5-pro, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano, gpt-5.4-pro")
     @PostMapping(value = "/report", consumes = APPLICATION_JSON_VALUE)
     public ApiResponseDto<ReportGenerationResult> runReportGeneration(@RequestBody ReportGenerationRequest request) {

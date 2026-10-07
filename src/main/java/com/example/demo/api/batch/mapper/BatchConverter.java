@@ -13,17 +13,8 @@ import java.util.List;
 
 import static com.example.demo.common.consts.StaticVariable.BATCH_ACCEPTED;
 import static com.example.demo.common.consts.StaticVariable.BATCH_NOT_ACCEPTED_ALREADY_RUNNING;
-import static com.example.demo.common.consts.StaticVariable.NOT_A_TRADING_DAY;
 
 public class BatchConverter {
-
-    public static DailyBatchResult toHolidayResult(LocalDate tradeDate) {
-        return DailyBatchResult.builder()
-                .tradeDate(tradeDate)
-                .outcome(DailyBatchOutcome.HOLIDAY)
-                .message(NOT_A_TRADING_DAY)
-                .build();
-    }
 
     public static DailyBatchResult toCompletedResult(LocalDate tradeDate) {
         return DailyBatchResult.builder()

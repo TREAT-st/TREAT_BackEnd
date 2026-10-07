@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -75,6 +76,13 @@ public class BatchExecutionLogServiceImpl implements BatchExecutionLogService {
         return batchExecutionLogRepository.findAllByTradeDate(tradeDate).stream()
                 .sorted(Comparator.comparing(BatchExecutionLog::getStep))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<LocalDate> getLatestTradeDate() {
+        return batchExecutionLogRepository.findFirstByOrderByStartedAtDescIdDesc()
+                .map(BatchExecutionLog::getTradeDate);
     }
 
     /**

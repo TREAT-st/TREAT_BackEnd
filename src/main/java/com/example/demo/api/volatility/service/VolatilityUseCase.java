@@ -64,7 +64,30 @@ public class VolatilityUseCase {
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public DetectionResult runDetection() {
+        return detectAndSave(null);
+    }
+
+    /**
+     * 배치 경로. SYNC가 확정한 거래일과 탐지 결과의 거래일이 같아야만 저장한다.
+     *
+     * 탐지는 시세 동기화와 다른 Lambda가 거래일을 정한다. 두 Lambda의 거래일 규칙이 어긋나면
+     * 탐지 결과가 다른 날짜로 저장되고, 뒤이은 REPORT는 SYNC 거래일로 대상을 찾으므로
+     * 0건으로 조용히 끝난다. 반환값을 받은 뒤 비교하면 이미 저장된 다음이라 늦다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public DetectionResult runDetection(LocalDate expectedTradeDate) {
+        return detectAndSave(expectedTradeDate);
+    }
+
+    /** @param expectedTradeDate null이면 거래일을 검증하지 않는다(수동 실행). */
+    private DetectionResult detectAndSave(LocalDate expectedTradeDate) {
         VolatilityDetectionResult detection = volatilityDetectionService.detect(DETECTION_REQUEST_SIZE);
+
+        if (expectedTradeDate != null && !expectedTradeDate.isEqual(detection.tradeDate())) {
+            log.error("탐지 결과의 거래일이 동기화 거래일과 다릅니다. 저장하지 않습니다. "
+                    + "expected={} detected={}", expectedTradeDate, detection.tradeDate());
+            throw VolatilityHandler.tradeDateMismatch();
+        }
 
         if (detection.signals().isEmpty()) {
             log.error("변동성 분석 결과가 비어 있습니다. 전 종목이 스킵됐습니다.");
@@ -90,7 +113,7 @@ public class VolatilityUseCase {
     public ReportGenerationResult runReportGeneration(ReportGenerationRequest request) {
         List<Volatility> targets = volatilityQueryService.getLatestVolatility();
         if (targets.isEmpty()) {
-            throw VolatilityHandler.volatilityNotDetectedToday();
+            throw VolatilityHandler.volatilityNotDetected();
         }
 
         LocalDate tradeDate = targets.get(0).getTradeDate();
@@ -111,7 +134,7 @@ public class VolatilityUseCase {
     public ReportGenerationResult runReportGeneration(ReportGenerationRequest request, LocalDate tradeDate) {
         List<Volatility> targets = volatilityQueryService.getByTradeDate(tradeDate);
         if (targets.isEmpty()) {
-            throw VolatilityHandler.volatilityNotDetectedToday();
+            throw VolatilityHandler.volatilityNotDetected();
         }
 
         return generateReports(request, targets, tradeDate);

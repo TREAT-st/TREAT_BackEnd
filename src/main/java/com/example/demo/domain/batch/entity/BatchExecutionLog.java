@@ -36,8 +36,9 @@ public class BatchExecutionLog extends BaseTimeEntity {
     /**
      * 배치 기준일. 정상 실행에서는 KRX가 알려준 거래일이다.
      *
-     * 거래일을 확보하지 못한 경우(휴장일 판정, KRX 장애)만 예외다. 그때는 남길 거래일이 없어
-     * 서울 기준 실행일을 키로 쓴다. 그 날짜는 거래일이 아니므로 진짜 단계 기록과 부딪히지 않는다.
+     * 거래일을 확보하지 못한 경우(KRX 장애)만 예외다. 그때는 남길 거래일이 없어
+     * 서울 기준 실행일을 키로 쓴다. 실행일이 거래일이면 다음 날 배치가 같은 키의 SYNC를
+     * 처리하게 되는데, 이 행은 FAILED라 재시작으로 이어받으므로 정상 실행을 막지 않는다.
      */
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
