@@ -79,11 +79,14 @@ public class BatchController {
 
     @Operation(summary = "일일 배치 실행 상태 조회", description =
             "해당 거래일의 단계별 실행 상태를 실행 순서대로 조회합니다. 날짜 형식은 \"yyyy-MM-dd\"입니다.<br>" +
-                    "tradeDate를 비우면 오늘 기준으로 조회합니다. 실행 요청 직후에는 거래일을 알 수 없으므로 비워서 부르면 됩니다.<br>" +
+                    "배치는 실행일이 아니라 직전 거래일을 처리합니다(예: 화요일 새벽 실행 → 월요일 거래일).<br>" +
+                    "tradeDate를 비우면 가장 최근에 시작된 배치의 거래일로 조회합니다. " +
+                    "실행 요청 직후에는 거래일을 알 수 없으므로 비워서 부르면 됩니다.<br>" +
                     "VERIFY가 RUNNING인 것은 정상입니다. 리포트 도착 확인은 콜백이 도착해야 끝납니다.<br>" +
-                    "휴장일이면 SYNC가 SKIPPED로, KRX 조회 자체가 실패했으면 SYNC가 FAILED로 남습니다.<br>" +
-                    "steps가 비어 있으면 아직 실행 이력이 만들어지지 않은 상태입니다. " +
-                    "한 번도 실행되지 않았거나, 접수 직후 KRX 조회가 진행 중일 수 있습니다.")
+                    "휴장일에는 새 행이 생기지 않습니다. 직전 거래일이 다시 내려와 이미 성공한 단계가 그대로 지나가기 때문입니다. " +
+                    "스케줄이 실제로 호출됐는지는 EventBridge 지표로 확인하세요.<br>" +
+                    "KRX 조회 자체가 실패했으면 거래일을 알 수 없어 실행일 키로 SYNC FAILED가 남습니다.<br>" +
+                    "steps가 비어 있으면 실행 이력이 하나도 없는 상태입니다.")
     @GetMapping("/daily-executions")
     public ApiResponseDto<BatchExecutionListResponse> getDailyExecutions(
             @RequestHeader(value = BATCH_SECRET_HEADER, required = false) String secret,
@@ -91,8 +94,12 @@ public class BatchController {
         verifyTriggerSecret(secret);
 
         // 실행 요청은 거래일을 모른 채 접수된다(KRX가 알려주기 전이다).
-        // 그래서 호출자가 조회 시점에도 날짜를 모를 수 있어, 비우면 오늘로 본다.
-        LocalDate target = tradeDate != null ? tradeDate : LocalDate.now(SEOUL_ZONE);
+        // 그래서 호출자가 조회 시점에도 날짜를 모를 수 있어, 비우면 가장 최근 실행의 거래일로 본다.
+        // 오늘로 보면 안 된다. 배치는 직전 거래일을 처리하므로 방금 끝난 실행이 보이지 않는다.
+        // 이력이 하나도 없으면 오늘로 두며, 그때 결과는 빈 목록이다.
+        LocalDate target = tradeDate != null
+                ? tradeDate
+                : batchExecutionLogService.getLatestTradeDate().orElseGet(() -> LocalDate.now(SEOUL_ZONE));
 
         return ApiResponseDto.onSuccess(BatchConverter.toBatchExecutionListResponse(
                 target, batchExecutionLogService.getByTradeDate(target)));

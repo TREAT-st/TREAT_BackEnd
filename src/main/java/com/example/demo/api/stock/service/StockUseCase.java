@@ -4,6 +4,7 @@ import com.example.demo.api.krx.dto.KrxKospi200ResponseDto;
 import com.example.demo.api.krx.service.KrxService;
 import com.example.demo.api.stock.dto.StockResponseDto.StockOpenAndClosePriceResponse;
 import com.example.demo.api.stock.dto.StockResponseDto.SyncStocksResponse;
+import com.example.demo.api.stock.dto.StockResponseDto.StockPageResponse;
 import com.example.demo.api.stock.mapper.StockConverter;
 import com.example.demo.common.annotation.UseCase;
 import com.example.demo.domain.stock.entity.Kospi200SyncCommand;
@@ -31,12 +32,25 @@ public class StockUseCase {
      * DB 커넥션을 붙잡게 되므로, 조회·변환은 트랜잭션 밖에서 끝내고 DB 쓰기만 커맨드에 맡긴다.
      */
     public SyncStocksResponse syncKospi200FromKrx(boolean force) {
-        KrxKospi200ResponseDto response = krxService.getKospi200Prices();
-        Kospi200SyncCommand command = StockConverter.toKospi200SyncCommand(response);
-        // 거래일 검증은 커맨드 쪽 트랜잭션 진입부에서 한다. 여기서 먼저 읽으면
-        // 조회와 반영이 다른 트랜잭션으로 갈라져 동시 요청 창이 넓어진다.
-        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(command, force);
+        return syncKospi200(fetchKospi200(), force);
+    }
 
+    /**
+     * 조회만 한다. 배치는 거래일을 먼저 확보하고 실행 이력을 연 뒤에 DB를 써야 해서
+     * 조회와 반영 사이에 끼어들 지점이 필요하다.
+     */
+    public Kospi200SyncCommand fetchKospi200() {
+        KrxKospi200ResponseDto response = krxService.getKospi200Prices();
+        return StockConverter.toKospi200SyncCommand(response);
+    }
+
+    /**
+     * 이미 받아둔 KRX 응답을 DB에 반영한다.
+     * 거래일 검증은 커맨드 쪽 트랜잭션 진입부에서 한다. 여기서 먼저 읽으면
+     * 조회와 반영이 다른 트랜잭션으로 갈라져 동시 요청 창이 넓어진다.
+     */
+    public SyncStocksResponse syncKospi200(Kospi200SyncCommand command, boolean force) {
+        StockSyncOutcome outcome = stockCommandService.syncStocksAndPrices(command, force);
         return StockConverter.toSyncStocksResponse(command, outcome);
     }
 
@@ -52,12 +66,10 @@ public class StockUseCase {
     }
 
     @Transactional(readOnly = true)
-    public com.example.demo.api.stock.dto.StockResponseDto.StockPageResponse getAllStocks(
-            Long userId, Boolean isActive, Pageable pageable) {
+    public StockPageResponse getAllStocks(Long userId, Boolean isActive, Pageable pageable) {
         Page<Stock> stocks = stockQueryService.getAllStocks(isActive, pageable);
         return StockConverter.toStockPageResponse(
-                stocks,
-                favoriteStockQueryService.getUserFavoriteStockCodes(userId)
+                stocks, favoriteStockQueryService.getUserFavoriteStockCodes(userId)
         );
     }
 }

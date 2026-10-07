@@ -41,6 +41,12 @@ public interface BatchExecutionLogRepository extends JpaRepository<BatchExecutio
 
     List<BatchExecutionLog> findAllByTradeDate(LocalDate tradeDate);
 
+    /**
+     * 가장 최근에 시작(또는 재시작)된 단계. 날짜 없이 이력을 조회할 때 기준 거래일을 정한다.
+     * 동률이면 id가 큰 쪽이 나중에 만들어진 행이다.
+     */
+    Optional<BatchExecutionLog> findFirstByOrderByStartedAtDescIdDesc();
+
     /** 도착 확인 스위퍼가 그레이스를 넘긴 단계를 찾을 때 쓴다. */
     List<BatchExecutionLog> findAllByStepAndStatusAndStartedAtBefore(
             BatchStep step, BatchStatus status, LocalDateTime startedAt);

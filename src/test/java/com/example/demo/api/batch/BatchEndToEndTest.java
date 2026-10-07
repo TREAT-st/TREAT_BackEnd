@@ -7,6 +7,7 @@ import com.example.demo.domain.batch.entity.BatchExecutionLog;
 import com.example.demo.domain.batch.entity.BatchStatus;
 import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.repository.BatchExecutionLogRepository;
+import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.stock.repository.StockRepository;
 import com.example.demo.domain.volatility.entity.VolatilityDetectionResult;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
@@ -28,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -35,6 +37,7 @@ import java.util.concurrent.Executor;
 
 import static com.example.demo.common.consts.StaticVariable.BATCH_SECRET_HEADER;
 import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
+import static com.example.demo.common.consts.StaticVariable.SYNC_ALREADY_APPLIED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -60,7 +63,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BatchEndToEndTest {
 
     private static final String SECRET = "test-batch-secret";
+    /** 실행일. 거래일을 확보하지 못한 시작 실패만 이 키로 남는다. */
     private static final LocalDate TODAY = LocalDate.now(SEOUL_ZONE);
+    /** KRX가 준 거래일. Lambda가 오늘을 제외하므로 실행일 전날이다. */
+    private static final LocalDate TRADE_DATE = TODAY.minusDays(1);
     private static final DateTimeFormatter TRADE_DATE_FORMAT = DateTimeFormatter.ofPattern("uuuuMMdd");
 
     @TestConfiguration
@@ -96,7 +102,7 @@ class BatchEndToEndTest {
         VolatilitySignal detected = signal();
         Mockito.when(krxService.getKospi200Prices()).thenReturn(kospi200Response());
         Mockito.when(volatilityDetectionService.detect(anyInt()))
-                .thenReturn(new VolatilityDetectionResult(TODAY, 100, List.of(detected)));
+                .thenReturn(new VolatilityDetectionResult(TRADE_DATE, 100, List.of(detected)));
         Mockito.when(volatilityDetectionService.selectTop(any(), anyInt(), anyInt()))
                 .thenReturn(List.of(detected));
     }
@@ -109,16 +115,16 @@ class BatchEndToEndTest {
                 .andExpect(jsonPath("$.isSuccess").value(true));
 
         // 체인이 실제로 돌아 네 단계가 남았다.
-        assertThat(batchExecutionLogRepository.findAllByTradeDate(TODAY)).hasSize(4);
+        assertThat(batchExecutionLogRepository.findAllByTradeDate(TRADE_DATE)).hasSize(4);
         assertThat(stockRepository.findAll()).hasSize(1);
-        assertThat(volatilityRepository.findAllByTradeDateOrderByIdAsc(TODAY)).hasSize(1);
+        assertThat(volatilityRepository.findAllByTradeDateOrderByIdAsc(TRADE_DATE)).hasSize(1);
         Mockito.verify(reportLambdaClient).invokeCreateReport(any());
 
         mockMvc.perform(get("/api/v1/batch/daily-executions")
                         .header(BATCH_SECRET_HEADER, SECRET)
-                        .param("tradeDate", TODAY.toString()))
+                        .param("tradeDate", TRADE_DATE.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.tradeDate").value(TODAY.toString()))
+                .andExpect(jsonPath("$.result.tradeDate").value(TRADE_DATE.toString()))
                 // 실행 순서대로 나온다. DB 정렬은 알파벳순이라 서비스가 다시 정렬한다.
                 .andExpect(jsonPath("$.result.steps[0].step").value("SYNC"))
                 .andExpect(jsonPath("$.result.steps[0].status").value("SUCCESS"))
@@ -144,7 +150,7 @@ class BatchEndToEndTest {
 
         Mockito.verify(volatilityDetectionService, Mockito.never()).detect(anyInt());
         Mockito.verify(reportLambdaClient, Mockito.never()).invokeCreateReport(any());
-        assertThat(batchExecutionLogRepository.findByTradeDateAndStep(TODAY, BatchStep.REPORT).orElseThrow()
+        assertThat(batchExecutionLogRepository.findByTradeDateAndStep(TRADE_DATE, BatchStep.REPORT).orElseThrow()
                 .getAttempt()).isEqualTo(1);
     }
 
@@ -164,10 +170,10 @@ class BatchEndToEndTest {
         assertThat(statusOf(BatchStep.DETECT)).isEqualTo(BatchStatus.FAILED);
         assertThat(logOf(BatchStep.DETECT).getMessage()).isEqualTo("KRX OHLCV 조회 실패");
         // 뒷 단계는 시작조차 하지 않는다.
-        assertThat(batchExecutionLogRepository.findByTradeDateAndStep(TODAY, BatchStep.REPORT)).isEmpty();
+        assertThat(batchExecutionLogRepository.findByTradeDateAndStep(TRADE_DATE, BatchStep.REPORT)).isEmpty();
         Mockito.verify(reportLambdaClient, Mockito.never()).invokeCreateReport(any());
 
-        Mockito.doReturn(new VolatilityDetectionResult(TODAY, 100, List.of(signal())))
+        Mockito.doReturn(new VolatilityDetectionResult(TRADE_DATE, 100, List.of(signal())))
                 .when(volatilityDetectionService).detect(anyInt());
 
         mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
@@ -197,7 +203,7 @@ class BatchEndToEndTest {
                 .andExpect(status().isAccepted());
 
         Mockito.verify(reportLambdaClient).invokeCreateReport(any());
-        assertThat(batchExecutionLogRepository.findByTradeDateAndStep(TODAY, BatchStep.REPORT).orElseThrow()
+        assertThat(batchExecutionLogRepository.findByTradeDateAndStep(TRADE_DATE, BatchStep.REPORT).orElseThrow()
                 .getAttempt()).isEqualTo(2);
     }
 
@@ -224,7 +230,7 @@ class BatchEndToEndTest {
     @Test
     void 이력_조회도_시크릿을_요구한다() throws Exception {
         mockMvc.perform(get("/api/v1/batch/daily-executions")
-                        .param("tradeDate", TODAY.toString()))
+                        .param("tradeDate", TRADE_DATE.toString()))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -243,7 +249,7 @@ class BatchEndToEndTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(("{\"stockCode\":\"005930\",\"reportDate\":\"%s\","
                                 + "\"reportUrl\":\"https://example.com/005930_analysis.html\"}")
-                                .formatted(TODAY.format(TRADE_DATE_FORMAT))))
+                                .formatted(TRADE_DATE.format(TRADE_DATE_FORMAT))))
                 .andExpect(status().isOk());
 
         assertThat(statusOf(BatchStep.VERIFY)).isEqualTo(BatchStatus.SUCCESS);
@@ -254,29 +260,82 @@ class BatchEndToEndTest {
     }
 
     /**
-     * 휴장일과 KRX 장애는 둘 다 체인을 시작조차 못 하지만 원인이 완전히 다르다.
-     * 아무것도 안 남기면 조회에서 구분되지 않아 운영자가 원인을 알 수 없다.
+     * 휴장일에는 KRX가 직전 거래일을 다시 돌려준다. 그 거래일은 이미 처리했으므로
+     * 모든 단계가 ALREADY_DONE으로 지나가고, 새 행(SKIPPED 포함)이 생기지 않는다.
      */
     @Test
-    void 휴장일은_실행일에_스킵으로_남는다() throws Exception {
-        LocalDate krxTradeDate = TODAY.minusDays(3);
-        Mockito.when(krxService.getKospi200Prices()).thenReturn(kospi200Response(krxTradeDate));
+    void 휴장일에_직전_거래일이_다시_오면_새_행_없이_지나간다() throws Exception {
+        mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(status().isAccepted());
+        long rowsAfterFirstRun = batchExecutionLogRepository.count();
+        Mockito.clearInvocations(volatilityDetectionService, reportLambdaClient);
+
+        // 다음 날(휴장일) 같은 거래일이 다시 내려온다.
+        mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(status().isAccepted());
+
+        assertThat(batchExecutionLogRepository.count()).isEqualTo(rowsAfterFirstRun);
+        assertThat(batchExecutionLogRepository.findAll())
+                .noneMatch(log -> log.getStatus() == BatchStatus.SKIPPED);
+        Mockito.verify(volatilityDetectionService, Mockito.never()).detect(anyInt());
+        Mockito.verify(reportLambdaClient, Mockito.never()).invokeCreateReport(any());
+    }
+
+    /**
+     * 수동 /sync가 먼저 돌아 stock이 이미 그 거래일 상태인 경우(4252).
+     * 실제 커맨드 서비스를 지나므로 4252가 정말로 나고, 그걸 SYNC 성공으로 받아 DETECT로 간다.
+     */
+    @Test
+    void 수동_동기화가_먼저_됐으면_SYNC는_생략_성공하고_체인이_이어진다() throws Exception {
+        Stock synced = Stock.builder().stockCode("005930").stockName("삼성전자").build();
+        synced.updatePrice(new BigDecimal("70000"), new BigDecimal("71000"), null, TRADE_DATE);
+        stockRepository.save(synced);
 
         mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
                 .andExpect(status().isAccepted());
 
-        Mockito.verify(volatilityDetectionService, Mockito.never()).detect(anyInt());
-        // KRX가 준 거래일의 기록은 건드리지 않는다.
-        assertThat(batchExecutionLogRepository.findAllByTradeDate(krxTradeDate)).isEmpty();
+        assertThat(statusOf(BatchStep.SYNC)).isEqualTo(BatchStatus.SUCCESS);
+        assertThat(logOf(BatchStep.SYNC).getMessage()).isEqualTo(SYNC_ALREADY_APPLIED);
+        assertThat(statusOf(BatchStep.DETECT)).isEqualTo(BatchStatus.SUCCESS);
+        assertThat(statusOf(BatchStep.VERIFY)).isEqualTo(BatchStatus.RUNNING);
+    }
+
+    /**
+     * 탐지 Lambda가 다른 거래일을 주면 저장하기 전에 멈춘다.
+     * 저장한 뒤에 비교하면 잘못된 날짜의 탐지 기록이 남고, REPORT는 0건으로 조용히 끝난다.
+     */
+    @Test
+    void 탐지_거래일이_어긋나면_저장하지_않고_DETECT가_실패한다() throws Exception {
+        LocalDate otherDate = TRADE_DATE.minusDays(1);
+        Mockito.when(volatilityDetectionService.detect(anyInt()))
+                .thenReturn(new VolatilityDetectionResult(otherDate, 100, List.of(signal())));
+
+        mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(status().isAccepted());
+
+        assertThat(statusOf(BatchStep.SYNC)).isEqualTo(BatchStatus.SUCCESS);
+        assertThat(statusOf(BatchStep.DETECT)).isEqualTo(BatchStatus.FAILED);
+        assertThat(volatilityRepository.findAllByTradeDateOrderByIdAsc(otherDate)).isEmpty();
+        assertThat(volatilityRepository.findAllByTradeDateOrderByIdAsc(TRADE_DATE)).isEmpty();
+        Mockito.verify(reportLambdaClient, Mockito.never()).invokeCreateReport(any());
+    }
+
+    /**
+     * 배치는 직전 거래일을 처리하므로 "오늘"로 조회하면 방금 끝난 실행이 안 보인다.
+     * 날짜 없이 조회하면 가장 최근에 시작된 배치의 거래일이 나와야 한다.
+     */
+    @Test
+    void 날짜_없이_조회하면_가장_최근_실행의_거래일을_보여준다() throws Exception {
+        mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(status().isAccepted());
 
         mockMvc.perform(get("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.steps[0].step").value("SYNC"))
-                .andExpect(jsonPath("$.result.steps[0].status").value("SKIPPED"))
-                .andExpect(jsonPath("$.result.steps[0].message").value(
-                        "거래일이 아닙니다. KRX 거래일=" + krxTradeDate));
+                .andExpect(jsonPath("$.result.tradeDate").value(TRADE_DATE.toString()))
+                .andExpect(jsonPath("$.result.steps.length()").value(4));
     }
 
+    /** 거래일을 모르면 실행일 키로 남긴다. 날짜 없는 조회에서도 그게 가장 최근 실행이다. */
     @Test
     void KRX_장애는_실행일에_실패로_남는다() throws Exception {
         Mockito.doThrow(new IllegalStateException("KRX Lambda 호출 실패"))
@@ -287,39 +346,49 @@ class BatchEndToEndTest {
 
         mockMvc.perform(get("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.tradeDate").value(TODAY.toString()))
                 .andExpect(jsonPath("$.result.steps[0].step").value("SYNC"))
                 .andExpect(jsonPath("$.result.steps[0].status").value("FAILED"))
                 .andExpect(jsonPath("$.result.steps[0].message").value("KRX Lambda 호출 실패"));
     }
 
-    /** 실행일이 실제 거래일이었다면, KRX 복구 후 재실행이 같은 키를 이어받아야 한다. */
+    /**
+     * KRX가 복구되면 재실행은 KRX가 준 거래일로 완주한다.
+     * 실행일 키의 FAILED 행은 그대로 남지만 정상 실행을 막지 않는다.
+     */
     @Test
-    void KRX가_복구되면_같은_키를_이어받아_완주한다() throws Exception {
+    void KRX가_복구되면_거래일로_완주한다() throws Exception {
         Mockito.doThrow(new IllegalStateException("KRX Lambda 호출 실패"))
                 .when(krxService).getKospi200Prices();
         mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
                 .andExpect(status().isAccepted());
-        assertThat(statusOf(BatchStep.SYNC)).isEqualTo(BatchStatus.FAILED);
+        assertThat(statusOf(TODAY, BatchStep.SYNC)).isEqualTo(BatchStatus.FAILED);
 
         Mockito.doReturn(kospi200Response()).when(krxService).getKospi200Prices();
         mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
                 .andExpect(status().isAccepted());
 
         assertThat(statusOf(BatchStep.SYNC)).isEqualTo(BatchStatus.SUCCESS);
-        assertThat(logOf(BatchStep.SYNC).getAttempt()).isEqualTo(2);
         assertThat(statusOf(BatchStep.VERIFY)).isEqualTo(BatchStatus.RUNNING);
+        // 가장 최근 실행은 거래일 쪽이다.
+        mockMvc.perform(get("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))
+                .andExpect(jsonPath("$.result.tradeDate").value(TRADE_DATE.toString()));
     }
 
     private BatchStatus statusOf(BatchStep step) {
-        return logOf(step).getStatus();
+        return statusOf(TRADE_DATE, step);
+    }
+
+    private BatchStatus statusOf(LocalDate date, BatchStep step) {
+        return batchExecutionLogRepository.findByTradeDateAndStep(date, step).orElseThrow().getStatus();
     }
 
     private BatchExecutionLog logOf(BatchStep step) {
-        return batchExecutionLogRepository.findByTradeDateAndStep(TODAY, step).orElseThrow();
+        return batchExecutionLogRepository.findByTradeDateAndStep(TRADE_DATE, step).orElseThrow();
     }
 
     private KrxKospi200ResponseDto kospi200Response() throws Exception {
-        return kospi200Response(TODAY);
+        return kospi200Response(TRADE_DATE);
     }
 
     /** DTO에 세터가 없어 역직렬화로 만든다. */

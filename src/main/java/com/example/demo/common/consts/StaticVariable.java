@@ -18,13 +18,12 @@ public class StaticVariable {
     public static final String NOTIFICATION_READ = "isRead";
     public static final String PAGINATION_SORTING_BY_ID  = "id";
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-    public static final String REPORT_GENERATION_SUCCESS = "success";
-    public static final String REPORT_GENERATION_FAILURE = "failure";
+    public static final String REPORT_GENERATION_SUCCESS = "SUCCESS";
+    public static final String REPORT_GENERATION_FAILURE = "FAILURE";
     public static final String REPORT_GENERATION_PARTIAL_SUCCESS = "PARTIAL_SUCCESS";
     public static final String NO_DETECTED_STOCK = "탐지된 종목 없음";
     public static final String ANOTHER_RUN_IN_PROGRESS = "다른 실행이 진행 중입니다";
-    public static final String NOT_A_TRADING_DAY = "거래일이 아니라 실행하지 않았습니다.";
-    public static final String NOT_A_TRADING_DAY_LOG = "거래일이 아닙니다. KRX 거래일=%s";
+    public static final String SYNC_ALREADY_APPLIED = "이미 반영된 거래일이라 DB 동기화를 생략했습니다.";
     public static final String BATCH_ACCEPTED = "배치를 접수했습니다.";
     public static final String BATCH_NOT_ACCEPTED_ALREADY_RUNNING = "이미 실행 중인 배치가 있어 접수하지 않았습니다.";
     public static final String VERIFY_ALL_REPORTS_ARRIVED = "리포트가 모두 도착했습니다.";
