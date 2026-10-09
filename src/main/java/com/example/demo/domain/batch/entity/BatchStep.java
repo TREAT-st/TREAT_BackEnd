@@ -17,10 +17,13 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public enum BatchStep {
 
-    /** KRX 코스피200 Lambda 1회 + DB 반영. 소켓 타임아웃이 6분이라 최악이 그 언저리다. */
+    /**
+     * 받아둔 KRX 응답을 DB에 반영한다. KRX Lambda 호출은 거래일을 먼저 알아야 해서
+     * 이 단계를 시작하기 전에 끝나므로 여기 포함되지 않는다. 반영은 초 단위라 넉넉한 값이다.
+     */
     SYNC(Duration.ofMinutes(30)),
 
-    /** KRX OHLCV Lambda 1회 + 지표 계산. 계산은 초 단위라 상한은 SYNC와 같다. */
+    /** KRX OHLCV Lambda 1회 + 지표 계산. 시간은 대부분 Lambda 호출이고, 소켓 타임아웃(6분)을 감안한 값이다. */
     DETECT(Duration.ofMinutes(30)),
 
     /**
