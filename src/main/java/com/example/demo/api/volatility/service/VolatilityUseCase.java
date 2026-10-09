@@ -31,7 +31,6 @@ import java.util.List;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
-import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 import static com.example.demo.common.consts.StaticVariable.VERIFY_ALL_REPORTS_ARRIVED;
 
 @Slf4j
@@ -117,12 +116,6 @@ public class VolatilityUseCase {
         }
 
         LocalDate tradeDate = targets.get(0).getTradeDate();
-        LocalDate today = LocalDate.now(SEOUL_ZONE);
-        if (!tradeDate.isEqual(today)) {
-            log.warn("가장 최근 탐지 결과가 오늘이 아닙니다. 해당 거래일 기준으로 생성합니다. tradeDate={}, today={}",
-                    tradeDate, today);
-        }
-
         return generateReports(request, targets, tradeDate);
     }
 
