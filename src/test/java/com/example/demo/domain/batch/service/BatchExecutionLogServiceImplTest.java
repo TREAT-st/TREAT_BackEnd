@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static com.example.demo.common.consts.StaticVariable.NO_DETECTED_STOCK;
 import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -363,5 +364,44 @@ class BatchExecutionLogServiceImplTest {
 
     private BatchExecutionLog log(BatchStep step) {
         return batchExecutionLogRepository.findByTradeDateAndStep(TRADE_DATE, step).orElseThrow();
+    }
+
+    // ---------- 탐지 0건 판정 ----------
+
+    /** 배치는 탐지 결과가 0건이면 REPORT를 이 사유로 SKIPPED 처리한다. 날짜별 조회가 이걸 근거로 200 빈 목록을 준다. */
+    @Test
+    void 탐지된_종목_없음으로_REPORT가_스킵됐으면_탐지_0건이다() {
+        batchExecutionLogService.skip(TRADE_DATE, BatchStep.REPORT, NO_DETECTED_STOCK);
+
+        assertThat(batchExecutionLogService.isDetectedWithNoStock(TRADE_DATE)).isTrue();
+    }
+
+    @Test
+    void 이력이_없으면_탐지_0건이_아니다() {
+        assertThat(batchExecutionLogService.isDetectedWithNoStock(TRADE_DATE)).isFalse();
+    }
+
+    /** 다른 사유로 스킵된 REPORT까지 0건으로 보면 휴장일·탐지 전 날짜가 200으로 새어 나간다. */
+    @Test
+    void 다른_사유로_스킵된_REPORT는_탐지_0건이_아니다() {
+        batchExecutionLogService.skip(TRADE_DATE, BatchStep.REPORT, "다른 사유");
+
+        assertThat(batchExecutionLogService.isDetectedWithNoStock(TRADE_DATE)).isFalse();
+    }
+
+    /** 리포트를 요청한 날은 탐지 결과가 있었던 날이다. */
+    @Test
+    void REPORT가_성공했으면_탐지_0건이_아니다() {
+        BatchStartResult start = batchExecutionLogService.tryStart(TRADE_DATE, BatchStep.REPORT, false);
+        batchExecutionLogService.succeed(start.execution(), "생성 요청 10건");
+
+        assertThat(batchExecutionLogService.isDetectedWithNoStock(TRADE_DATE)).isFalse();
+    }
+
+    @Test
+    void 다른_거래일의_탐지_0건은_영향을_주지_않는다() {
+        batchExecutionLogService.skip(TRADE_DATE.minusDays(1), BatchStep.REPORT, NO_DETECTED_STOCK);
+
+        assertThat(batchExecutionLogService.isDetectedWithNoStock(TRADE_DATE)).isFalse();
     }
 }

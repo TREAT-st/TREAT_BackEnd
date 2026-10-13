@@ -30,6 +30,7 @@ import java.util.List;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
+import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 import static com.example.demo.common.consts.StaticVariable.VERIFY_ALL_REPORTS_ARRIVED;
 
 @Slf4j
@@ -220,13 +221,46 @@ public class VolatilityUseCase {
         batchExecutionLogService.completeVerification(tradeDate, VERIFY_ALL_REPORTS_ARRIVED);
     }
 
+    /**
+     * 기록이 없을 때 이유를 나눠서 알린다.
+     *
+     *   기록 있음                       → 200 + 목록
+     *   배치가 탐지했는데 0건           → 200 + 빈 목록 (조용한 장세의 정상 결과다)
+     *   날짜 ≥ 오늘                     → 400/4310 (탐지는 직전 거래일 기준이라 아직 대상이 아니다)
+     *   그 외(휴장일, 탐지 안 함)       → 404/4308
+     *
+     * 0건이면 volatility에 아무것도 저장되지 않아 DB만으로는 휴장일과 구분이 안 된다.
+     * 그래서 배치 실행 이력을 근거로 삼는다. 수동 /detect는 이력을 남기지 않으므로 그 경로의 0건은 404로 나간다.
+     * 휴장일과 "탐지 안 함"은 휴장일 달력이 없어 나누지 않는다.
+     *
+     * 기록 유무를 먼저 본다. 날짜만 보고 먼저 거절하면, 실제로 저장된 데이터가 있어도 내보내지 못한다.
+     *
+     * 조회 서비스(getByTradeDate)는 그대로 빈 목록을 돌려준다. 배치가 그 빈 목록으로
+     * "리포트 대상 없음"을 판정하므로, 예외는 API 경로인 여기서만 던진다.
+     */
     @Transactional(readOnly = true)
     public VolatilityListResponse getAllVolatilityByDate(LocalDate date) {
-        return VolatilityConverter.toVolatilityListResponse(volatilityQueryService.getByTradeDate(date));
+        List<Volatility> volatilities = volatilityQueryService.getByTradeDate(date);
+        if (!volatilities.isEmpty()) {
+            return VolatilityConverter.toVolatilityListResponse(volatilities);
+        }
+
+        if (!date.isBefore(LocalDate.now(SEOUL_ZONE))) {
+            throw VolatilityHandler.dateNotYetDetectable();
+        }
+        if (batchExecutionLogService.isDetectedWithNoStock(date)) {
+            return VolatilityConverter.toVolatilityListResponse(List.of());
+        }
+        throw VolatilityHandler.volatilityNotFoundByDate();
     }
 
     @Transactional(readOnly = true)
     public VolatilityListResponse getAllVolatilityByCode(String stockCode) {
-        return VolatilityConverter.toVolatilityListResponse(volatilityQueryService.getAllVolatilityByCode(stockCode));
+        // 날짜별 조회와 같은 이유로 빈 200 대신 404로 알린다.
+        List<Volatility> volatilities = volatilityQueryService.getAllVolatilityByCode(stockCode);
+        if (volatilities.isEmpty()) {
+            throw VolatilityHandler.volatilityNotFoundByStockCode();
+        }
+        return VolatilityConverter.toVolatilityListResponse(volatilities);
     }
 }

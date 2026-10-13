@@ -53,4 +53,15 @@ public interface BatchExecutionLogService {
      * 거래일을 확보하지 못한 시작 실패는 실행일 키로 남으므로, 그 경우엔 실행일이 나온다.
      */
     Optional<LocalDate> getLatestTradeDate();
+
+    /**
+     * 그 거래일에 배치가 탐지를 마쳤고 결과가 0건이었는지.
+     *
+     * 탐지 결과가 0건이면 volatility에 아무것도 저장되지 않아, DB만으로는 휴장일·탐지 전 날짜와
+     * 구분할 수 없다. 배치는 이 경우 REPORT를 "탐지된 종목 없음"으로 SKIPPED 처리하므로 그걸 근거로 삼는다.
+     * 메시지 문자열("탐지 0건")을 파싱하지 않고 상수로 남긴 스킵 사유를 비교한다.
+     *
+     * 수동 /detect는 실행 이력을 남기지 않으므로 그 경로의 0건은 여기서 false다.
+     */
+    boolean isDetectedWithNoStock(LocalDate tradeDate);
 }
