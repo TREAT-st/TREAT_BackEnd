@@ -32,7 +32,16 @@ public enum VolatilityErrorStatus implements BaseErrorCode {
     VOLATILITY_DETECTION_FAILED(HttpStatus.BAD_GATEWAY, 4306, "변동성 분석에 실패했습니다. 분석 가능한 종목이 없습니다."),
     @ExplainError("시세 동기화 Lambda와 변동성 탐지 Lambda가 서로 다른 거래일을 반환했습니다. "
             + "두 Lambda의 거래일 판정 규칙(오늘 제외 여부)이 같은지 확인하세요. 탐지 결과는 저장하지 않았습니다.")
-    VOLATILITY_TRADE_DATE_MISMATCH(HttpStatus.BAD_GATEWAY, 4307, "탐지 거래일이 동기화 거래일과 다릅니다.");
+    VOLATILITY_TRADE_DATE_MISMATCH(HttpStatus.BAD_GATEWAY, 4307, "탐지 거래일이 동기화 거래일과 다릅니다."),
+    @ExplainError("해당 날짜의 탐지 기록이 없습니다. 주말·공휴일 등 휴장일이거나 아직 탐지를 실행하지 않은 날짜입니다. "
+            + "휴장일 달력이 없어 두 경우는 구분하지 않습니다. "
+            + "배치가 탐지했는데 알림 대상이 0건이었던 거래일은 이 에러가 아니라 200과 빈 목록으로 응답합니다.")
+    VOLATILITY_NOT_FOUND_BY_DATE(HttpStatus.NOT_FOUND, 4308, "해당 날짜에 탐지된 변동성 종목이 없습니다."),
+    @ExplainError("해당 종목이 변동성 상위 종목으로 선정된 적이 없습니다. "
+            + "종목 코드가 잘못됐거나, 코스피200 종목이지만 아직 한 번도 탐지되지 않은 경우입니다.")
+    VOLATILITY_NOT_FOUND_BY_STOCK_CODE(HttpStatus.NOT_FOUND, 4309, "해당 종목의 변동성 기록이 없습니다."),
+    @ExplainError("탐지는 장이 끝난 직전 거래일을 대상으로 하므로 오늘이나 미래 날짜의 탐지 기록은 생기지 않습니다.")
+    VOLATILITY_DATE_NOT_YET_DETECTABLE(HttpStatus.BAD_REQUEST, 4310, "아직 탐지 대상이 아닌 날짜입니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

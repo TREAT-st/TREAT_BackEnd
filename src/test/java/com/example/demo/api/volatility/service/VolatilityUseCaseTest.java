@@ -22,6 +22,7 @@ import java.util.List;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
+import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -258,6 +259,79 @@ class VolatilityUseCaseTest {
                 .stockName("삼성전자")
                 .tradeDate(TRADE_DATE)
                 .build();
+    }
+
+    /** 빈 200이면 휴장일·탐지 전 날짜를 "0건"과 구분할 수 없다. */
+    @Test
+    void 날짜별_조회에서_기록이_없으면_404_4308() {
+        LocalDate sunday = LocalDate.of(2026, 10, 11);
+        Mockito.when(queryService.getByTradeDate(sunday)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.getAllVolatilityByDate(sunday))
+                .isInstanceOf(GeneralException.class)
+                .extracting(e -> ((GeneralException) e).getErrorReasonHttpStatus().getCode())
+                .isEqualTo(VolatilityErrorStatus.VOLATILITY_NOT_FOUND_BY_DATE.getCode());
+    }
+
+    /** 조용한 장세에서 0건은 실패가 아니라 정상 결과다. 휴장일(404)과 달리 200 빈 목록이어야 한다. */
+    @Test
+    void 배치가_탐지했는데_0건이면_200_빈_목록() {
+        Mockito.when(queryService.getByTradeDate(TRADE_DATE)).thenReturn(List.of());
+        Mockito.when(batchExecutionLogService.isDetectedWithNoStock(TRADE_DATE)).thenReturn(true);
+
+        assertThat(useCase.getAllVolatilityByDate(TRADE_DATE).getTotalCount()).isZero();
+    }
+
+    /** 탐지는 직전 거래일 기준이라 오늘·미래는 아직 대상이 아니다. 휴장일(404)과 구분해 알린다. */
+    @Test
+    void 오늘이나_미래_날짜는_400_4310() {
+        LocalDate today = LocalDate.now(SEOUL_ZONE);
+        for (LocalDate date : List.of(today, today.plusDays(1))) {
+            Mockito.when(queryService.getByTradeDate(date)).thenReturn(List.of());
+
+            assertThatThrownBy(() -> useCase.getAllVolatilityByDate(date))
+                    .isInstanceOf(GeneralException.class)
+                    .extracting(e -> ((GeneralException) e).getErrorReasonHttpStatus().getCode())
+                    .isEqualTo(VolatilityErrorStatus.VOLATILITY_DATE_NOT_YET_DETECTABLE.getCode());
+        }
+        // 날짜만으로 거절되므로 실행 이력은 볼 필요가 없다.
+        verify(batchExecutionLogService, never()).isDetectedWithNoStock(any());
+    }
+
+    /** 기록 유무를 날짜 판정보다 먼저 본다. 실제로 저장된 데이터는 날짜와 상관없이 내보낸다. */
+    @Test
+    void 기록이_있으면_오늘_날짜여도_그대로_돌려준다() {
+        LocalDate today = LocalDate.now(SEOUL_ZONE);
+        Mockito.when(queryService.getByTradeDate(today)).thenReturn(List.of(
+                Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(today).build()));
+
+        assertThat(useCase.getAllVolatilityByDate(today).getTotalCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 날짜별_조회에서_기록이_있으면_그대로_돌려준다() {
+        Mockito.when(queryService.getByTradeDate(TRADE_DATE)).thenReturn(List.of(
+                Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(TRADE_DATE).build()));
+
+        assertThat(useCase.getAllVolatilityByDate(TRADE_DATE).getTotalCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 종목별_조회에서_기록이_없으면_404_4309() {
+        Mockito.when(queryService.getAllVolatilityByCode("999999")).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.getAllVolatilityByCode("999999"))
+                .isInstanceOf(GeneralException.class)
+                .extracting(e -> ((GeneralException) e).getErrorReasonHttpStatus().getCode())
+                .isEqualTo(VolatilityErrorStatus.VOLATILITY_NOT_FOUND_BY_STOCK_CODE.getCode());
+    }
+
+    @Test
+    void 종목별_조회에서_기록이_있으면_그대로_돌려준다() {
+        Mockito.when(queryService.getAllVolatilityByCode("005930")).thenReturn(List.of(
+                Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(TRADE_DATE).build()));
+
+        assertThat(useCase.getAllVolatilityByCode("005930").getTotalCount()).isEqualTo(1);
     }
 
     private VolatilityDetectionResult detection(List<VolatilitySignal> signals) {

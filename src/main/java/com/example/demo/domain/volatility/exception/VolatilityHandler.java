@@ -19,6 +19,18 @@ public class VolatilityHandler extends GeneralException {
         return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_DETECTION_FAILED);
     }
 
+    public static VolatilityHandler volatilityNotFoundByDate() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_FOUND_BY_DATE);
+    }
+
+    public static VolatilityHandler dateNotYetDetectable() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_DATE_NOT_YET_DETECTABLE);
+    }
+
+    public static VolatilityHandler volatilityNotFoundByStockCode() {
+        return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_NOT_FOUND_BY_STOCK_CODE);
+    }
+
     public static VolatilityHandler tradeDateMismatch() {
         return new VolatilityHandler(VolatilityErrorStatus.VOLATILITY_TRADE_DATE_MISMATCH);
     }
