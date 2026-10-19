@@ -8,6 +8,7 @@ import com.example.demo.domain.batch.entity.BatchStatus;
 import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.repository.BatchExecutionLogRepository;
 import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.domain.stock.entity.StockPriceSnapshot;
 import com.example.demo.domain.stock.repository.StockRepository;
 import com.example.demo.domain.volatility.entity.VolatilityDetectionResult;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
@@ -288,7 +289,7 @@ class BatchEndToEndTest {
     @Test
     void 수동_동기화가_먼저_됐으면_SYNC는_생략_성공하고_체인이_이어진다() throws Exception {
         Stock synced = Stock.builder().stockCode("005930").stockName("삼성전자").build();
-        synced.updatePrice(new BigDecimal("70000"), new BigDecimal("71000"), null, TRADE_DATE);
+        synced.updatePrice(new StockPriceSnapshot("005930", new BigDecimal("70000"), new BigDecimal("71000"), null, null, null), TRADE_DATE);
         stockRepository.save(synced);
 
         mockMvc.perform(post("/api/v1/batch/daily-executions").header(BATCH_SECRET_HEADER, SECRET))

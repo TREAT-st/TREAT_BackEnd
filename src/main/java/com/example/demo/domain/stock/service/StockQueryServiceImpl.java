@@ -9,6 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -38,5 +43,15 @@ public class StockQueryServiceImpl implements StockQueryService {
         return Boolean.TRUE.equals(isActive)
                 ? stockRepository.findAllByIsActive(true, pageable)
                 : stockRepository.findAll(pageable);
+    }
+
+    @Override
+    public Map<String, Stock> getStocksByCodes(Collection<String> stockCodes) {
+        // 빈 목록으로 IN 쿼리를 날리면 DB에 따라 문법 오류가 난다. 조회할 것도 없다.
+        if (stockCodes.isEmpty()) {
+            return Map.of();
+        }
+        return stockRepository.findAllByStockCodeIn(stockCodes).stream()
+                .collect(Collectors.toMap(Stock::getStockCode, Function.identity()));
     }
 }

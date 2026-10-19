@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface StockRepository extends JpaRepository<Stock, Long> {
     Optional<Stock> findByStockCode(String stockCode);
     List<Stock> findAllByStockCodeInAndIsActiveTrue(Collection<String> stockCodes);
+    List<Stock> findAllByStockCodeIn(Collection<String> stockCodes);
     Page<Stock> findAllByIsActive(Boolean isActive, Pageable pageable);
 
     @Query("select max(s.tradeDate) from Stock s")
