@@ -64,7 +64,9 @@ public class StockController {
             description = "Stock에 저장된 종목을 페이지 단위로 조회합니다.<br>" +
                     "Stock은 종목별 최신 스냅샷만 보관하므로 항상 마지막으로 동기화된 시세가 나옵니다. " +
                     "각 종목의 기준 거래일은 응답의 tradeDate로 확인하세요. " +
-                    "시세를 못 받은 종목은 이전 거래일 값이 남아 있어 종목마다 tradeDate가 다를 수 있습니다.<br><br>" +
+                    "시세를 못 받은 종목은 이전 거래일 값이 남아 있어 종목마다 tradeDate가 다를 수 있습니다.<br>" +
+                    "currentPrice는 실시간 시세가 아니라 tradeDate의 종가입니다. " +
+                    "priceChange·changeRate는 직전 거래일 종가 대비 값이며 하락이면 음수입니다.<br><br>" +
                     "isActive=true : 코스피200에 현재 편입된 종목만<br>" +
                     "isActive=false 또는 생략 : 편입, 편출 전체 종목<br><br>" +
                     "sortBy=STOCK_CODE : 종목코드 오름차순(기본값)<br>" +

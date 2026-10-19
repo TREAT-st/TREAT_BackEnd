@@ -44,8 +44,19 @@ public class StockResponseDto {
     public static class StockItemResponse {
         private String stockCode;
         private String stockName;
+        /**
+         * tradeDate의 종가. 실시간 시세가 아니다.
+         * 아직 한 번도 시세가 반영되지 않은 종목(신규 편입 직후 등)은 null.
+         * 최근 동기화에서 시세를 못 받은 종목은 마지막으로 반영된 값이 남아 있고, tradeDate가 그만큼 이전이다.
+         */
+        private BigDecimal currentPrice;
+        /** 직전 거래일 종가 대비 등락폭(원). 하락이면 음수. */
+        private BigDecimal priceChange;
+        /** 직전 거래일 종가 대비 등락률(%). 하락이면 음수. */
+        private BigDecimal changeRate;
         private Long marketCapitalization;
         private Long likeCount;
+        /** 위 시세의 기준 거래일. */
         private LocalDate tradeDate;
         private Boolean isActive;
         private Boolean isFavorite;
@@ -60,7 +71,10 @@ public class StockResponseDto {
         private String stockName;
         private BigDecimal openPrice;
         private BigDecimal closePrice;
-        /** 종가 기준 시가총액(원 단위). 시세를 못 받았거나 동기화 전이면 null이다. */
+        /**
+         * 종가 기준 시가총액(원 단위). 아직 한 번도 시세가 반영되지 않았으면 null이다.
+         * 최근 동기화에서 시세를 못 받은 종목은 마지막으로 반영된 값이 남는다.
+         */
         private Long marketCapitalization;
         private Long likeCount;
         private LocalDate tradeDate;

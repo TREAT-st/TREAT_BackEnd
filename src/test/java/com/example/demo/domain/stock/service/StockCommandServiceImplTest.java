@@ -182,8 +182,8 @@ class StockCommandServiceImplTest {
         LocalDate tradeDate = LocalDate.of(2026, 8, 2);
 
         var priceResult = stockCommandService.updateStockPrices(List.of(
-                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null),
-                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"), null)
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null, null, null),
+                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"), null, null, null)
         ), tradeDate);
 
         assertThat(priceResult.updatedCount()).isEqualTo(2);
@@ -254,7 +254,7 @@ class StockCommandServiceImplTest {
                 tradeDate,
                 source("005930", "삼성전자"),
                 Set.of(),
-                List.of(new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null)),
+                List.of(new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null, null, null)),
                 List.of()), false);
 
         assertThat(outcome.syncResult().addedCount()).isEqualTo(1);
@@ -274,7 +274,7 @@ class StockCommandServiceImplTest {
                 source("005930", "삼성전자"),
                 Set.of(),
                 List.of(new StockPriceSnapshot("005930",
-                        new BigDecimal("71000"), new BigDecimal("72500"), marketCap)),
+                        new BigDecimal("71000"), new BigDecimal("72500"), marketCap, null, null)),
                 List.of()), false);
 
         assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
@@ -285,6 +285,64 @@ class StockCommandServiceImplTest {
         });
     }
 
+    /**
+     * 등락은 시세와 같은 거래일 기준이어야 한다. 한 번 반영된 뒤 다음 거래일이 오면 함께 바뀐다.
+     * Stock은 전일 종가를 보관하지 않으므로 KRX가 준 값을 그대로 저장한다.
+     */
+    @Test
+    void 등락폭과_등락률도_시세와_같은_거래일로_반영된다() {
+        stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
+                LocalDate.of(2026, 8, 3),
+                source("005930", "삼성전자"),
+                Set.of(),
+                List.of(new StockPriceSnapshot("005930", new BigDecimal("73000"), new BigDecimal("72500"),
+                        null, new BigDecimal("-1200"), new BigDecimal("-1.63"))),
+                List.of()), false);
+
+        assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
+            assertThat(s.getClosePrice()).isEqualByComparingTo("72500");
+            assertThat(s.getPriceChange()).isEqualByComparingTo("-1200");
+            assertThat(s.getChangeRate()).isEqualByComparingTo("-1.63");
+            assertThat(s.getTradeDate()).isEqualTo(LocalDate.of(2026, 8, 3));
+        });
+    }
+
+    /**
+     * 시세를 못 받은 종목은 null로 지워지지 않고 마지막 값이 남는다. 그 대신 tradeDate가 이전 날짜로 남아
+     * 클라이언트가 오래된 값임을 알 수 있다. API 문서가 이 동작을 전제로 쓰여 있다.
+     */
+    @Test
+    void 시세를_못_받은_종목은_마지막_시세와_거래일이_그대로_남는다() {
+        stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
+                LocalDate.of(2026, 8, 3),
+                source("005930", "삼성전자", "000660", "SK하이닉스"),
+                Set.of(),
+                List.of(new StockPriceSnapshot("005930", new BigDecimal("73000"), new BigDecimal("72500"),
+                                432_000_000_000_000L, new BigDecimal("-1200"), new BigDecimal("-1.63")),
+                        new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"),
+                                null, new BigDecimal("3000"), new BigDecimal("1.67"))),
+                List.of()), false);
+
+        // 다음 거래일: 005930만 시세를 못 받음(거래정지 등). 구성종목에는 그대로 있다.
+        stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
+                LocalDate.of(2026, 8, 4),
+                source("005930", "삼성전자", "000660", "SK하이닉스"),
+                Set.of("005930"),
+                List.of(new StockPriceSnapshot("000660", new BigDecimal("183000"), new BigDecimal("185000"),
+                        null, new BigDecimal("2000"), new BigDecimal("1.09"))),
+                List.of("005930")), false);
+
+        assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
+            assertThat(s.getClosePrice()).isEqualByComparingTo("72500");
+            assertThat(s.getPriceChange()).isEqualByComparingTo("-1200");
+            assertThat(s.getChangeRate()).isEqualByComparingTo("-1.63");
+            assertThat(s.getMarketCapitalization()).isEqualTo(432_000_000_000_000L);
+            assertThat(s.getTradeDate()).isEqualTo(LocalDate.of(2026, 8, 3));
+        });
+        assertThat(stockRepository.findByStockCode("000660")).get()
+                .satisfies(s -> assertThat(s.getTradeDate()).isEqualTo(LocalDate.of(2026, 8, 4)));
+    }
+
     @Test
     void 시가총액을_못_받아도_시세는_반영한다() {
         stockCommandService.syncStocksAndPrices(new Kospi200SyncCommand(
@@ -292,7 +350,7 @@ class StockCommandServiceImplTest {
                 source("005930", "삼성전자"),
                 Set.of(),
                 List.of(new StockPriceSnapshot("005930",
-                        new BigDecimal("71000"), new BigDecimal("72500"), null)),
+                        new BigDecimal("71000"), new BigDecimal("72500"), null, null, null)),
                 List.of()), false);
 
         assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
@@ -311,7 +369,7 @@ class StockCommandServiceImplTest {
                 source(stockCode, "삼성전자"),
                 Set.of(),
                 List.of(new StockPriceSnapshot(stockCode,
-                        new BigDecimal("71000"), BigDecimal.valueOf(closePrice), 432_000_000_000_000L)),
+                        new BigDecimal("71000"), BigDecimal.valueOf(closePrice), 432_000_000_000_000L, null, null)),
                 List.of());
     }
 
@@ -413,7 +471,7 @@ class StockCommandServiceImplTest {
                 source("000660", "SK하이닉스"),
                 Set.of(),
                 List.of(new StockPriceSnapshot("000660",
-                        new BigDecimal("1"), new BigDecimal("2"), 1L)),
+                        new BigDecimal("1"), new BigDecimal("2"), 1L, null, null)),
                 List.of()), false))
                 .isInstanceOf(GeneralException.class);
 
@@ -433,8 +491,8 @@ class StockCommandServiceImplTest {
         stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());
 
         var priceResult = stockCommandService.updateStockPrices(List.of(
-                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null),
-                new StockPriceSnapshot("999999", new BigDecimal("1000"), new BigDecimal("1100"), null)
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null, null, null),
+                new StockPriceSnapshot("999999", new BigDecimal("1000"), new BigDecimal("1100"), null, null, null)
         ), LocalDate.of(2026, 8, 2));
 
         assertThat(priceResult.updatedCount()).isEqualTo(1);
@@ -449,8 +507,8 @@ class StockCommandServiceImplTest {
         stockCommandService.syncStocks(source("005930", "삼성전자"), Set.of());   // 000660 편출
 
         var priceResult = stockCommandService.updateStockPrices(List.of(
-                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null),
-                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"), null)
+                new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"), null, null, null),
+                new StockPriceSnapshot("000660", new BigDecimal("180000"), new BigDecimal("183000"), null, null, null)
         ), LocalDate.of(2026, 8, 2));
 
         assertThat(priceResult.updatedCount()).isEqualTo(1);

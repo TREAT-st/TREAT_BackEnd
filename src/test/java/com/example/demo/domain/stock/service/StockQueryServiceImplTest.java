@@ -2,6 +2,7 @@ package com.example.demo.domain.stock.service;
 
 import com.example.demo.common.config.JpaAuditingConfig;
 import com.example.demo.domain.stock.entity.Stock;
+import com.example.demo.domain.stock.entity.StockPriceSnapshot;
 import com.example.demo.domain.stock.entity.StockSortType;
 import com.example.demo.domain.stock.repository.StockRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -64,7 +66,7 @@ class StockQueryServiceImplTest {
                 .stockName(stockName)
                 .likeCount(likeCount)
                 .build();
-        stock.updatePrice(new BigDecimal("1000"), new BigDecimal("1100"), marketCap, TRADE_DATE);
+        stock.updatePrice(new StockPriceSnapshot(stockCode, new BigDecimal("1000"), new BigDecimal("1100"), marketCap, null, null), TRADE_DATE);
         return stock;
     }
 
@@ -140,5 +142,28 @@ class StockQueryServiceImplTest {
         assertThat(stockQueryService.getAllStocks(null, pageSortedBy(StockSortType.MARKET_CAP)))
                 .extracting(Stock::getStockCode)
                 .containsExactly("000660", "005930", "035720");
+    }
+
+    // ---------- 종목코드 일괄 조회 (관심종목에 시세를 붙일 때) ----------
+
+    /** 관심종목은 편출 뒤에도 남아 있을 수 있다. 활성 종목만 가져오면 그 종목의 시세가 사라진다. */
+    @Test
+    void 종목코드로_조회하면_편출_종목도_포함한다() {
+        assertThat(stockQueryService.getStocksByCodes(Set.of("005930", "000660")))
+                .containsOnlyKeys("005930", "000660")
+                .hasEntrySatisfying("000660", s -> assertThat(s.getIsActive()).isFalse());
+    }
+
+    /** FavoriteStock.stockCode는 FK가 아니라 stock에 없는 코드가 올 수 있다. 예외 없이 빠져야 한다. */
+    @Test
+    void stock에_없는_코드는_결과에서_빠진다() {
+        assertThat(stockQueryService.getStocksByCodes(Set.of("005930", "999999")))
+                .containsOnlyKeys("005930");
+    }
+
+    /** 관심종목이 없는 사용자. 빈 IN 쿼리는 DB에 따라 문법 오류가 나므로 조회 자체를 하지 않는다. */
+    @Test
+    void 빈_목록이면_빈_결과를_돌려준다() {
+        assertThat(stockQueryService.getStocksByCodes(Set.of())).isEmpty();
     }
 }
