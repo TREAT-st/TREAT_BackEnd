@@ -13,22 +13,24 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static com.example.demo.common.consts.StaticVariable.CALLBACK_SECRET_HEADER;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 
 @Tag(name = "[변동성 종목 페이지] 변동성 종목 API")
+@Validated
 @RestController
 @RequestMapping("/api/v1/volatility")
 @RequiredArgsConstructor
 public class VolatilityController {
-
-    private static final String CALLBACK_SECRET_HEADER = "X-Callback-Secret";
 
     private final VolatilityUseCase volatilityUseCase;
 
@@ -82,15 +84,22 @@ public class VolatilityController {
         }
     }
 
-    @Operation(summary = "특정 날짜의 변동성 종목 전체 조회", description = "특정 날짜에 생성된 변동성 종목 전체를 조회합니다. 날짜 입력 형식은 \"yyyy-mm-dd\"입니다.")
+    @Operation(summary = "특정 날짜의 변동성 종목 전체 조회", description = "특정 거래일에 탐지된 변동성 종목 전체를 조회합니다. 날짜 입력 형식은 \"yyyy-MM-dd\"입니다.<br>" +
+            "· 기록 있음 → 200, 목록<br>" +
+            "· 배치가 탐지했지만 알림 대상이 0건인 거래일 → 200, 빈 목록 (조용한 장세의 정상 결과)<br>" +
+            "· 오늘 또는 미래 날짜 → 400(4310). 탐지는 장이 끝난 직전 거래일 기준입니다<br>" +
+            "· 그 외 → 404(4308). 주말·공휴일 등 휴장일이거나 아직 탐지하지 않은 날짜이며, 둘은 구분하지 않습니다<br>" +
+            "수동 탐지(/detect)로 0건이 나온 날짜는 이력이 남지 않아 404로 응답합니다.")
     @GetMapping("/volatility-by-date")
     public ApiResponseDto<VolatilityListResponse> getAllVolatilityByDate(@RequestParam LocalDate date) {
         return ApiResponseDto.onSuccess(volatilityUseCase.getAllVolatilityByDate(date));
     }
 
-    @Operation(summary = "종목 코드로 변동성 전체 조회", description = "종목 코드로 해당 종목의 변동성 기록 전체를 조회합니다.")
+    @Operation(summary = "종목 코드로 변동성 전체 조회", description = "종목 코드로 해당 종목의 변동성 기록 전체를 최신 거래일 순으로 조회합니다.<br>" +
+            "종목코드가 6자리 숫자가 아니면 400, 변동성 상위 종목으로 선정된 적이 없는 종목이면 404(4309)를 반환합니다.")
     @GetMapping("/{stockCode}")
-    public ApiResponseDto<VolatilityListResponse> getVolatilityByStockCode(@PathVariable String stockCode) {
+    public ApiResponseDto<VolatilityListResponse> getVolatilityByStockCode(
+            @PathVariable @Pattern(regexp = "\\d{6}", message = "종목코드는 6자리 숫자입니다.") String stockCode) {
         return ApiResponseDto.onSuccess(volatilityUseCase.getAllVolatilityByCode(stockCode));
     }
 }

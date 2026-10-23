@@ -24,6 +24,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import static com.example.demo.common.consts.StaticVariable.AUTHORIZATION;
+import static com.example.demo.common.consts.StaticVariable.HEALTH_CHECK_ENDPOINT;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -62,7 +65,7 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",
-                                "/api/v1/test/health-check"
+                                HEALTH_CHECK_ENDPOINT
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
                         // S3 이벤트로 트리거되는 Lambda가 호출하는 콜백. JWT 대신 X-Callback-Secret 헤더로 검증한다.
@@ -91,7 +94,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(allowedOrigins.split(","))); // yml에서 읽은 프론트 주소만 허용
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*")); // 모든 헤더 허용
-        config.setExposedHeaders(List.of("Authorization"));  // 프론트에서 Authorization 헤더 읽을 수 있도록
+        config.setExposedHeaders(List.of(AUTHORIZATION));  // 프론트에서 Authorization 헤더 읽을 수 있도록
         config.setAllowCredentials(true);  // API 요청에 대해 CORS를 허용하도록 설정, Cookie(RefreshToken) 전송 허용 // 추후 프론트에서 요청을 할 때 withCredentials를 true로 header에 담아서 요청
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

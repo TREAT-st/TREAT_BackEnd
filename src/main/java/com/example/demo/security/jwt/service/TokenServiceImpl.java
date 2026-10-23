@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
 
+import static com.example.demo.common.consts.StaticVariable.GRANT_TYPE_BEARER;
+
 @Slf4j
 @Service
 public class TokenServiceImpl implements TokenService{
@@ -102,7 +104,6 @@ public class TokenServiceImpl implements TokenService{
 
         // Access Token 생성
         Date accessTokenExpiresIn = new Date(now + 1800000);   // 30분
-        log.info("date = {}", accessTokenExpiresIn);
         String accessToken = Jwts.builder()
                 .setSubject(authentication.getName())
                 .claim("auth", authorities)
@@ -121,7 +122,7 @@ public class TokenServiceImpl implements TokenService{
         redisService.setValue(refreshToken, authentication.getName());
 
         return JwtToken.builder()
-                .grantType("Bearer")
+                .grantType(GRANT_TYPE_BEARER)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .code_expire(parseExpiration(accessToken))

@@ -2,21 +2,20 @@ package com.example.demo.api.batch.controller;
 
 import com.example.demo.api.batch.dto.BatchResponseDto.BatchExecutionListResponse;
 import com.example.demo.api.batch.dto.BatchResponseDto.DailyBatchTriggerResponse;
-import com.example.demo.api.common.dto.ApiResponseDto;
 import com.example.demo.api.batch.service.BatchUseCase;
+import com.example.demo.api.common.dto.ApiResponseDto;
 import com.example.demo.common.exception.GeneralException;
 import com.example.demo.domain.batch.entity.BatchExecutionLog;
 import com.example.demo.domain.batch.entity.BatchStatus;
 import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.exception.BatchErrorStatus;
 import com.example.demo.domain.batch.service.BatchExecutionLogService;
-import org.junit.jupiter.api.BeforeEach;
+import com.example.demo.security.batch.BatchSecretVerifier;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,12 +40,8 @@ class BatchControllerTest {
     private final BatchUseCase useCase = Mockito.mock(BatchUseCase.class);
     private final BatchExecutionLogService logService = Mockito.mock(BatchExecutionLogService.class);
 
-    private final BatchController controller = new BatchController(useCase, logService);
-
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(controller, "triggerSecret", SECRET);
-    }
+    private final BatchController controller =
+            new BatchController(useCase, logService, new BatchSecretVerifier(SECRET));
 
     @Test
     void 시크릿이_없으면_거부한다() {

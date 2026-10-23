@@ -22,8 +22,9 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
+
+import static com.example.demo.common.consts.StaticVariable.SEOUL_ZONE;
 
 @Slf4j
 @UseCase
@@ -104,7 +105,7 @@ public class PredictionUseCase {
     }
 
     private LocalDateTime calcMaturityAt(PredictionDuration duration) {
-        LocalDate base = LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(duration.getDays());
+        LocalDate base = LocalDate.now(SEOUL_ZONE).plusDays(duration.getDays());
         DayOfWeek dow = base.getDayOfWeek();
         if (dow == DayOfWeek.SATURDAY) {
             base = base.plusDays(2); // 토 → 월

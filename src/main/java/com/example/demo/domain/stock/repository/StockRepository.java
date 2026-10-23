@@ -16,6 +16,11 @@ import java.util.Optional;
 public interface StockRepository extends JpaRepository<Stock, Long> {
     Optional<Stock> findByStockCode(String stockCode);
     List<Stock> findAllByStockCodeInAndIsActiveTrue(Collection<String> stockCodes);
+    List<Stock> findAllByStockCodeIn(Collection<String> stockCodes);
+
+    /** 백필 대상. 엔티티 전체가 아니라 코드만 읽는다. 편출 종목도 포함한다(관심종목 차트용). */
+    @Query("select s.stockCode from Stock s order by s.stockCode")
+    List<String> findAllStockCodes();
     Page<Stock> findAllByIsActive(Boolean isActive, Pageable pageable);
 
     @Query("select max(s.tradeDate) from Stock s")

@@ -1,24 +1,20 @@
 package com.example.demo.domain.volatility.service;
 
-import com.example.demo.api.krx.dto.KrxOhlcvResponseDto;
-import com.example.demo.api.krx.service.KrxService;
+import com.example.demo.domain.volatility.entity.MarketOhlcv;
 import com.example.demo.domain.volatility.entity.VolatilityDetectionResult;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
 import com.example.demo.domain.volatility.exception.VolatilityHandler;
+import com.example.demo.domain.volatility.port.MarketOhlcvPort;
 import com.example.demo.domain.volatility.util.VolatilityAlertEvaluator;
 import com.example.demo.domain.volatility.util.VolatilityIndicatorCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 @Slf4j
 @Service
@@ -41,26 +37,22 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
      */
     private static final double MIN_ANALYZED_RATIO = 0.8;
 
-    /** STRICT 해석이라 존재하지 않는 날짜를 보정 없이 거부한다. STRICT에서는 yyyy가 아니라 uuuu다. */
-    private static final DateTimeFormatter TRADE_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
-
-    private final KrxService krxService;
+    private final MarketOhlcvPort marketOhlcvPort;
 
     @Override
     public VolatilityDetectionResult detect(int topN) {
-        KrxOhlcvResponseDto response = krxService.getTopMarketCapOhlcv(topN);
+        MarketOhlcv market = marketOhlcvPort.getTopMarketCapOhlcv(topN);
 
         List<VolatilitySignal> signals = new ArrayList<>();
-        for (KrxOhlcvResponseDto.StockOhlcv stock : response.getStocks()) {
+        for (MarketOhlcv.StockSeries stock : market.stocks()) {
             try {
                 signals.add(analyze(stock));
             } catch (Exception e) {
-                log.warn("변동성 분석 실패, 종목 스킵. stockCode={}, reason={}", stock.getStockCode(), e.getMessage());
+                log.warn("변동성 분석 실패, 종목 스킵. stockCode={}, reason={}", stock.stockCode(), e.getMessage());
             }
         }
 
-        int received = response.getStocks().size();
+        int received = market.stocks().size();
         int skipped = received - signals.size();
         if (skipped > 0) {
             log.warn("변동성 분석 스킵 {}건 / 수신 {}건 (요청 {}건)", skipped, received, topN);
@@ -73,8 +65,8 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
         }
 
         return new VolatilityDetectionResult(
-                resolveTradeDate(response.getEffectiveTradeDate()),
-                resolveUniverseSize(response.getUniverseSize(), received),
+                market.tradeDate(),
+                resolveUniverseSize(market.universeSize(), received),
                 signals);
     }
 
@@ -86,15 +78,6 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
                         (VolatilitySignal s) -> combinedScore(s, universeSize)).reversed())
                 .limit(topN)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 거래일은 KRX 응답을 기준으로 삼는다. 서버 날짜로 대체하면 휴장일이나 응답 오류일 때
-     * 실제 거래일과 다른 Volatility와 리포트가 만들어지므로, 대체하지 않고 실패시킨다.
-     * 값의 존재와 형식은 KrxService가 경계에서 이미 검증했다.
-     */
-    private LocalDate resolveTradeDate(String effectiveTradeDate) {
-        return LocalDate.parse(effectiveTradeDate, TRADE_DATE_FORMATTER);
     }
 
     /**
@@ -121,15 +104,15 @@ public class VolatilityDetectionServiceImpl implements VolatilityDetectionServic
         return COMBINED_SCORE_WEIGHT * signal.score() + MARKET_CAP_WEIGHT * clamped;
     }
 
-    private VolatilitySignal analyze(KrxOhlcvResponseDto.StockOhlcv stock) {
+    private VolatilitySignal analyze(MarketOhlcv.StockSeries stock) {
         VolatilityIndicatorCalculator.IndicatorSnapshot snapshot = VolatilityIndicatorCalculator.calculate(
-                stock.getClose(), stock.getHigh(), stock.getLow(), stock.getVolume());
+                stock.close(), stock.high(), stock.low(), stock.volume());
         VolatilityAlertEvaluator.AlertResult alertResult = VolatilityAlertEvaluator.evaluate(snapshot);
 
         return new VolatilitySignal(
-                stock.getStockCode(),
-                stock.getStockName(),
-                stock.getMarketCapRank(),
+                stock.stockCode(),
+                stock.stockName(),
+                stock.marketCapRank(),
                 snapshot.dailyReturnPct(),
                 snapshot.intradayRangePct(),
                 snapshot.vol20AnnualizedPct(),

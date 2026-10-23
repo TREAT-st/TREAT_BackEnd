@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
+import static com.example.demo.common.consts.StaticVariable.BEARER;
+
 @Slf4j
 @Tag(name = "OAuth2 API", description = "소셜 로그인 API")
 @RestController
@@ -60,7 +62,7 @@ public class OAuthController {
     public ApiResponseDto<AccessTokenResponse> exchangeToken(@RequestBody AuthCodeRequest request,
                                                              HttpServletResponse response) {
         JwtToken jwtToken = tokenService.issueTokensByAuthCode(request.getCode());
-        response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken.getAccessToken());
+        response.setHeader(HttpHeaders.AUTHORIZATION, BEARER + jwtToken.getAccessToken());
         return ApiResponseDto.onSuccess(new AccessTokenResponse(jwtToken.getAccessToken(), jwtToken.getRefreshToken()));
     }
 }

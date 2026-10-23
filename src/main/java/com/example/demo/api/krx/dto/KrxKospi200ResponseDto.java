@@ -48,6 +48,14 @@ public class KrxKospi200ResponseDto {
         @JsonProperty("marketCap")
         private Long marketCap;
 
+        /** 직전 거래일 종가 대비 등락폭(원). 부호 있음. 시세가 있어도 이것만 없을 수 있다. */
+        @JsonProperty("priceChange")
+        private BigDecimal priceChange;
+
+        /** 직전 거래일 종가 대비 등락률(%). 부호 있음. */
+        @JsonProperty("changeRate")
+        private BigDecimal changeRate;
+
         public boolean hasPrice() {
             return openPrice != null && closePrice != null;
         }

@@ -3,6 +3,7 @@ package com.example.demo.domain.batch.service;
 import com.example.demo.domain.batch.entity.BatchExecutionLog;
 import com.example.demo.domain.batch.entity.BatchExecutionRef;
 import com.example.demo.domain.batch.entity.BatchStartResult;
+import com.example.demo.domain.batch.entity.BatchStatus;
 import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.repository.BatchExecutionLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.example.demo.common.consts.StaticVariable.NO_DETECTED_STOCK;
 
 /**
  * 실행 이력 API.
@@ -83,6 +86,15 @@ public class BatchExecutionLogServiceImpl implements BatchExecutionLogService {
     public Optional<LocalDate> getLatestTradeDate() {
         return batchExecutionLogRepository.findFirstByOrderByStartedAtDescIdDesc()
                 .map(BatchExecutionLog::getTradeDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isDetectedWithNoStock(LocalDate tradeDate) {
+        return batchExecutionLogRepository.findByTradeDateAndStep(tradeDate, BatchStep.REPORT)
+                .filter(report -> report.getStatus() == BatchStatus.SKIPPED)
+                .filter(report -> NO_DETECTED_STOCK.equals(report.getMessage()))
+                .isPresent();
     }
 
     /**

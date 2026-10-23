@@ -12,7 +12,6 @@ import com.example.demo.domain.volatility.entity.VolatilityDetectionResult;
 import com.example.demo.domain.volatility.exception.VolatilityHandler;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
 import com.example.demo.domain.volatility.service.VolatilityDetectionService;
-import com.example.demo.domain.batch.entity.BatchStep;
 import com.example.demo.domain.batch.service.BatchExecutionLogService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
@@ -22,12 +21,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.demo.common.consts.StaticVariable.YYYYMMDD_FORMATTER;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
@@ -44,14 +42,6 @@ public class VolatilityUseCase {
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
     private final BatchExecutionLogService batchExecutionLogService;
-
-    /**
-     * yyyyMMdd. 기본 SMART 해석은 20260231 같은 날짜를 2월 말로 보정해버려서,
-     * 콜백이 엉뚱한 거래일의 행을 갱신할 수 있다. STRICT로 거부한다.
-     * STRICT에서는 연도 필드로 yyyy(연호 기준) 대신 uuuu(proleptic)를 써야 한다.
-     */
-    private static final DateTimeFormatter REPORT_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
 
     /** KRX Lambda에 요청할 시총 상위 종목 수. */
     private static final int DETECTION_REQUEST_SIZE = 100;
@@ -117,12 +107,6 @@ public class VolatilityUseCase {
         }
 
         LocalDate tradeDate = targets.get(0).getTradeDate();
-        LocalDate today = LocalDate.now(SEOUL_ZONE);
-        if (!tradeDate.isEqual(today)) {
-            log.warn("가장 최근 탐지 결과가 오늘이 아닙니다. 해당 거래일 기준으로 생성합니다. tradeDate={}, today={}",
-                    tradeDate, today);
-        }
-
         return generateReports(request, targets, tradeDate);
     }
 
@@ -148,7 +132,7 @@ public class VolatilityUseCase {
      */
     private ReportGenerationResult generateReports(ReportGenerationRequest request,
                                                    List<Volatility> targets, LocalDate tradeDate) {
-        String reportDate = tradeDate.format(REPORT_DATE_FORMATTER);
+        String reportDate = tradeDate.format(YYYYMMDD_FORMATTER);
 
         List<String> failedStockCodes = new ArrayList<>();
         for (Volatility v : targets) {
@@ -171,7 +155,7 @@ public class VolatilityUseCase {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void runSingleReportGeneration(SingleReportRequest request) {
         Volatility target = volatilityQueryService.getLatestByStockCode(request.getStockCode());
-        String reportDate = target.getTradeDate().format(REPORT_DATE_FORMATTER);
+        String reportDate = target.getTradeDate().format(YYYYMMDD_FORMATTER);
 
         invokeReportJob(reportDate, target.getStockCode(), request.getStockName(), request.getGptModel());
     }
@@ -213,7 +197,7 @@ public class VolatilityUseCase {
     public void handleReportCallback(ReportCallback request) {
         LocalDate tradeDate;
         try {
-            tradeDate = LocalDate.parse(request.getReportDate(), REPORT_DATE_FORMATTER);
+            tradeDate = LocalDate.parse(request.getReportDate(), YYYYMMDD_FORMATTER);
         } catch (DateTimeParseException e) {
             throw VolatilityHandler.reportCallbackInvalidRequest();
         }
@@ -228,13 +212,46 @@ public class VolatilityUseCase {
         batchExecutionLogService.completeVerification(tradeDate, VERIFY_ALL_REPORTS_ARRIVED);
     }
 
+    /**
+     * 기록이 없을 때 이유를 나눠서 알린다.
+     *
+     *   기록 있음                       → 200 + 목록
+     *   배치가 탐지했는데 0건           → 200 + 빈 목록 (조용한 장세의 정상 결과다)
+     *   날짜 ≥ 오늘                     → 400/4310 (탐지는 직전 거래일 기준이라 아직 대상이 아니다)
+     *   그 외(휴장일, 탐지 안 함)       → 404/4308
+     *
+     * 0건이면 volatility에 아무것도 저장되지 않아 DB만으로는 휴장일과 구분이 안 된다.
+     * 그래서 배치 실행 이력을 근거로 삼는다. 수동 /detect는 이력을 남기지 않으므로 그 경로의 0건은 404로 나간다.
+     * 휴장일과 "탐지 안 함"은 휴장일 달력이 없어 나누지 않는다.
+     *
+     * 기록 유무를 먼저 본다. 날짜만 보고 먼저 거절하면, 실제로 저장된 데이터가 있어도 내보내지 못한다.
+     *
+     * 조회 서비스(getByTradeDate)는 그대로 빈 목록을 돌려준다. 배치가 그 빈 목록으로
+     * "리포트 대상 없음"을 판정하므로, 예외는 API 경로인 여기서만 던진다.
+     */
     @Transactional(readOnly = true)
     public VolatilityListResponse getAllVolatilityByDate(LocalDate date) {
-        return VolatilityConverter.toVolatilityListResponse(volatilityQueryService.getByTradeDate(date));
+        List<Volatility> volatilities = volatilityQueryService.getByTradeDate(date);
+        if (!volatilities.isEmpty()) {
+            return VolatilityConverter.toVolatilityListResponse(volatilities);
+        }
+
+        if (!date.isBefore(LocalDate.now(SEOUL_ZONE))) {
+            throw VolatilityHandler.dateNotYetDetectable();
+        }
+        if (batchExecutionLogService.isDetectedWithNoStock(date)) {
+            return VolatilityConverter.toVolatilityListResponse(List.of());
+        }
+        throw VolatilityHandler.volatilityNotFoundByDate();
     }
 
     @Transactional(readOnly = true)
     public VolatilityListResponse getAllVolatilityByCode(String stockCode) {
-        return VolatilityConverter.toVolatilityListResponse(volatilityQueryService.getAllVolatilityByCode(stockCode));
+        // 날짜별 조회와 같은 이유로 빈 200 대신 404로 알린다.
+        List<Volatility> volatilities = volatilityQueryService.getAllVolatilityByCode(stockCode);
+        if (volatilities.isEmpty()) {
+            throw VolatilityHandler.volatilityNotFoundByStockCode();
+        }
+        return VolatilityConverter.toVolatilityListResponse(volatilities);
     }
 }

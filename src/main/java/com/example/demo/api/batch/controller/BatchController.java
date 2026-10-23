@@ -5,13 +5,12 @@ import com.example.demo.api.batch.dto.BatchResponseDto.DailyBatchTriggerResponse
 import com.example.demo.api.batch.mapper.BatchConverter;
 import com.example.demo.api.batch.service.BatchUseCase;
 import com.example.demo.api.common.dto.ApiResponseDto;
-import com.example.demo.domain.batch.exception.BatchHandler;
 import com.example.demo.domain.batch.service.BatchExecutionLogService;
+import com.example.demo.security.batch.BatchSecretVerifier;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDate;
 
 import static com.example.demo.common.consts.StaticVariable.BATCH_SECRET_HEADER;
@@ -37,13 +34,7 @@ public class BatchController {
 
     private final BatchUseCase batchUseCase;
     private final BatchExecutionLogService batchExecutionLogService;
-
-    /**
-     * 리포트 콜백 시크릿과 다른 값이다.
-     * 콜백 시크릿은 S3 이벤트 Lambda가 쓰고 이건 배치 트리거가 쓴다. 하나가 새도 다른 하나는 살아 있어야 한다.
-     */
-    @Value("${batch.trigger.secret}")
-    private String triggerSecret;
+    private final BatchSecretVerifier batchSecretVerifier;
 
     @Operation(summary = "일일 배치 실행 요청", description =
             "코스피200 동기화 → 변동성 탐지 → 리포트 생성 요청을 순서대로 실행합니다.<br>" +
@@ -56,7 +47,7 @@ public class BatchController {
     public ResponseEntity<ApiResponseDto<DailyBatchTriggerResponse>> triggerDailyExecution(
             @RequestHeader(value = BATCH_SECRET_HEADER, required = false) String secret,
             @RequestParam(defaultValue = "false") boolean force) {
-        verifyTriggerSecret(secret);
+        batchSecretVerifier.verify(secret);
 
         try {
             batchUseCase.runDailyBatchAsync(force);
@@ -79,7 +70,7 @@ public class BatchController {
 
     @Operation(summary = "일일 배치 실행 상태 조회", description =
             "해당 거래일의 단계별 실행 상태를 실행 순서대로 조회합니다. 날짜 형식은 \"yyyy-MM-dd\"입니다.<br>" +
-                    "배치는 실행일이 아니라 직전 거래일을 처리합니다(예: 화요일 새벽 실행 → 월요일 거래일).<br>" +
+                    "배치는 실행일이 아니라 직전 거래일을 처리합니다(예: 화요일 실행 → 월요일 거래일).<br>" +
                     "tradeDate를 비우면 가장 최근에 시작된 배치의 거래일로 조회합니다. " +
                     "실행 요청 직후에는 거래일을 알 수 없으므로 비워서 부르면 됩니다.<br>" +
                     "VERIFY가 RUNNING인 것은 정상입니다. 리포트 도착 확인은 콜백이 도착해야 끝납니다.<br>" +
@@ -91,7 +82,7 @@ public class BatchController {
     public ApiResponseDto<BatchExecutionListResponse> getDailyExecutions(
             @RequestHeader(value = BATCH_SECRET_HEADER, required = false) String secret,
             @RequestParam(required = false) LocalDate tradeDate) {
-        verifyTriggerSecret(secret);
+        batchSecretVerifier.verify(secret);
 
         // 실행 요청은 거래일을 모른 채 접수된다(KRX가 알려주기 전이다).
         // 그래서 호출자가 조회 시점에도 날짜를 모를 수 있어, 비우면 가장 최근 실행의 거래일로 본다.
@@ -103,14 +94,5 @@ public class BatchController {
 
         return ApiResponseDto.onSuccess(BatchConverter.toBatchExecutionListResponse(
                 target, batchExecutionLogService.getByTradeDate(target)));
-    }
-
-    /** 길이가 달라도 시간이 새지 않도록 상수시간 비교를 쓴다. */
-    private void verifyTriggerSecret(String secret) {
-        if (secret == null || !MessageDigest.isEqual(
-                secret.getBytes(StandardCharsets.UTF_8),
-                triggerSecret.getBytes(StandardCharsets.UTF_8))) {
-            throw BatchHandler.triggerUnauthorized();
-        }
     }
 }

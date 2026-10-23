@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
+import static com.example.demo.common.consts.StaticVariable.BEARER;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -28,9 +30,9 @@ public class RedisService {
     }
 
     public void deleteValue(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
+        if (token != null && token.startsWith(BEARER)) {
             // "Bearer " 접두사 제거
-            token = token.substring(7);
+            token = token.substring(BEARER.length());
         }
         redisTemplate.delete(token);
     }

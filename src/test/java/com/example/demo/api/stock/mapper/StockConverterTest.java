@@ -87,4 +87,30 @@ class StockConverterTest {
 
         assertThat(StockConverter.toKospi200SyncCommand(response).errorCodes()).isEmpty();
     }
+
+    /** 하락은 음수로 온다. 부호를 잃으면 상승·하락이 뒤집혀 보인다. */
+    @Test
+    void 등락폭과_등락률이_부호와_함께_스냅샷에_실린다() throws Exception {
+        KrxKospi200ResponseDto response = objectMapper.readValue("""
+                { "tradeDate": "20260810", "requestedCount": 1,
+                  "stocks": [ { "stockCode": "005930", "stockName": "삼성전자",
+                                "openPrice": 73000, "closePrice": 72500,
+                                "priceChange": -1200, "changeRate": -1.63 } ] }
+                """, KrxKospi200ResponseDto.class);
+
+        StockPriceSnapshot snapshot = StockConverter.toKospi200SyncCommand(response).priceSnapshots().get(0);
+
+        assertThat(snapshot.priceChange()).isEqualByComparingTo("-1200");
+        assertThat(snapshot.changeRate()).isEqualByComparingTo("-1.63");
+    }
+
+    /** 등락을 아직 내려주지 않는 Lambda와도 호환돼야 한다. 시세 반영 자체를 막으면 안 된다. */
+    @Test
+    void 등락이_없는_응답도_시세는_반영된다() throws Exception {
+        StockPriceSnapshot snapshot = convert().priceSnapshots().get(0);
+
+        assertThat(snapshot.closePrice()).isEqualByComparingTo("72500");
+        assertThat(snapshot.priceChange()).isNull();
+        assertThat(snapshot.changeRate()).isNull();
+    }
 }

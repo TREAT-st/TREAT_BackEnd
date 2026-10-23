@@ -21,6 +21,10 @@ public class KrxHandler extends GeneralException {
         return new KrxHandler(KrxErrorStatus.KRX_LAMBDA_EXECUTION_ERROR);
     }
 
+    public static KrxHandler krxLambdaResponseMismatch() {
+        return new KrxHandler(KrxErrorStatus.KRX_LAMBDA_RESPONSE_MISMATCH);
+    }
+
     public static KrxHandler krxLambdaResponseParseError() {
         return new KrxHandler(KrxErrorStatus.KRX_LAMBDA_RESPONSE_PARSE_ERROR);
     }

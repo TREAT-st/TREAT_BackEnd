@@ -15,12 +15,12 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+
+import static com.example.demo.common.consts.StaticVariable.YYYYMMDD_FORMATTER;
 
 /**
  * 리포트는 만들어졌는데 콜백만 유실된 경우를 S3에서 찾아 메운다.
@@ -36,10 +36,6 @@ import java.util.Optional;
 public class ReportUrlRecoverer {
 
     private static final String KEY_SUFFIX = "_analysis.html";
-
-    /** STRICT 해석이라 존재하지 않는 날짜를 보정 없이 거부한다. STRICT에서는 yyyy가 아니라 uuuu다. */
-    private static final DateTimeFormatter REPORT_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
 
     private final S3Client s3Client;
     private final VolatilityQueryService volatilityQueryService;
@@ -63,7 +59,7 @@ public class ReportUrlRecoverer {
             return new RecoveryResult(0, 0);
         }
 
-        String suffix = "_" + tradeDate.format(REPORT_DATE_FORMATTER) + KEY_SUFFIX;
+        String suffix = "_" + tradeDate.format(YYYYMMDD_FORMATTER) + KEY_SUFFIX;
         int recovered = 0;
         int lookupFailures = 0;
 

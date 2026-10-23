@@ -57,6 +57,7 @@ krx:
   lambda:
     function-name: ${KRX_LAMBDA_FUNCTION_NAME:krxOhlcvFetcher}
     kospi200-function-name: ${KRX_KOSPI200_LAMBDA_FUNCTION_NAME:GetOpenAndClosePriceFromKrx}
+    daily-price-function-name: ${KRX_DAILY_PRICE_LAMBDA_FUNCTION_NAME:GetDailyPricesFromKrx}
 
 report:
   lambda:

@@ -1,6 +1,9 @@
 package com.example.demo.common.exception;
 
 import com.example.demo.api.common.dto.ApiResponseDto;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +64,41 @@ public class ExceptionAdvice {
                         reason.getMessage(),
                         fieldErrors
                 ));
+    }
+
+    /**
+     * @Validated 컨트롤러의 파라미터 검증 실패(@PathVariable·@RequestParam의 @Pattern, @Min, @Max 등).
+     *
+     * 이 핸들러가 없으면 아래 catch-all로 빠져 500이 된다. ConstraintViolationException은
+     * Spring MVC의 ErrorResponse가 아니라서 상태코드 보존 분기에도 걸리지 않는다.
+     * 본문 검증(@Valid @RequestBody)과 같은 모양으로 파라미터 이름별 사유를 result에 담는다.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponseDto<?>> handleConstraintViolation(ConstraintViolationException e) {
+        Map<String, String> violations = new LinkedHashMap<>();
+        for (ConstraintViolation<?> violation : e.getConstraintViolations()) {
+            violations.merge(parameterName(violation), violation.getMessage(),
+                    (existing, added) -> existing + ", " + added);
+        }
+
+        Reason reason = ErrorStatus._BAD_REQUEST.getReasonHttpStatus();
+
+        return ResponseEntity
+                .status(reason.getHttpStatus())
+                .body(ApiResponseDto.onFailure(
+                        reason.getCode(),
+                        reason.getMessage(),
+                        violations
+                ));
+    }
+
+    /** 경로는 "메서드명.파라미터명" 형태다. 클라이언트에게는 파라미터명만 의미가 있다. */
+    private String parameterName(ConstraintViolation<?> violation) {
+        String name = null;
+        for (Path.Node node : violation.getPropertyPath()) {
+            name = node.getName();
+        }
+        return name != null ? name : violation.getPropertyPath().toString();
     }
 
     /**

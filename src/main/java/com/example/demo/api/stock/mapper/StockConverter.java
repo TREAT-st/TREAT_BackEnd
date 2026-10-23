@@ -12,11 +12,12 @@ import com.example.demo.domain.stock.entity.StockSyncOutcome;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.example.demo.common.consts.StaticVariable.YYYYMMDD_FORMATTER;
 
 public class StockConverter {
 
@@ -39,7 +40,8 @@ public class StockConverter {
         List<StockPriceSnapshot> priceSnapshots = response.getStocks().stream()
                 .filter(KrxKospi200ResponseDto.StockPrice::hasPrice)
                 .map(s -> new StockPriceSnapshot(
-                        s.getStockCode(), s.getOpenPrice(), s.getClosePrice(), s.getMarketCap()))
+                        s.getStockCode(), s.getOpenPrice(), s.getClosePrice(), s.getMarketCap(),
+                        s.getPriceChange(), s.getChangeRate()))
                 .toList();
 
         List<String> priceUnavailableStockCodes = response.getStocks().stream()
@@ -49,7 +51,7 @@ public class StockConverter {
                 .toList();
 
         return new Kospi200SyncCommand(
-                LocalDate.parse(response.getTradeDate(), DateTimeFormatter.BASIC_ISO_DATE),
+                LocalDate.parse(response.getTradeDate(), YYYYMMDD_FORMATTER),
                 incomingStocks, errorCodes, priceSnapshots, priceUnavailableStockCodes);
     }
 
@@ -88,6 +90,9 @@ public class StockConverter {
         return StockItemResponse.builder()
                 .stockCode(stock.getStockCode())
                 .stockName(stock.getStockName())
+                .currentPrice(stock.getClosePrice())
+                .priceChange(stock.getPriceChange())
+                .changeRate(stock.getChangeRate())
                 .marketCapitalization(stock.getMarketCapitalization())
                 .likeCount(stock.getLikeCount())
                 .tradeDate(stock.getTradeDate())

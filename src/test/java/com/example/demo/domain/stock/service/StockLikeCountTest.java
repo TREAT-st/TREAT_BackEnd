@@ -156,8 +156,8 @@ class StockLikeCountTest {
         stockCommandService.increaseLikeCount("005930");
 
         // 동기화가 시세를 반영하고 flush
-        loaded.updatePrice(new BigDecimal("71000"), new BigDecimal("72500"),
-                432_000_000_000_000L, LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1));
+        loaded.updatePrice(new StockPriceSnapshot("005930", new BigDecimal("71000"), new BigDecimal("72500"),
+                432_000_000_000_000L, null, null), LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1));
         em.flush();
 
         assertThat(likeCountOf("005930")).isEqualTo(1L);
@@ -177,7 +177,7 @@ class StockLikeCountTest {
                 Map.of("005930", "삼성전자"),
                 Set.of(),
                 List.of(new StockPriceSnapshot("005930",
-                        new BigDecimal("71000"), new BigDecimal("72500"), 432_000_000_000_000L)),
+                        new BigDecimal("71000"), new BigDecimal("72500"), 432_000_000_000_000L, null, null)),
                 List.of()), false);
 
         assertThat(stockRepository.findByStockCode("005930")).get().satisfies(s -> {
