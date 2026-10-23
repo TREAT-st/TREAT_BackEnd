@@ -30,7 +30,6 @@ public class FavoriteStockCommandServiceImpl implements FavoriteStockCommandServ
         favoriteStock.updateAlertEnabled(isEnabled);
     }
 
-    //  TODO: hard
     @Override
     public void deleteFavoriteStock(Long favoriteStockId) {
         favoriteStockRepository.deleteById(favoriteStockId);

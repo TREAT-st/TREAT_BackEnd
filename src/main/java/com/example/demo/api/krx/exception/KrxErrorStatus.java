@@ -22,7 +22,10 @@ public enum KrxErrorStatus implements BaseErrorCode {
     @ExplainError("Lambda는 호출됐으나 함수 내부에서 예외가 발생했습니다. Lambda 로그를 확인하세요.")
     KRX_LAMBDA_EXECUTION_ERROR(HttpStatus.BAD_GATEWAY, 4402, "KRX 종목 조회 Lambda 실행 중 오류가 발생했습니다."),
     @ExplainError("Lambda 응답 형식이 KrxOhlcvResponseDto와 맞지 않습니다. 양쪽 계약을 확인하세요.")
-    KRX_LAMBDA_RESPONSE_PARSE_ERROR(HttpStatus.BAD_GATEWAY, 4403, "KRX 종목 조회 Lambda 응답을 해석하지 못했습니다.");
+    KRX_LAMBDA_RESPONSE_PARSE_ERROR(HttpStatus.BAD_GATEWAY, 4403, "KRX 종목 조회 Lambda 응답을 해석하지 못했습니다."),
+    @ExplainError("Lambda 응답이 요청과 맞지 않습니다. 요청한 날짜·기간과 응답의 날짜·기간이 다르거나, "
+            + "휴장일이라면서 시세가 들어 있는 등 응답이 스스로 모순됩니다. 다른 날짜의 시세가 요청 날짜로 저장되는 것을 막으려고 거절합니다.")
+    KRX_LAMBDA_RESPONSE_MISMATCH(HttpStatus.BAD_GATEWAY, 4404, "KRX Lambda 응답이 요청과 맞지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

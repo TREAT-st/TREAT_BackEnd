@@ -5,7 +5,7 @@ import com.example.demo.api.prediction.mapper.PredictionConverter;
 import com.example.demo.domain.prediction.entity.Prediction;
 import com.example.demo.domain.prediction.entity.PredictionStatus;
 import com.example.demo.domain.prediction.exception.PredictionHandler;
-import com.example.demo.domain.prediction.port.KisPricePort;
+import com.example.demo.domain.prediction.port.CurrentPricePort;
 import com.example.demo.domain.prediction.service.PredictionCommandService;
 import com.example.demo.domain.prediction.service.PredictionQueryService;
 import com.example.demo.domain.userPortfolio.service.UserPortfolioCommandService;
@@ -23,7 +23,7 @@ public class PredictionGradingService {
     private final PredictionQueryService predictionQueryService;
     private final PredictionCommandService predictionCommandService;
     private final UserPortfolioCommandService userPortfolioCommandService;
-    private final KisPricePort kisPricePort;
+    private final CurrentPricePort currentPricePort;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public GradePredictionResponse grade(Long predictionId) {
@@ -31,7 +31,7 @@ public class PredictionGradingService {
         if (prediction.getStatus() != PredictionStatus.PENDING) {
             throw PredictionHandler.ALREADY_GRADED;
         }
-        BigDecimal currentPrice = kisPricePort.getCurrentPrice(prediction.getStock().getStockCode());
+        BigDecimal currentPrice = currentPricePort.getCurrentPrice(prediction.getStock().getStockCode());
         double changeRate = currentPrice
                 .subtract(prediction.getBasePrice())
                 .divide(prediction.getBasePrice(), 6, RoundingMode.HALF_UP)

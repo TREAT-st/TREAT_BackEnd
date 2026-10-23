@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
+import static com.example.demo.common.consts.StaticVariable.BEARER;
+
 @Tag(name = "Token API", description = "토큰 API")
 @ApiResponse(responseCode = "2000", description = "성공")
 @RequiredArgsConstructor
@@ -32,7 +34,7 @@ public class TokenApiController {
     public ApiResponseDto<AccessTokenResponse> login(@RequestParam String kakaoEmail,
                                                      HttpServletResponse response) {
         JwtToken jwtToken = tokenService.login(kakaoEmail);
-        response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken.getAccessToken());
+        response.setHeader(HttpHeaders.AUTHORIZATION, BEARER + jwtToken.getAccessToken());
         return ApiResponseDto.onSuccess(new AccessTokenResponse(jwtToken.getAccessToken(), jwtToken.getRefreshToken()));
     }
 
@@ -45,7 +47,7 @@ public class TokenApiController {
     public ApiResponseDto<AccessTokenResponse> reissue(@RequestBody RefreshTokenRequest request,
                                                        HttpServletResponse response) {
         JwtToken jwtToken = tokenService.issueTokens(request.getRefreshToken());
-        response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken.getAccessToken());
+        response.setHeader(HttpHeaders.AUTHORIZATION, BEARER + jwtToken.getAccessToken());
         return ApiResponseDto.onSuccess(new AccessTokenResponse(jwtToken.getAccessToken(), jwtToken.getRefreshToken()));
     }
 

@@ -2,7 +2,7 @@ package com.example.demo.api.prediction.service;
 
 import com.example.demo.common.config.JpaAuditingConfig;
 import com.example.demo.domain.prediction.entity.*;
-import com.example.demo.domain.prediction.port.KisPricePort;
+import com.example.demo.domain.prediction.port.CurrentPricePort;
 import com.example.demo.domain.prediction.repository.PredictionRepository;
 import com.example.demo.domain.prediction.service.*;
 import com.example.demo.domain.stock.entity.Stock;
@@ -43,7 +43,7 @@ class PredictionGradingIntegrationTest {
     @Autowired PredictionRepository repository;
     @Autowired EntityManager entityManager;
     @Autowired PlatformTransactionManager transactionManager;
-    @MockitoBean KisPricePort pricePort;
+    @MockitoBean CurrentPricePort pricePort;
     @MockitoBean StockQueryService stockQueryService;
     @MockitoBean UserPortfolioCommandService portfolioService;
 

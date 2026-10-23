@@ -9,8 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,5 +56,15 @@ public class StockQueryServiceImpl implements StockQueryService {
         }
         return stockRepository.findAllByStockCodeIn(stockCodes).stream()
                 .collect(Collectors.toMap(Stock::getStockCode, Function.identity()));
+    }
+
+    @Override
+    public List<String> getAllStockCodes() {
+        return stockRepository.findAllStockCodes();
+    }
+
+    @Override
+    public Optional<LocalDate> getLatestTradeDate() {
+        return stockRepository.findLatestTradeDate();
     }
 }

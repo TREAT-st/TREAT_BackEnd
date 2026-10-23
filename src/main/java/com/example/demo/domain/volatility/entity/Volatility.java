@@ -2,7 +2,6 @@ package com.example.demo.domain.volatility.entity;
 
 import com.example.demo.domain.model.entity.BaseTimeEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import lombok.experimental.SuperBuilder;

@@ -1,6 +1,7 @@
 package com.example.demo.domain.volatility.service;
 
 import com.example.demo.api.krx.dto.KrxOhlcvResponseDto;
+import com.example.demo.api.krx.adapter.KrxMarketOhlcvAdapter;
 import com.example.demo.api.krx.service.KrxService;
 import com.example.demo.domain.volatility.entity.VolatilityDetectionResult;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
@@ -28,7 +29,7 @@ class VolatilityDetectionServiceImplTest {
     private static final int UNIVERSE_SIZE = 100;
 
     private final KrxService krxService = Mockito.mock(KrxService.class);
-    private final VolatilityDetectionService service = new VolatilityDetectionServiceImpl(krxService);
+    private final VolatilityDetectionService service = new VolatilityDetectionServiceImpl(new KrxMarketOhlcvAdapter(krxService));
 
     @Test
     void alert가_아닌_종목은_후보에서_제외() {

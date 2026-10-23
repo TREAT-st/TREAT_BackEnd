@@ -21,12 +21,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.demo.common.consts.StaticVariable.YYYYMMDD_FORMATTER;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportCallback;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.ReportGenerationRequest;
 import static com.example.demo.api.volatility.dto.VolatilityRequestDto.SingleReportRequest;
@@ -43,14 +42,6 @@ public class VolatilityUseCase {
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
     private final BatchExecutionLogService batchExecutionLogService;
-
-    /**
-     * yyyyMMdd. 기본 SMART 해석은 20260231 같은 날짜를 2월 말로 보정해버려서,
-     * 콜백이 엉뚱한 거래일의 행을 갱신할 수 있다. STRICT로 거부한다.
-     * STRICT에서는 연도 필드로 yyyy(연호 기준) 대신 uuuu(proleptic)를 써야 한다.
-     */
-    private static final DateTimeFormatter REPORT_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
 
     /** KRX Lambda에 요청할 시총 상위 종목 수. */
     private static final int DETECTION_REQUEST_SIZE = 100;
@@ -141,7 +132,7 @@ public class VolatilityUseCase {
      */
     private ReportGenerationResult generateReports(ReportGenerationRequest request,
                                                    List<Volatility> targets, LocalDate tradeDate) {
-        String reportDate = tradeDate.format(REPORT_DATE_FORMATTER);
+        String reportDate = tradeDate.format(YYYYMMDD_FORMATTER);
 
         List<String> failedStockCodes = new ArrayList<>();
         for (Volatility v : targets) {
@@ -164,7 +155,7 @@ public class VolatilityUseCase {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void runSingleReportGeneration(SingleReportRequest request) {
         Volatility target = volatilityQueryService.getLatestByStockCode(request.getStockCode());
-        String reportDate = target.getTradeDate().format(REPORT_DATE_FORMATTER);
+        String reportDate = target.getTradeDate().format(YYYYMMDD_FORMATTER);
 
         invokeReportJob(reportDate, target.getStockCode(), request.getStockName(), request.getGptModel());
     }
@@ -206,7 +197,7 @@ public class VolatilityUseCase {
     public void handleReportCallback(ReportCallback request) {
         LocalDate tradeDate;
         try {
-            tradeDate = LocalDate.parse(request.getReportDate(), REPORT_DATE_FORMATTER);
+            tradeDate = LocalDate.parse(request.getReportDate(), YYYYMMDD_FORMATTER);
         } catch (DateTimeParseException e) {
             throw VolatilityHandler.reportCallbackInvalidRequest();
         }

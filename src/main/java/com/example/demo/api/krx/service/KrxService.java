@@ -1,29 +1,25 @@
 package com.example.demo.api.krx.service;
 
 import com.example.demo.api.krx.client.KrxLambdaClient;
+import com.example.demo.api.krx.dto.KrxDailyPricesByDateResponseDto;
 import com.example.demo.api.krx.dto.KrxKospi200ResponseDto;
 import com.example.demo.api.krx.dto.KrxOhlcvResponseDto;
+import com.example.demo.api.krx.dto.KrxDailyPricesByRangeResponseDto;
 import com.example.demo.api.krx.exception.KrxHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
+import java.util.List;
+
+import static com.example.demo.common.consts.StaticVariable.YYYYMMDD_FORMATTER;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class KrxService {
-
-    /**
-     * yyyyMMdd. STRICT 해석이라 20260231 같은 존재하지 않는 날짜를 보정하지 않고 거부한다.
-     * STRICT에서는 연도 필드로 yyyy(연호 기준) 대신 uuuu(proleptic)를 써야 한다.
-     */
-    private static final DateTimeFormatter TRADE_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
 
     private final KrxLambdaClient krxLambdaClient;
 
@@ -65,10 +61,85 @@ public class KrxService {
             throw KrxHandler.krxLambdaResponseParseError();
         }
         try {
-            LocalDate.parse(tradeDate, TRADE_DATE_FORMATTER);
+            LocalDate.parse(tradeDate, YYYYMMDD_FORMATTER);
         } catch (DateTimeParseException e) {
             log.error("KRX Lambda 응답의 {} 형식이 올바르지 않습니다. value={}", fieldName, tradeDate);
             throw KrxHandler.krxLambdaResponseParseError();
+        }
+    }
+
+    /**
+     * 종목별 기간 일봉. 3년치 백필용.
+     *
+     * 받은 종목도 건너뛴 종목도 없으면(prices·skipped가 모두 비었으면) 실패로 막는다. 그대로 통과시키면
+     * 저장할 게 없어 0건 저장으로 조용히 성공 처리된다. 종목 일부 실패는 errors로 오고
+     * 나머지는 쓸 수 있으므로 통과시킨다. 요청한 종목이 응답에서 빠졌는지는 호출자가 직접 대조한다.
+     * 응답의 기간이 요청과 다르면 막는다.
+     */
+    public KrxDailyPricesByRangeResponseDto getDailyPricesByRange(LocalDate from, LocalDate to, List<String> stockCodes) {
+        KrxDailyPricesByRangeResponseDto response = krxLambdaClient.invokeGetDailyPricesByRange(
+                from.format(YYYYMMDD_FORMATTER), to.format(YYYYMMDD_FORMATTER), stockCodes);
+
+        if (response == null || (isEmpty(response.getPrices()) && isEmpty(response.getSkipped()))) {
+            log.error("KRX 일봉 응답이 비어있습니다. from={} to={} 종목={}건", from, to, stockCodes.size());
+            throw KrxHandler.krxLambdaResponseEmpty();
+        }
+        String requestedFrom = from.format(YYYYMMDD_FORMATTER);
+        String requestedTo = to.format(YYYYMMDD_FORMATTER);
+        if (!requestedFrom.equals(response.getFrom()) || !requestedTo.equals(response.getTo())) {
+            log.error("KRX 일봉 응답의 기간이 요청과 다릅니다. 요청={}~{} 응답={}~{}",
+                    requestedFrom, requestedTo, response.getFrom(), response.getTo());
+            throw KrxHandler.krxLambdaResponseMismatch();
+        }
+
+        if (!isEmpty(response.getErrors())) {
+            log.warn("KRX 일봉 {}건 실패. 사유={}", response.getErrors().size(),
+                    response.getErrors().stream()
+                            .map(e -> e.getStockCode() + ":" + e.getReason())
+                            .toList());
+        }
+        return response;
+    }
+
+    /**
+     * 한 날짜의 종목별 일봉. 일일 적재용.
+     *
+     * 휴장일(marketClosed)이나 요청 종목이 모두 거래정지인 경우처럼 prices가 비는 것이 정상일 수 있어
+     * 비어 있다고 막지 않는다. 요청한 종목이 빠졌는지는 호출자가 대조해 실패로 기록한다.
+     * 응답 자체가 없거나, 응답 날짜가 요청과 다르거나, 휴장일이라면서 시세가 있으면 막는다.
+     */
+    public KrxDailyPricesByDateResponseDto getDailyPricesByDate(LocalDate date, List<String> stockCodes) {
+        KrxDailyPricesByDateResponseDto response = krxLambdaClient.invokeGetDailyPricesByDate(
+                date.format(YYYYMMDD_FORMATTER), stockCodes);
+
+        if (response == null) {
+            log.error("KRX 날짜별 일봉 응답이 비어있습니다. date={} 종목={}건", date, stockCodes.size());
+            throw KrxHandler.krxLambdaResponseEmpty();
+        }
+        String requestedDate = date.format(YYYYMMDD_FORMATTER);
+        if (!requestedDate.equals(response.getDate())) {
+            // 그대로 받으면 다른 날짜의 시세가 요청 날짜로 저장된다(날짜 모드 응답의 행에는 거래일이 없다).
+            log.error("KRX 날짜별 일봉 응답의 날짜가 요청과 다릅니다. 요청={} 응답={}", requestedDate, response.getDate());
+            throw KrxHandler.krxLambdaResponseMismatch();
+        }
+        if (response.isMarketClosed() && !isEmpty(response.getPrices())) {
+            log.error("KRX 날짜별 일봉 응답이 휴장일이라면서 시세 {}건을 담고 있습니다. date={}",
+                    response.getPrices().size(), requestedDate);
+            throw KrxHandler.krxLambdaResponseMismatch();
+        }
+        return response;
+    }
+
+    private static boolean isEmpty(List<?> list) {
+        return list == null || list.isEmpty();
+    }
+
+    /** 일봉 행의 거래일. 형식이 틀리면 null(호출자가 그 행을 버린다). */
+    public static LocalDate parseTradeDateOrNull(String tradeDate) {
+        try {
+            return tradeDate == null ? null : LocalDate.parse(tradeDate, YYYYMMDD_FORMATTER);
+        } catch (DateTimeParseException e) {
+            return null;
         }
     }
 

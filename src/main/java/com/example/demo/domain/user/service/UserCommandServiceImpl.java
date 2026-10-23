@@ -1,11 +1,9 @@
 package com.example.demo.domain.user.service;
 
-import com.example.demo.domain.user.entity.Gender;
 import com.example.demo.domain.user.entity.User;
 import com.example.demo.domain.user.exception.UserHandler;
 import com.example.demo.domain.user.repository.UserRepository;
 
-import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserCommandServiceImpl implements UserCommandService {
     private final UserRepository userRepository;
 
-    // TODO: builder로 처리하기
     @Override
     public User registerUser(User user) {
         return userRepository.save(user);
