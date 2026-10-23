@@ -22,12 +22,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AsyncConfigTest {
 
     private ThreadPoolTaskExecutor executor;
+    private ThreadPoolTaskExecutor dailyPriceExecutor;
 
     @AfterEach
     void tearDown() {
         if (executor != null) {
             executor.shutdown();
         }
+        if (dailyPriceExecutor != null) {
+            dailyPriceExecutor.shutdown();
+        }
+    }
+
+    private ThreadPoolTaskExecutor dailyPriceExecutor() {
+        dailyPriceExecutor = (ThreadPoolTaskExecutor) new AsyncConfig().dailyPriceTaskExecutor();
+        return dailyPriceExecutor;
     }
 
     private ThreadPoolTaskExecutor batchExecutor() {
@@ -92,6 +101,69 @@ class AsyncConfigTest {
         executeUntilAccepted(second::countDown);
 
         assertThat(second.await(2, TimeUnit.SECONDS)).isTrue();
+    }
+
+    // ---------- 일봉 실행기 ----------
+
+    @Test
+    void 일봉_실행기는_스레드_하나_큐_없음이고_이름이_구분된다() throws Exception {
+        ThreadPoolTaskExecutor daily = dailyPriceExecutor();
+        assertThat(daily.getCorePoolSize()).isEqualTo(1);
+        assertThat(daily.getMaxPoolSize()).isEqualTo(1);
+        assertThat(daily.getQueueCapacity()).isZero();
+
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<String> ranOn = new AtomicReference<>();
+        daily.execute(() -> {
+            ranOn.set(Thread.currentThread().getName());
+            done.countDown();
+        });
+
+        assertThat(done.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(ranOn.get()).startsWith("daily-price-");
+    }
+
+    /** 같은 서버에서 백필끼리는 겹치지 않는다. 컨트롤러는 이 예외를 accepted=false로 바꾼다. */
+    @Test
+    void 일봉_실행기도_실행_중이면_두_번째_제출을_거부한다() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        dailyPriceExecutor().execute(() -> {
+            started.countDown();
+            await(release);
+        });
+        assertThat(started.await(2, TimeUnit.SECONDS)).isTrue();
+
+        assertThatThrownBy(() -> dailyPriceExecutor.execute(() -> { }))
+                .isInstanceOf(TaskRejectedException.class);
+
+        release.countDown();
+    }
+
+    /**
+     * 수 분 걸리는 백필이 돌고 있어도 일일 배치 트리거는 받아야 한다. 같은 실행기를 쓰면 그날 배치가 빠진다.
+     */
+    @Test
+    void 두_실행기는_서로의_점유에_막히지_않는다() throws Exception {
+        CountDownLatch dailyStarted = new CountDownLatch(1);
+        CountDownLatch batchStarted = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        dailyPriceExecutor().execute(() -> {
+            dailyStarted.countDown();
+            await(release);
+        });
+        assertThat(dailyStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+        // 일봉 실행기가 바쁜 동안 배치 실행기는 받고, 두 작업이 동시에 돈다.
+        batchExecutor().execute(() -> {
+            batchStarted.countDown();
+            await(release);
+        });
+        assertThat(batchStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+        release.countDown();
     }
 
     private void executeUntilAccepted(Runnable task) throws InterruptedException {

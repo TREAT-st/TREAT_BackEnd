@@ -15,9 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-
 @Tag(name = "[사용자 관심 종목 페이지] 사용자 관심 종목 API")
 @RestController
 @RequestMapping("/api/v1/users/favorite-stocks")

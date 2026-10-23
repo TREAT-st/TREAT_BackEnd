@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static com.example.demo.common.consts.StaticVariable.CALLBACK_SECRET_HEADER;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -30,8 +31,6 @@ import java.time.LocalDate;
 @RequestMapping("/api/v1/volatility")
 @RequiredArgsConstructor
 public class VolatilityController {
-
-    private static final String CALLBACK_SECRET_HEADER = "X-Callback-Secret";
 
     private final VolatilityUseCase volatilityUseCase;
 

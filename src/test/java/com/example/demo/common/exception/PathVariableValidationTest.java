@@ -54,6 +54,27 @@ class PathVariableValidationTest {
                 .andExpect(jsonPath("$.code").value(4309));
     }
 
+    @Test
+    void 차트_기간이_허용값이_아니면_400() throws Exception {
+        mockMvc.perform(get("/api/v1/stocks/005930/chart").param("range", "2Y"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result.range").exists());
+    }
+
+    @Test
+    void 차트도_종목코드가_6자리_숫자가_아니면_400() throws Exception {
+        mockMvc.perform(get("/api/v1/stocks/ABC/chart"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result.stockCode").value("종목코드는 6자리 숫자입니다."));
+    }
+
+    @Test
+    void 차트는_없는_종목이면_404_4250() throws Exception {
+        mockMvc.perform(get("/api/v1/stocks/999999/chart").param("range", "1Y"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(4250));
+    }
+
     /**
      * 같은 핸들러를 타는 @RequestParam 범위 검증도 500이 아니라 400이어야 한다.
      * 이 API는 @AuthUser가 검증보다 먼저 사용자를 요구하므로 인증된 사용자를 넣어둔다.

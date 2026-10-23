@@ -12,11 +12,12 @@ import com.example.demo.domain.stock.entity.StockSyncOutcome;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.example.demo.common.consts.StaticVariable.YYYYMMDD_FORMATTER;
 
 public class StockConverter {
 
@@ -50,7 +51,7 @@ public class StockConverter {
                 .toList();
 
         return new Kospi200SyncCommand(
-                LocalDate.parse(response.getTradeDate(), DateTimeFormatter.BASIC_ISO_DATE),
+                LocalDate.parse(response.getTradeDate(), YYYYMMDD_FORMATTER),
                 incomingStocks, errorCodes, priceSnapshots, priceUnavailableStockCodes);
     }
 

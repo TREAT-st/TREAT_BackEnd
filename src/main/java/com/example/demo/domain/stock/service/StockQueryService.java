@@ -4,8 +4,11 @@ import com.example.demo.domain.stock.entity.Stock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface StockQueryService {
     Stock getStockByCode(String stockCode);
@@ -20,4 +23,10 @@ public interface StockQueryService {
      * stock에 없는 코드는 맵에서 빠진다.
      */
     Map<String, Stock> getStocksByCodes(Collection<String> stockCodes);
+
+    /** 저장된 모든 종목코드. 편출 종목 포함, 코드 오름차순. */
+    List<String> getAllStockCodes();
+
+    /** 시세가 반영된 가장 최근 거래일. 아직 아무 시세도 없으면 비어 있다. */
+    Optional<LocalDate> getLatestTradeDate();
 }
