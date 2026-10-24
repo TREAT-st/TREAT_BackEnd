@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -19,6 +21,12 @@ import java.util.Map;
 public class FcmService {
     private final FirebaseMessaging firebaseMessaging;
     private final UserDevicePushService devicePushService;
+
+    /** 알림 DB 트랜잭션이 실제로 커밋된 경우에만 푸시를 요청한다. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendPublishedNotification(NotificationPublishedEvent event) {
+        sendToUser(event.userId(), event.title(), event.message(), event.data());
+    }
 
     /**
      * 사용자의 모든 등록 기기에 같은 알림을 발송합니다.

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
 public interface FavoriteStockRepository extends JpaRepository<FavoriteStock, Long> {
@@ -16,4 +17,5 @@ public interface FavoriteStockRepository extends JpaRepository<FavoriteStock, Lo
 
     @Query("select f.stockCode from FavoriteStock f where f.user.id = :userId")
     Set<String> findStockCodesByUserId(@Param("userId") Long userId);
+    List<FavoriteStock> findAllByStockCodeAndIsAlertEnabledTrue(String stockCode);
 }

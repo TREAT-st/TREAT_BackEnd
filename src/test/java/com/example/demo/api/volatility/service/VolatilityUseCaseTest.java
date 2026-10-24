@@ -10,6 +10,7 @@ import com.example.demo.domain.volatility.exception.VolatilityErrorStatus;
 import com.example.demo.domain.volatility.service.VolatilityCommandService;
 import com.example.demo.domain.volatility.service.VolatilityDetectionService;
 import com.example.demo.domain.batch.service.BatchExecutionLogService;
+import com.example.demo.domain.notification.service.ReportNotificationService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -46,9 +47,12 @@ class VolatilityUseCaseTest {
     private final ReportLambdaClient reportLambdaClient = Mockito.mock(ReportLambdaClient.class);
     private final BatchExecutionLogService batchExecutionLogService =
             Mockito.mock(BatchExecutionLogService.class);
+    private final ReportNotificationService reportNotificationService =
+            Mockito.mock(ReportNotificationService.class);
 
     private final VolatilityUseCase useCase = new VolatilityUseCase(
-            queryService, detectionService, commandService, reportLambdaClient, batchExecutionLogService);
+            queryService, detectionService, commandService, reportLambdaClient, batchExecutionLogService,
+            reportNotificationService);
 
     @Test
     void 전_종목_분석에_실패하면_저장하지_않고_예외를_던진다() {

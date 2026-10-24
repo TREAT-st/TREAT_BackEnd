@@ -15,6 +15,7 @@ import com.example.demo.domain.volatility.service.VolatilityDetectionService;
 import com.example.demo.domain.batch.service.BatchExecutionLogService;
 import com.example.demo.domain.volatility.service.VolatilityQueryService;
 import com.example.demo.domain.volatility.entity.VolatilitySignal;
+import com.example.demo.domain.notification.service.ReportNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Propagation;
@@ -42,6 +43,7 @@ public class VolatilityUseCase {
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
     private final BatchExecutionLogService batchExecutionLogService;
+    private final ReportNotificationService reportNotificationService;
 
     /** KRX Lambda에 요청할 시총 상위 종목 수. */
     private static final int DETECTION_REQUEST_SIZE = 100;
@@ -202,6 +204,7 @@ public class VolatilityUseCase {
             throw VolatilityHandler.reportCallbackInvalidRequest();
         }
         volatilityCommandService.updateReportUrl(request.getStockCode(), tradeDate, request.getReportUrl());
+        reportNotificationService.notifyReportReady(request.getStockCode(), tradeDate);
 
         // 이번 콜백으로 마지막 하나가 채워졌으면 도착 확인을 끝낸다.
         long missing = volatilityQueryService.countMissingReport(tradeDate);
