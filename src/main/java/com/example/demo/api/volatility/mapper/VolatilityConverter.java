@@ -10,6 +10,7 @@ import com.example.demo.domain.volatility.entity.VolatilitySignal;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static com.example.demo.common.consts.StaticVariable.*;
@@ -52,19 +53,21 @@ public class VolatilityConverter {
                 .build();
     }
 
-    public static VolatilityInfo toVolatilityInfo(Volatility volatility) {
+    /** @param reportUrlResolver 저장된 URL을 응답용 URL로 바꾼다. 리포트 버킷이 private이라 서명이 필요하다. */
+    public static VolatilityInfo toVolatilityInfo(Volatility volatility, UnaryOperator<String> reportUrlResolver) {
         return VolatilityInfo.builder()
                 .stockCode(volatility.getStockCode())
                 .stockName(volatility.getStockName())
                 .tradeDate(volatility.getTradeDate())
-                .reportUrl(volatility.getReportUrl())
+                .reportUrl(reportUrlResolver.apply(volatility.getReportUrl()))
                 .createdDate(volatility.getCreatedDate())
                 .build();
     }
 
-    public static VolatilityListResponse toVolatilityListResponse(List<Volatility> volatilises) {
+    public static VolatilityListResponse toVolatilityListResponse(List<Volatility> volatilises,
+                                                                  UnaryOperator<String> reportUrlResolver) {
         List<VolatilityInfo> content = volatilises.stream()
-                .map(VolatilityConverter::toVolatilityInfo)
+                .map(v -> toVolatilityInfo(v, reportUrlResolver))
                 .collect(Collectors.toList());
 
         return VolatilityListResponse.builder()
