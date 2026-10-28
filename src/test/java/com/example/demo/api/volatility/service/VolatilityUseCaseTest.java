@@ -47,12 +47,19 @@ class VolatilityUseCaseTest {
     private final ReportLambdaClient reportLambdaClient = Mockito.mock(ReportLambdaClient.class);
     private final BatchExecutionLogService batchExecutionLogService =
             Mockito.mock(BatchExecutionLogService.class);
+
     private final ReportNotificationService reportNotificationService =
             Mockito.mock(ReportNotificationService.class);
 
     private final VolatilityUseCase useCase = new VolatilityUseCase(
             queryService, detectionService, commandService, reportLambdaClient, batchExecutionLogService,
             reportNotificationService);
+
+    private final ReportUrlSigner reportUrlSigner = Mockito.mock(ReportUrlSigner.class);
+
+    private final VolatilityUseCase useCase = new VolatilityUseCase(
+            queryService, detectionService, commandService, reportLambdaClient, batchExecutionLogService,
+            reportUrlSigner);
 
     @Test
     void 전_종목_분석에_실패하면_저장하지_않고_예외를_던진다() {
@@ -336,6 +343,20 @@ class VolatilityUseCaseTest {
                 Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(TRADE_DATE).build()));
 
         assertThat(useCase.getAllVolatilityByCode("005930").getTotalCount()).isEqualTo(1);
+    }
+
+    /** 리포트 버킷은 private이다. 저장된 객체 URL을 그대로 내보내면 프런트에서 403이 난다. */
+    @Test
+    void 조회_응답의_reportUrl은_서명된_URL로_내보낸다() {
+        String stored = "https://treat-finance-reports.s3.ap-northeast-2.amazonaws.com/005930_report.html";
+        Mockito.when(queryService.getAllVolatilityByCode("005930")).thenReturn(List.of(
+                Volatility.builder().stockCode("005930").stockName("삼성전자").tradeDate(TRADE_DATE)
+                        .reportUrl(stored).build()));
+        Mockito.when(reportUrlSigner.sign(stored)).thenReturn(stored + "?X-Amz-Signature=sig");
+
+        var response = useCase.getAllVolatilityByCode("005930");
+
+        assertThat(response.getContent().get(0).getReportUrl()).isEqualTo(stored + "?X-Amz-Signature=sig");
     }
 
     private VolatilityDetectionResult detection(List<VolatilitySignal> signals) {

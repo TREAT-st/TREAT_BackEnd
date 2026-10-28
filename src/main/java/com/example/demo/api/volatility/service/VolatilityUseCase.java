@@ -43,7 +43,11 @@ public class VolatilityUseCase {
     private final VolatilityCommandService volatilityCommandService;
     private final ReportLambdaClient reportLambdaClient;
     private final BatchExecutionLogService batchExecutionLogService;
+
     private final ReportNotificationService reportNotificationService;
+
+    private final ReportUrlSigner reportUrlSigner;
+
 
     /** KRX Lambda에 요청할 시총 상위 종목 수. */
     private static final int DETECTION_REQUEST_SIZE = 100;
@@ -236,14 +240,14 @@ public class VolatilityUseCase {
     public VolatilityListResponse getAllVolatilityByDate(LocalDate date) {
         List<Volatility> volatilities = volatilityQueryService.getByTradeDate(date);
         if (!volatilities.isEmpty()) {
-            return VolatilityConverter.toVolatilityListResponse(volatilities);
+            return VolatilityConverter.toVolatilityListResponse(volatilities, reportUrlSigner::sign);
         }
 
         if (!date.isBefore(LocalDate.now(SEOUL_ZONE))) {
             throw VolatilityHandler.dateNotYetDetectable();
         }
         if (batchExecutionLogService.isDetectedWithNoStock(date)) {
-            return VolatilityConverter.toVolatilityListResponse(List.of());
+            return VolatilityConverter.toVolatilityListResponse(List.of(), reportUrlSigner::sign);
         }
         throw VolatilityHandler.volatilityNotFoundByDate();
     }
@@ -255,6 +259,6 @@ public class VolatilityUseCase {
         if (volatilities.isEmpty()) {
             throw VolatilityHandler.volatilityNotFoundByStockCode();
         }
-        return VolatilityConverter.toVolatilityListResponse(volatilities);
+        return VolatilityConverter.toVolatilityListResponse(volatilities, reportUrlSigner::sign);
     }
 }
