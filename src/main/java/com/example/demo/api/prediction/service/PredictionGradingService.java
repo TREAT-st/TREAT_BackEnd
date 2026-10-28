@@ -1,6 +1,7 @@
 package com.example.demo.api.prediction.service;
 
 import com.example.demo.api.prediction.dto.PredictionResponseDto.GradePredictionResponse;
+import com.example.demo.api.prediction.dto.PredictionGradingResultDto;
 import com.example.demo.api.prediction.mapper.PredictionConverter;
 import com.example.demo.domain.prediction.entity.Prediction;
 import com.example.demo.domain.prediction.entity.PredictionStatus;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +24,8 @@ public class PredictionGradingService {
     private final PredictionCommandService predictionCommandService;
     private final UserPortfolioCommandService userPortfolioCommandService;
     private final CurrentPricePort currentPricePort;
+    private final PredictionGrader predictionGrader;
+    private final PredictionResultNotificationService predictionResultNotificationService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public GradePredictionResponse grade(Long predictionId) {
@@ -32,20 +34,19 @@ public class PredictionGradingService {
             throw PredictionHandler.ALREADY_GRADED;
         }
         BigDecimal currentPrice = currentPricePort.getCurrentPrice(prediction.getStock().getStockCode());
-        double changeRate = currentPrice
-                .subtract(prediction.getBasePrice())
-                .divide(prediction.getBasePrice(), 6, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100))
-                .doubleValue();
+        PredictionGrader.GradeDecision decision = predictionGrader.decide(
+                prediction.getBasePrice(), currentPrice, prediction.getTarget());
 
-        boolean isHit = prediction.getTarget().isHit(changeRate);
-        PredictionStatus resultStatus = isHit ? PredictionStatus.CORRECT : PredictionStatus.WRONG;
-
-        Prediction graded = predictionCommandService.grade(prediction, resultStatus);
+        Prediction graded = predictionCommandService.grade(prediction, decision.status());
         userPortfolioCommandService.recordGradingResult(
-                prediction.getUser().getId(), isHit, prediction.getEarnablePoints());
+                prediction.getUser().getId(), decision.isCorrect(), prediction.getEarnablePoints());
 
-        return PredictionConverter.toGradeResponse(graded, changeRate);
+        PredictionGradingResultDto result = new PredictionGradingResultDto(
+                graded.getId(), prediction.getUser().getId(), prediction.getStock().getStockName(),
+                graded.getStatus(), decision.changeRate(), graded.getEarnablePoints());
+        predictionResultNotificationService.notify(prediction.getUser(), result);
+
+        return PredictionConverter.toGradeResponse(graded, result.changeRate());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

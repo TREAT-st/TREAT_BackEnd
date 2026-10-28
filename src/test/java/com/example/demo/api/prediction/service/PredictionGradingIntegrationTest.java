@@ -9,6 +9,7 @@ import com.example.demo.domain.stock.entity.Stock;
 import com.example.demo.domain.stock.service.StockQueryService;
 import com.example.demo.domain.user.entity.*;
 import com.example.demo.domain.userPortfolio.service.UserPortfolioCommandService;
+import com.example.demo.domain.notification.service.NotificationDispatchService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,8 @@ import static org.mockito.Mockito.*;
 @DataJpaTest(properties = "spring.datasource.url=jdbc:h2:mem:prediction;NON_KEYWORDS=USER")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({PredictionUseCase.class, PredictionGradingService.class,
+@Import({PredictionUseCase.class, PredictionGradingService.class, PredictionGrader.class,
+        PredictionResultNotificationService.class,
         PredictionCommandServiceImpl.class, PredictionQueryServiceImpl.class, JpaAuditingConfig.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PredictionGradingIntegrationTest {
@@ -46,6 +48,7 @@ class PredictionGradingIntegrationTest {
     @MockitoBean CurrentPricePort pricePort;
     @MockitoBean StockQueryService stockQueryService;
     @MockitoBean UserPortfolioCommandService portfolioService;
+    @MockitoBean NotificationDispatchService notificationDispatchService;
 
     @Test
     void failedGradingRollsBackOnlyThatPredictionAndPersistsFailureSeparately() {
