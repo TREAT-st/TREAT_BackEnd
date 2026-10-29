@@ -177,6 +177,7 @@ jobs:
             export GOOGLE_APPLICATION_CREDENTIALS="$APP_DIR/secrets/firebase-service-account.json"
             test -r "$GOOGLE_APPLICATION_CREDENTIALS"
             nohup java \
+              -Duser.timezone=Asia/Seoul \
               -Xms128m -Xmx400m \
               -XX:+HeapDumpOnOutOfMemoryError \
               -XX:HeapDumpPath="$APP_DIR" \
